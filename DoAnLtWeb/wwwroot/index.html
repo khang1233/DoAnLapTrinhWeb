@@ -1,0 +1,248 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slidify - Nền tảng thiết kế online miễn phí</title>
+    <!-- Fonts & Icons -->
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="css/styles.css?v=2">
+    <!-- Fabric.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+    <!-- jsPDF -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+</head>
+<body class="dark-mode">
+
+    <header>
+        <h1><i class="fa-solid fa-layer-group"></i> Slidify</h1>
+        <div class="user-info">
+            <button class="btn-icon" onclick="toggleTheme()" title="Đổi giao diện"><i class="fa-solid fa-moon" id="theme-icon"></i></button>
+            <span id="user-info-header"></span>
+        </div>
+    </header>
+
+    <!-- Auth Section -->
+    <div id="auth-section" class="container">
+        <h2 id="auth-title">Đăng Nhập</h2>
+        <div class="form-group hidden" id="register-username-group">
+            <input type="text" id="auth-username" placeholder="Tên người dùng (Username)">
+        </div>
+        <div class="form-group">
+            <input type="email" id="auth-email" placeholder="Email">
+        </div>
+        <div class="form-group">
+            <input type="password" id="auth-password" placeholder="Mật khẩu">
+        </div>
+        <button id="btn-submit-auth" onclick="handleAuth()"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</button>
+        <div class="auth-switch">
+            <span id="auth-switch-text">Chưa có tài khoản?</span> 
+            <span class="link" onclick="toggleAuthMode()" id="auth-switch-link">Đăng ký ngay</span>
+        </div>
+    </div>
+
+    <!-- Dashboard Section -->
+    <div id="dashboard-section" class="container hidden">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
+            <h2><i class="fa-solid fa-folder-open"></i> Dự án của bạn</h2>
+            <div>
+                <button onclick="promptCreateProject()" class="btn-success"><i class="fa-solid fa-plus"></i> Tạo mới</button>
+                <button onclick="logout()" class="btn-danger"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
+            </div>
+        </div>
+        <div id="project-list" class="project-grid"></div>
+    </div>
+
+    <!-- Editor Section (Canva/PowerPoint Clone) -->
+    <div id="editor-section" class="hidden">
+        <!-- Top Toolbar -->
+        <div class="editor-topbar">
+            <div class="editor-topbar-title">
+                <button class="btn-icon" onclick="backToDashboard()"><i class="fa-solid fa-arrow-left"></i></button>
+                <span id="current-project-name">Đang thiết kế...</span>
+            </div>
+            <div class="editor-topbar-tools">
+                <button onclick="resizeCanvasPrompt()" class="btn-icon" title="Đổi kích thước Slide"><i class="fa-solid fa-expand"></i> Resize</button>
+                <button onclick="saveSlide()" class="btn-success"><i class="fa-solid fa-floppy-disk"></i> Lưu dự án</button>
+                <button onclick="exportToImage()" class="btn-icon"><i class="fa-solid fa-image"></i> Tải ảnh</button>
+                <button onclick="exportToPDF()" class="btn-icon"><i class="fa-solid fa-file-pdf"></i> Tải PDF</button>
+            </div>
+        </div>
+
+        <!-- Canva Style Sub-toolbar (Properties) -->
+        <div class="editor-sub-toolbar" id="sub-toolbar" style="visibility: hidden;">
+            <div class="prop-group" id="prop-font-group">
+                <select id="prop-font-family" onchange="updateObjectProperty('fontFamily', this.value)">
+                    <option value="Times New Roman">Times New Roman</option>
+                    <option value="Inter">Inter</option>
+                    <option value="Arial">Arial</option>
+                    <option value="Verdana">Verdana</option>
+                    <option value="Courier New">Courier New</option>
+                    <option value="Tahoma">Tahoma</option>
+                    <option value="Georgia">Georgia</option>
+                    <option value="Comic Sans MS">Comic Sans</option>
+                </select>
+                <input type="number" id="prop-font-size" onchange="updateObjectProperty('fontSize', this.value)" min="10" max="200" title="Cỡ chữ">
+                <button class="btn-format" id="btn-bold" onclick="toggleFormat('fontWeight', 'bold', 'normal')" title="In đậm (Ctrl+B)"><b>B</b></button>
+                <button class="btn-format" id="btn-italic" onclick="toggleFormat('fontStyle', 'italic', 'normal')" title="In nghiêng (Ctrl+I)"><i>I</i></button>
+                <button class="btn-format" id="btn-underline" onclick="toggleFormat('underline', true, false)" title="Gạch chân (Ctrl+U)"><u>U</u></button>
+                <button class="btn-format" id="btn-strikethrough" onclick="toggleFormat('linethrough', true, false)" title="Gạch ngang">S</button>
+                <button class="btn-format" id="btn-uppercase" onclick="toggleUppercase()" title="Chữ hoa">aA</button>
+                <button class="btn-format" id="btn-align-left" onclick="updateObjectProperty('textAlign', 'left')"><i class="fa-solid fa-align-left"></i></button>
+                <button class="btn-format" id="btn-align-center" onclick="updateObjectProperty('textAlign', 'center')"><i class="fa-solid fa-align-center"></i></button>
+                <button class="btn-format" id="btn-align-right" onclick="updateObjectProperty('textAlign', 'right')"><i class="fa-solid fa-align-right"></i></button>
+                
+                <label title="Khoảng cách dòng" style="margin-left: 10px;"><i class="fa-solid fa-arrows-up-down"></i></label>
+                <input type="range" id="prop-line-height" min="0.5" max="3" step="0.1" value="1.16" oninput="updateObjectProperty('lineHeight', this.value)" style="width: 60px;">
+            </div>
+            <div class="prop-group">
+                <label title="Màu chữ"><i class="fa-solid fa-palette"></i></label>
+                <input type="color" id="prop-color" onchange="updateObjectProperty('fill', this.value)">
+                
+                <label title="Màu nền chữ (Highlight)" style="margin-left: 10px;"><i class="fa-solid fa-highlighter"></i></label>
+                <input type="color" id="prop-bg-color" onchange="updateObjectProperty('textBackgroundColor', this.value)" value="#ffffff">
+                
+                <label title="Bóng đổ (Shadow)" style="margin-left: 10px;"><i class="fa-solid fa-moon"></i></label>
+                <input type="checkbox" id="prop-shadow" onchange="toggleShadow(this.checked)">
+
+                <label title="Độ trong suốt (Opacity)" style="margin-left: 10px;"><i class="fa-solid fa-chess-board"></i></label>
+                <input type="range" id="prop-opacity" class="range-slider" min="0" max="1" step="0.05" value="1" oninput="updateObjectProperty('opacity', this.value)" style="width: 80px;">
+            </div>
+            <div class="prop-group">
+                <button class="btn-icon" onclick="bringForward()" title="Lên trên"><i class="fa-solid fa-arrow-up-long"></i> Lên trên</button>
+                <button class="btn-icon" onclick="sendBackward()" title="Xuống dưới"><i class="fa-solid fa-arrow-down-long"></i> Xuống dưới</button>
+                <button class="btn-icon" style="color:var(--danger)" onclick="deleteSelected()" title="Xóa"><i class="fa-solid fa-trash"></i> Xóa</button>
+            </div>
+        </div>
+
+        <div class="editor-workspace">
+            <!-- Left Sidebar (Canva Tools) -->
+            <div class="editor-sidebar">
+                <div class="sidebar-tool" id="tab-design" onclick="toggleDrawer('design')" title="Thiết kế">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Thiết kế</span>
+                </div>
+                <div class="sidebar-tool" id="tab-elements" onclick="toggleDrawer('elements')" title="Thành phần">
+                    <i class="fa-solid fa-shapes"></i>
+                    <span>Thành phần</span>
+                </div>
+                <div class="sidebar-tool" id="tab-text" onclick="toggleDrawer('text')" title="Văn bản">
+                    <i class="fa-solid fa-font"></i>
+                    <span>Văn bản</span>
+                </div>
+                <div class="sidebar-tool" id="tab-brand" onclick="toggleDrawer('brand')" title="Thương hiệu">
+                    <i class="fa-solid fa-briefcase"></i>
+                    <span>Thương hiệu</span>
+                </div>
+                <div class="sidebar-tool" onclick="document.getElementById('upload-img').click()" title="Tải lên">
+                    <i class="fa-solid fa-cloud-arrow-up"></i>
+                    <span>Tải lên</span>
+                </div>
+                <input type="file" id="upload-img" accept="image/png, image/jpeg" class="hidden" onchange="uploadImage(event)">
+                <div class="sidebar-tool" id="tab-draw" onclick="toggleDrawer('draw')" title="Vẽ">
+                    <i class="fa-solid fa-pen-nib"></i>
+                    <span>Vẽ</span>
+                </div>
+                <div class="sidebar-tool" id="tab-projects" onclick="toggleDrawer('projects')" title="Dự án">
+                    <i class="fa-solid fa-folder-open"></i>
+                    <span>Dự án</span>
+                </div>
+                <div class="sidebar-tool" id="tab-apps" onclick="toggleDrawer('apps')" title="Ứng dụng">
+                    <i class="fa-solid fa-border-all"></i>
+                    <span>Ứng dụng</span>
+                </div>
+            </div>
+
+            <!-- Drawer Panel -->
+            <div class="editor-drawer" id="drawer-panel">
+                <!-- Content gets injected by JS -->
+            </div>
+
+            <!-- Main Canvas & Bottom Thumbnails Area -->
+            <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;">
+                <!-- Main Canvas -->
+                <div class="editor-canvas-container" id="canvas-container">
+                    <div class="canvas-wrapper">
+                        <canvas id="canvas" width="800" height="450"></canvas>
+                    </div>
+                </div>
+
+                <!-- Bottom Slide Panel (Canva Style) -->
+                <div class="editor-bottom-thumbnails">
+                    <div id="slides-list" class="slides-list-horizontal">
+                        <!-- Slide Thumbnails go here -->
+                    </div>
+                    <button class="btn-add-slide-horizontal" onclick="addNewSlide()" title="Thêm trang mới">
+                        <i class="fa-solid fa-plus"></i>
+                    </button>
+                </div>
+            </div>
+            <!-- /End Canvas + Thumbnails column -->
+
+            <!-- Bottom Toolbar (Zoom) -->
+            <div class="editor-bottom-bar">
+                <span class="page-indicator" id="page-indicator">Trang 1 / 1</span>
+                <div style="display:flex; align-items:center; gap:5px;">
+                    <i class="fa-solid fa-magnifying-glass-minus"></i>
+                    <input type="range" id="zoom-slider" min="0.5" max="2" step="0.1" value="1" oninput="changeZoom(this.value)">
+                    <i class="fa-solid fa-magnifying-glass-plus"></i>
+                    <span id="zoom-text">100%</span>
+                </div>
+            </div>
+            <!-- Context Menu -->
+            <div id="context-menu" class="custom-context-menu">
+                <div class="context-menu-item" onclick="contextAction('copy')">
+                    <i class="fa-regular fa-copy"></i> Sao chép <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted)">Ctrl+C</span>
+                </div>
+                <div class="context-menu-item" onclick="contextAction('paste')">
+                    <i class="fa-regular fa-paste"></i> Dán <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted)">Ctrl+V</span>
+                </div>
+                <div class="context-menu-item" onclick="contextAction('duplicate')">
+                    <i class="fa-regular fa-clone"></i> Tạo bản sao <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted)">Ctrl+D</span>
+                </div>
+                <div class="context-divider"></div>
+                <div class="context-menu-item has-submenu">
+                    <i class="fa-solid fa-layer-group"></i> Lớp
+                    <i class="fa-solid fa-chevron-right" style="margin-left:auto; font-size: 0.75rem"></i>
+                    <div class="context-submenu">
+                        <div class="context-menu-item" onclick="contextAction('bringForward')"><i class="fa-solid fa-angle-up"></i> Tiến một lớp</div>
+                        <div class="context-menu-item" onclick="contextAction('bringToFront')"><i class="fa-solid fa-angles-up"></i> Lên trước</div>
+                        <div class="context-menu-item" onclick="contextAction('sendBackward')"><i class="fa-solid fa-angle-down"></i> Lùi một lớp</div>
+                        <div class="context-menu-item" onclick="contextAction('sendToBack')"><i class="fa-solid fa-angles-down"></i> Xuống cuối</div>
+                    </div>
+                </div>
+                <div class="context-divider"></div>
+                <div class="context-menu-item" onclick="contextAction('lock')" id="context-btn-lock">
+                    <i class="fa-solid fa-lock"></i> Khóa
+                </div>
+                <div class="context-divider"></div>
+                <div class="context-menu-item" onclick="contextAction('addPage')">
+                    <i class="fa-solid fa-plus"></i> Thêm trang
+                </div>
+                <div class="context-menu-item" onclick="contextAction('delete')" style="color:var(--danger)">
+                    <i class="fa-solid fa-trash"></i> Xóa
+                </div>
+            </div>
+        </div> <!-- End of the new flex-col div for Canvas + Thumbnails -->
+    </div>
+
+    <!-- Create Project Modal -->
+    <div id="create-project-modal" class="modal-overlay hidden">
+        <div class="modal-content">
+            <h2>Tạo dự án mới</h2>
+            <div class="form-group">
+                <input type="text" id="new-project-name" placeholder="Nhập tên dự án...">
+            </div>
+            <div style="display: flex; gap: 10px; justify-content: flex-end;">
+                <button onclick="closeCreateModal()" class="btn-danger">Hủy</button>
+                <button onclick="submitCreateProject()" class="btn-success">Xác nhận</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- Toast Notification -->
+    <div id="toast" class="toast">Message here</div>
+
+    <script src="js/app.js"></script>
+</body>
+</html>
