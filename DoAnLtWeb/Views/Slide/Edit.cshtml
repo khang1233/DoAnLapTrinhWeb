@@ -1,12 +1,19 @@
+@model DoAnLtWeb.Models.Presentation
+
+@{
+    ViewData["Title"] = Model.Title;
+    Layout = null; // Use a standalone layout for the editor (Canva-like full screen)
+}
 <!DOCTYPE html>
 <html lang="vi">
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Slidify - Nền tảng thiết kế online miễn phí</title>
+    <title>@Model.Title - Slidify Editor</title>
     <!-- Fonts & Icons -->
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&family=Oswald:wght@500&display=swap" rel="stylesheet">
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="css/styles.css?v=2">
+    <link rel="stylesheet" href="~/css/styles.css?v=2">
     <!-- Fabric.js -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
     <!-- jsPDF -->
@@ -14,56 +21,31 @@
 </head>
 <body class="dark-mode">
 
-    <header>
-        <h1><i class="fa-solid fa-layer-group"></i> Slidify</h1>
-        <div class="user-info">
-            <button class="btn-icon" onclick="toggleTheme()" title="Đổi giao diện"><i class="fa-solid fa-moon" id="theme-icon"></i></button>
-            <span id="user-info-header"></span>
-        </div>
-    </header>
-
-    <!-- Auth Section -->
-    <div id="auth-section" class="container">
-        <h2 id="auth-title">Đăng Nhập</h2>
-        <div class="form-group hidden" id="register-username-group">
-            <input type="text" id="auth-username" placeholder="Tên người dùng (Username)">
-        </div>
-        <div class="form-group">
-            <input type="email" id="auth-email" placeholder="Email">
-        </div>
-        <div class="form-group">
-            <input type="password" id="auth-password" placeholder="Mật khẩu">
-        </div>
-        <button id="btn-submit-auth" onclick="handleAuth()"><i class="fa-solid fa-right-to-bracket"></i> Đăng nhập</button>
-        <div class="auth-switch">
-            <span id="auth-switch-text">Chưa có tài khoản?</span> 
-            <span class="link" onclick="toggleAuthMode()" id="auth-switch-link">Đăng ký ngay</span>
-        </div>
-    </div>
-
-    <!-- Dashboard Section -->
-    <div id="dashboard-section" class="container hidden">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 20px;">
-            <h2><i class="fa-solid fa-folder-open"></i> Dự án của bạn</h2>
-            <div>
-                <button onclick="promptCreateProject()" class="btn-success"><i class="fa-solid fa-plus"></i> Tạo mới</button>
-                <button onclick="logout()" class="btn-danger"><i class="fa-solid fa-right-from-bracket"></i> Đăng xuất</button>
-            </div>
-        </div>
-        <div id="project-list" class="project-grid"></div>
-    </div>
+    <!-- Store Presentation Data for JS -->
+    <input type="hidden" id="presentation-id" value="@Model.Id" />
+    <input type="hidden" id="presentation-data" value='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Slides.Select(s => new { s.PageNumber, s.BackgroundColor, s.BackgroundImage, s.ElementsJson })))' />
 
     <!-- Editor Section (Canva/PowerPoint Clone) -->
-    <div id="editor-section" class="hidden">
+    <div id="editor-section" style="display: flex; flex-direction: column; height: 100vh;">
         <!-- Top Toolbar -->
         <div class="editor-topbar">
             <div class="editor-topbar-title">
-                <button class="btn-icon" onclick="backToDashboard()"><i class="fa-solid fa-arrow-left"></i></button>
-                <span id="current-project-name">Đang thiết kế...</span>
+                <a href="/Home/Index" class="btn-icon" style="text-decoration:none;"><i class="fa-solid fa-arrow-left"></i></a>
+                <span id="current-project-name" contenteditable="true">@Model.Title</span>
+                <span id="save-status" class="text-muted" style="font-size: 0.8rem; margin-left: 10px;"><i class="fa-solid fa-cloud-check"></i> Đã lưu</span>
             </div>
             <div class="editor-topbar-tools">
+                @if (User.Identity.Name == "Admin" || User.Identity.Name == "admin" || User.Claims.Any(c => c.Value == "admin@slidify.com"))
+                {
+                    <button onclick="publishAsTemplate()" class="btn-icon" style="color: #f59e0b;" title="Dành cho Admin"><i class="fa-solid fa-crown"></i> Đăng làm Mẫu</button>
+                }
+                <!-- AI Generation Placeholder -->
+                <button onclick="generateWithAI()" class="btn-icon" style="color: #a855f7;" title="Thiết kế bằng AI (Đang phát triển)"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Design</button>
+                
                 <button onclick="resizeCanvasPrompt()" class="btn-icon" title="Đổi kích thước Slide"><i class="fa-solid fa-expand"></i> Resize</button>
-                <button onclick="saveSlide()" class="btn-success"><i class="fa-solid fa-floppy-disk"></i> Lưu dự án</button>
+                <button onclick="showToast('Tính năng Trình chiếu đang phát triển!', 'info')" class="btn-icon"><i class="fa-solid fa-play"></i> Trình bày</button>
+                <button onclick="showToast('Tính năng Chia sẻ đang phát triển!', 'info')" class="btn-icon"><i class="fa-solid fa-share-nodes"></i> Chia sẻ</button>
+                <button onclick="savePresentationManually()" class="btn-success"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
                 <button onclick="exportToImage()" class="btn-icon"><i class="fa-solid fa-image"></i> Tải ảnh</button>
                 <button onclick="exportToPDF()" class="btn-icon"><i class="fa-solid fa-file-pdf"></i> Tải PDF</button>
             </div>
@@ -73,16 +55,15 @@
         <div class="editor-sub-toolbar" id="sub-toolbar" style="visibility: hidden;">
             <div class="prop-group" id="prop-font-group">
                 <select id="prop-font-family" onchange="updateObjectProperty('fontFamily', this.value)">
-                    <option value="Times New Roman">Times New Roman</option>
                     <option value="Inter">Inter</option>
+                    <option value="Montserrat">Montserrat</option>
+                    <option value="Playfair Display">Playfair Display</option>
+                    <option value="Oswald">Oswald</option>
                     <option value="Arial">Arial</option>
-                    <option value="Verdana">Verdana</option>
-                    <option value="Courier New">Courier New</option>
-                    <option value="Tahoma">Tahoma</option>
-                    <option value="Georgia">Georgia</option>
-                    <option value="Comic Sans MS">Comic Sans</option>
+                    <option value="Times New Roman">Times New Roman</option>
                 </select>
                 <input type="number" id="prop-font-size" onchange="updateObjectProperty('fontSize', this.value)" min="10" max="200" title="Cỡ chữ">
+                <input type="color" id="prop-color" onchange="updateObjectProperty('fill', this.value)" title="Màu chữ" style="width: 30px; height: 30px; padding: 0; border: none; cursor: pointer; background: transparent;">
                 <button class="btn-format" id="btn-bold" onclick="toggleFormat('fontWeight', 'bold', 'normal')" title="In đậm (Ctrl+B)"><b>B</b></button>
                 <button class="btn-format" id="btn-italic" onclick="toggleFormat('fontStyle', 'italic', 'normal')" title="In nghiêng (Ctrl+I)"><i>I</i></button>
                 <button class="btn-format" id="btn-underline" onclick="toggleFormat('underline', true, false)" title="Gạch chân (Ctrl+U)"><u>U</u></button>
@@ -95,14 +76,19 @@
                 <label title="Khoảng cách dòng" style="margin-left: 10px;"><i class="fa-solid fa-arrows-up-down"></i></label>
                 <input type="range" id="prop-line-height" min="0.5" max="3" step="0.1" value="1.16" oninput="updateObjectProperty('lineHeight', this.value)" style="width: 60px;">
             </div>
+            <div class="prop-group" id="prop-shape-group" style="display:none;">
+                <label title="Màu tô (Fill)"><i class="fa-solid fa-fill"></i></label>
+                <input type="color" id="prop-fill-color" onchange="updateObjectProperty('fill', this.value)">
+                
+                <label title="Màu viền (Stroke)" style="margin-left: 10px;"><i class="fa-solid fa-pen-fancy"></i></label>
+                <input type="color" id="prop-stroke-color" onchange="updateObjectProperty('stroke', this.value)">
+                
+                <label title="Độ dày viền (Stroke Width)" style="margin-left: 10px;"><i class="fa-solid fa-border-none"></i></label>
+                <input type="number" id="prop-stroke-width" min="0" max="50" onchange="updateObjectProperty('strokeWidth', this.value)">
+            </div>
+            
             <div class="prop-group">
-                <label title="Màu chữ"><i class="fa-solid fa-palette"></i></label>
-                <input type="color" id="prop-color" onchange="updateObjectProperty('fill', this.value)">
-                
-                <label title="Màu nền chữ (Highlight)" style="margin-left: 10px;"><i class="fa-solid fa-highlighter"></i></label>
-                <input type="color" id="prop-bg-color" onchange="updateObjectProperty('textBackgroundColor', this.value)" value="#ffffff">
-                
-                <label title="Bóng đổ (Shadow)" style="margin-left: 10px;"><i class="fa-solid fa-moon"></i></label>
+                <label title="Bóng đổ (Shadow)"><i class="fa-solid fa-moon"></i></label>
                 <input type="checkbox" id="prop-shadow" onchange="toggleShadow(this.checked)">
 
                 <label title="Độ trong suốt (Opacity)" style="margin-left: 10px;"><i class="fa-solid fa-chess-board"></i></label>
@@ -115,12 +101,12 @@
             </div>
         </div>
 
-        <div class="editor-workspace">
+        <div class="editor-workspace" style="flex: 1; display: flex; overflow: hidden;">
             <!-- Left Sidebar (Canva Tools) -->
             <div class="editor-sidebar">
-                <div class="sidebar-tool" id="tab-design" onclick="toggleDrawer('design')" title="Thiết kế">
+                <div class="sidebar-tool" id="tab-design" onclick="toggleDrawer('design')" title="Mẫu">
                     <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    <span>Thiết kế</span>
+                    <span>Mẫu</span>
                 </div>
                 <div class="sidebar-tool" id="tab-elements" onclick="toggleDrawer('elements')" title="Thành phần">
                     <i class="fa-solid fa-shapes"></i>
@@ -130,26 +116,22 @@
                     <i class="fa-solid fa-font"></i>
                     <span>Văn bản</span>
                 </div>
-                <div class="sidebar-tool" id="tab-brand" onclick="toggleDrawer('brand')" title="Thương hiệu">
-                    <i class="fa-solid fa-briefcase"></i>
-                    <span>Thương hiệu</span>
+                <div class="sidebar-tool" id="tab-photos" onclick="toggleDrawer('photos')" title="Ảnh (Mới)">
+                    <i class="fa-solid fa-image"></i>
+                    <span>Ảnh</span>
                 </div>
-                <div class="sidebar-tool" onclick="document.getElementById('upload-img').click()" title="Tải lên">
+                <div class="sidebar-tool" id="tab-bg" onclick="toggleDrawer('bg')" title="Nền (Mới)">
+                    <i class="fa-solid fa-fill-drip"></i>
+                    <span>Nền</span>
+                </div>
+                <div class="sidebar-tool" id="tab-upload" onclick="toggleDrawer('upload')" title="Tải lên">
                     <i class="fa-solid fa-cloud-arrow-up"></i>
                     <span>Tải lên</span>
                 </div>
-                <input type="file" id="upload-img" accept="image/png, image/jpeg" class="hidden" onchange="uploadImage(event)">
+                <input type="file" id="upload-img-input" accept="image/png, image/jpeg, image/svg+xml" class="hidden" onchange="uploadImageReal(event)">
                 <div class="sidebar-tool" id="tab-draw" onclick="toggleDrawer('draw')" title="Vẽ">
                     <i class="fa-solid fa-pen-nib"></i>
                     <span>Vẽ</span>
-                </div>
-                <div class="sidebar-tool" id="tab-projects" onclick="toggleDrawer('projects')" title="Dự án">
-                    <i class="fa-solid fa-folder-open"></i>
-                    <span>Dự án</span>
-                </div>
-                <div class="sidebar-tool" id="tab-apps" onclick="toggleDrawer('apps')" title="Ứng dụng">
-                    <i class="fa-solid fa-border-all"></i>
-                    <span>Ứng dụng</span>
                 </div>
             </div>
 
@@ -163,6 +145,7 @@
                 <!-- Main Canvas -->
                 <div class="editor-canvas-container" id="canvas-container">
                     <div class="canvas-wrapper">
+                        <!-- Default 16:9 ratio -->
                         <canvas id="canvas" width="800" height="450"></canvas>
                     </div>
                 </div>
@@ -179,16 +162,6 @@
             </div>
             <!-- /End Canvas + Thumbnails column -->
 
-            <!-- Bottom Toolbar (Zoom) -->
-            <div class="editor-bottom-bar">
-                <span class="page-indicator" id="page-indicator">Trang 1 / 1</span>
-                <div style="display:flex; align-items:center; gap:5px;">
-                    <i class="fa-solid fa-magnifying-glass-minus"></i>
-                    <input type="range" id="zoom-slider" min="0.5" max="2" step="0.1" value="1" oninput="changeZoom(this.value)">
-                    <i class="fa-solid fa-magnifying-glass-plus"></i>
-                    <span id="zoom-text">100%</span>
-                </div>
-            </div>
             <!-- Context Menu -->
             <div id="context-menu" class="custom-context-menu">
                 <div class="context-menu-item" onclick="contextAction('copy')">
@@ -223,26 +196,20 @@
                     <i class="fa-solid fa-trash"></i> Xóa
                 </div>
             </div>
-        </div> <!-- End of the new flex-col div for Canvas + Thumbnails -->
-    </div>
-
-    <!-- Create Project Modal -->
-    <div id="create-project-modal" class="modal-overlay hidden">
-        <div class="modal-content">
-            <h2>Tạo dự án mới</h2>
-            <div class="form-group">
-                <input type="text" id="new-project-name" placeholder="Nhập tên dự án...">
-            </div>
-            <div style="display: flex; gap: 10px; justify-content: flex-end;">
-                <button onclick="closeCreateModal()" class="btn-danger">Hủy</button>
-                <button onclick="submitCreateProject()" class="btn-success">Xác nhận</button>
-            </div>
         </div>
     </div>
 
     <!-- Toast Notification -->
     <div id="toast" class="toast">Message here</div>
 
-    <script src="js/app.js"></script>
+    <!-- Real-time Collaboration Placeholder -->
+    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script> -->
+    <!-- <script>
+        // const connection = new signalR.HubConnectionBuilder().withUrl("/slideHub").build();
+        // connection.on("ReceiveSlideUpdate", (data) => { /* Update canvas */ });
+        // connection.start().catch(err => console.error(err.toString()));
+    </script> -->
+
+    <script src="~/js/slide-editor.js"></script>
 </body>
 </html>

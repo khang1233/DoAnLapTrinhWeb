@@ -1,0 +1,50 @@
+@model IEnumerable<DoAnLtWeb.Models.Presentation>
+
+@{
+    ViewData["Title"] = "Trang chủ Slidify";
+}
+
+<div class="container mt-5">
+    <div class="d-flex justify-content-between align-items-center mb-4">
+        <h2>Bài thuyết trình của bạn</h2>
+        <a asp-controller="Slide" asp-action="Edit" asp-route-id="-1" class="btn btn-primary">
+            <i class="fa-solid fa-plus"></i> Tạo bản thiết kế mới
+        </a>
+    </div>
+
+    <div class="row">
+        @if (Model != null && Model.Any())
+        {
+            foreach (var item in Model)
+            {
+                <div class="col-md-3 mb-4">
+                    <div class="card shadow-sm h-100">
+                        <div class="card-img-top bg-light" style="height: 150px; display:flex; align-items:center; justify-content:center;">
+                            @if (!string.IsNullOrEmpty(item.ThumbnailUrl))
+                            {
+                                <img src="@item.ThumbnailUrl" alt="Thumbnail" style="max-height: 100%; max-width: 100%;">
+                            }
+                            else
+                            {
+                                <i class="fa-solid fa-image text-muted" style="font-size: 3rem;"></i>
+                            }
+                        </div>
+                        <div class="card-body">
+                            <h5 class="card-title text-truncate">@item.Title</h5>
+                            <p class="card-text text-muted small">Cập nhật: @item.UpdatedAt.ToString("dd/MM/yyyy HH:mm")</p>
+                        </div>
+                        <div class="card-footer bg-white border-top-0">
+                            <a asp-controller="Slide" asp-action="Edit" asp-route-id="@item.Id" class="btn btn-outline-primary btn-sm w-100">Chỉnh sửa</a>
+                        </div>
+                    </div>
+                </div>
+            }
+        }
+        else
+        {
+            <div class="col-12 text-center text-muted py-5">
+                <p>Bạn chưa có bản thiết kế nào.</p>
+            </div>
+        }
+    </div>
+</div>

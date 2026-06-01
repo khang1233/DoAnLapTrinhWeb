@@ -1,8 +1,6 @@
 using DoAnLtWeb.Data;
-using Microsoft.AspNetCore.Authentication.JwtBearer;
 using Microsoft.EntityFrameworkCore;
-using Microsoft.IdentityModel.Tokens;
-using System.Text;
+
 
 var builder = WebApplication.CreateBuilder(args);
 
@@ -11,22 +9,14 @@ builder.Services.AddControllersWithViews(); // Keep MVC support for frontend sta
 builder.Services.AddDbContext<AppDbContext>(options =>
     options.UseSqlServer(builder.Configuration.GetConnectionString("DefaultConnection")));
 
-// Configure JWT Authentication
-var jwtKey = builder.Configuration["Jwt:Key"] ?? "default_super_secret_key";
-var key = Encoding.UTF8.GetBytes(jwtKey);
-
-builder.Services.AddAuthentication(JwtBearerDefaults.AuthenticationScheme)
-    .AddJwtBearer(options =>
+// Configure Cookie Authentication
+builder.Services.AddAuthentication(Microsoft.AspNetCore.Authentication.Cookies.CookieAuthenticationDefaults.AuthenticationScheme)
+    .AddCookie(options =>
     {
-        options.RequireHttpsMetadata = false;
-        options.SaveToken = true;
-        options.TokenValidationParameters = new TokenValidationParameters
-        {
-            ValidateIssuerSigningKey = true,
-            IssuerSigningKey = new SymmetricSecurityKey(key),
-            ValidateIssuer = false,
-            ValidateAudience = false
-        };
+        options.LoginPath = "/Account/Login";
+        options.LogoutPath = "/Account/Logout";
+        options.AccessDeniedPath = "/Account/AccessDenied";
+        options.ExpireTimeSpan = TimeSpan.FromDays(30);
     });
 
 var app = builder.Build();
@@ -40,8 +30,7 @@ if (!app.Environment.IsDevelopment())
 
 app.UseHttpsRedirection();
 
-// Serve static files from wwwroot (index.html, css, js)
-app.UseDefaultFiles(); 
+// Serve static files from wwwroot (css, js)
 app.UseStaticFiles();
 
 app.UseRouting();
@@ -52,5 +41,11 @@ app.UseAuthorization();
 app.MapControllerRoute(
     name: "default",
     pattern: "{controller=Home}/{action=Index}/{id?}");
+
+using (var scope = app.Services.CreateScope())
+{
+    var services = scope.ServiceProvider;
+    DoAnLtWeb.Data.DbInitializer.Initialize(services);
+}
 
 app.Run();

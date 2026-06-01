@@ -1,0 +1,98 @@
+@model DoAnLtWeb.Models.LoginViewModel
+@{
+    Layout = null;
+    ViewData["Title"] = "Đăng nhập";
+}
+
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đăng nhập - Slidify</title>
+    <link rel="stylesheet" href="~/css/styles.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <style>
+        .auth-container {
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            padding: 20px;
+        }
+        .auth-box {
+            background: var(--panel-bg);
+            backdrop-filter: blur(20px);
+            border: 1px solid var(--border-color);
+            border-radius: 24px;
+            padding: 40px;
+            width: 100%;
+            max-width: 420px;
+            box-shadow: var(--glass-shadow);
+            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+        @@keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
+        
+        .auth-title { text-align: center; margin-bottom: 30px; }
+        .auth-title h1 {
+            font-size: 2rem; font-weight: 700;
+            background: linear-gradient(to right, #818cf8, #c084fc);
+            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
+            margin-bottom: 8px;
+        }
+        .auth-title p { color: var(--text-muted); font-size: 0.95rem; }
+        
+        .auth-form-group { margin-bottom: 20px; }
+        .auth-form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem; }
+        
+        .btn-auth {
+            width: 100%; padding: 14px;
+            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
+            color: white; border: none; border-radius: 12px;
+            font-size: 1rem; font-weight: 600; cursor: pointer;
+            transition: all 0.3s;
+        }
+        .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5); }
+        
+        .auth-links { text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-muted); }
+        .auth-links a { color: var(--primary); text-decoration: none; font-weight: 600; transition: 0.2s; }
+        .auth-links a:hover { color: #818cf8; }
+        
+        .validation-summary-errors { color: var(--danger); font-size: 0.9rem; margin-bottom: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; list-style: none; }
+        .validation-summary-errors ul { padding-left: 0; margin-bottom: 0; list-style-type: none; }
+        .field-validation-error { color: var(--danger); font-size: 0.85rem; margin-top: 6px; display: block; }
+    </style>
+</head>
+<body class="dark-mode">
+    <div class="auth-container">
+        <div class="auth-box">
+            <div class="auth-title">
+                <h1>Slidify</h1>
+                <p>Đăng nhập để bắt đầu sáng tạo</p>
+            </div>
+
+            <form asp-action="Login" method="post">
+                <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+                <div class="auth-form-group">
+                    <label asp-for="Email">Email</label>
+                    <input asp-for="Email" placeholder="you@example.com" autofocus />
+                    <span asp-validation-for="Email" class="field-validation-error"></span>
+                </div>
+
+                <div class="auth-form-group">
+                    <label asp-for="Password">Mật khẩu</label>
+                    <input asp-for="Password" placeholder="••••••••" />
+                    <span asp-validation-for="Password" class="field-validation-error"></span>
+                </div>
+
+                <button type="submit" class="btn-auth">Đăng nhập</button>
+            </form>
+
+            <div class="auth-links">
+                Chưa có tài khoản? <a href="/Account/Register">Đăng ký ngay</a>
+            </div>
+        </div>
+    </div>
+</body>
+</html>
