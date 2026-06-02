@@ -225,6 +225,94 @@ namespace DoAnLtWeb.Controllers
 
             return Ok(new { success = true });
         }
+
+        [HttpPost]
+        public async Task<IActionResult> Delete(int id)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId)) return Unauthorized();
+
+            var presentation = await _context.Presentations
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+
+            if (presentation == null) return NotFound();
+
+            _context.Presentations.Remove(presentation);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> Duplicate(int id)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId)) return Unauthorized();
+
+            var presentation = await _context.Presentations
+                .Include(p => p.Slides)
+                .FirstOrDefaultAsync(p => p.Id == id && p.UserId == userId);
+
+            if (presentation == null) return NotFound();
+
+            var newPresentation = new Presentation
+            {
+                Title = presentation.Title + " (Bản sao)",
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow,
+                ThumbnailUrl = presentation.ThumbnailUrl,
+                IsTemplate = false
+            };
+
+            foreach (var slide in presentation.Slides.OrderBy(s => s.PageNumber))
+            {
+                newPresentation.Slides.Add(new Slide
+                {
+                    PageNumber = slide.PageNumber,
+                    BackgroundColor = slide.BackgroundColor,
+                    BackgroundImage = slide.BackgroundImage,
+                    ElementsJson = slide.ElementsJson
+                });
+            }
+
+            _context.Presentations.Add(newPresentation);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { success = true });
+        }
+
+        [HttpPost]
+        public async Task<IActionResult> CreateFromImport([FromBody] PresentationSaveDto data)
+        {
+            var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
+            if (!int.TryParse(userIdStr, out int userId)) return Unauthorized();
+
+            var presentation = new Presentation
+            {
+                Title = string.IsNullOrEmpty(data.Title) ? "Bản thuyết trình nhập từ PDF" : data.Title,
+                UserId = userId,
+                CreatedAt = DateTime.UtcNow,
+                UpdatedAt = DateTime.UtcNow
+            };
+
+            int pageNum = 1;
+            foreach (var slideDto in data.Slides)
+            {
+                presentation.Slides.Add(new Slide
+                {
+                    PageNumber = pageNum++,
+                    BackgroundColor = string.IsNullOrEmpty(slideDto.BackgroundColor) ? "#ffffff" : slideDto.BackgroundColor,
+                    BackgroundImage = slideDto.BackgroundImage,
+                    ElementsJson = string.IsNullOrEmpty(slideDto.ElementsJson) ? "[]" : slideDto.ElementsJson
+                });
+            }
+
+            _context.Presentations.Add(presentation);
+            await _context.SaveChangesAsync();
+
+            return Ok(new { id = presentation.Id });
+        }
     }
 
     public class PresentationSaveDto

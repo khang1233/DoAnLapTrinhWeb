@@ -13,98 +13,668 @@
     <link rel="stylesheet" href="~/css/styles.css" />
     <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
     <style>
-        .auth-container {
+        /* ===== AUTH PAGE LAYOUT ===== */
+        .auth-page {
             min-height: 100vh;
+            display: flex;
+            position: relative;
+            overflow: hidden;
+        }
+
+        /* --- Animated Background --- */
+        .auth-page::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            left: -50%;
+            width: 200%;
+            height: 200%;
+            background: 
+                radial-gradient(ellipse at 20% 50%, rgba(99, 102, 241, 0.15) 0%, transparent 50%),
+                radial-gradient(ellipse at 80% 20%, rgba(168, 85, 247, 0.12) 0%, transparent 50%),
+                radial-gradient(ellipse at 50% 80%, rgba(249, 115, 22, 0.08) 0%, transparent 50%);
+            animation: bgShift 15s ease-in-out infinite alternate;
+            z-index: 0;
+        }
+
+        @@keyframes bgShift {
+            0% { transform: translate(0, 0) rotate(0deg); }
+            50% { transform: translate(-2%, 1%) rotate(1deg); }
+            100% { transform: translate(1%, -1%) rotate(-1deg); }
+        }
+
+        /* --- Left Panel (Branding) --- */
+        .auth-left {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            padding: 60px;
+            background: linear-gradient(135deg, 
+                rgba(99, 102, 241, 0.08) 0%, 
+                rgba(168, 85, 247, 0.05) 50%, 
+                rgba(249, 115, 22, 0.03) 100%);
+            border-right: 1px solid var(--border-color);
+        }
+
+        .auth-left-content {
+            max-width: 440px;
+            text-align: center;
+            animation: fadeInLeft 0.8s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @@keyframes fadeInLeft {
+            from { opacity: 0; transform: translateX(-40px); }
+            to { opacity: 1; transform: translateX(0); }
+        }
+
+        .brand-logo {
+            width: 80px;
+            height: 80px;
+            background: linear-gradient(135deg, #6366f1, #a855f7, #f97316);
+            border-radius: 24px;
             display: flex;
             align-items: center;
             justify-content: center;
-            padding: 20px;
+            margin: 0 auto 32px;
+            font-size: 2rem;
+            color: white;
+            box-shadow: 0 20px 60px -15px rgba(99, 102, 241, 0.5);
+            animation: logoFloat 4s ease-in-out infinite;
         }
-        .auth-box {
-            background: var(--panel-bg);
-            backdrop-filter: blur(20px);
-            border: 1px solid var(--border-color);
-            border-radius: 24px;
-            padding: 40px;
-            width: 100%;
-            max-width: 480px;
-            box-shadow: var(--glass-shadow);
-            animation: slideUp 0.5s cubic-bezier(0.16, 1, 0.3, 1);
+
+        @@keyframes logoFloat {
+            0%, 100% { transform: translateY(0) rotate(0deg); }
+            50% { transform: translateY(-8px) rotate(2deg); }
         }
-        @@keyframes slideUp { from { opacity: 0; transform: translateY(40px); } to { opacity: 1; transform: translateY(0); } }
-        
-        .auth-title { text-align: center; margin-bottom: 30px; }
-        .auth-title h1 {
-            font-size: 2rem; font-weight: 700;
-            background: linear-gradient(to right, #818cf8, #c084fc);
-            -webkit-background-clip: text; -webkit-text-fill-color: transparent;
-            margin-bottom: 8px;
+
+        .brand-tagline {
+            font-size: 2.2rem;
+            font-weight: 700;
+            line-height: 1.3;
+            margin-bottom: 16px;
+            background: linear-gradient(135deg, #818cf8, #c084fc, #f9a8d4);
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            background-clip: text;
         }
-        .auth-title p { color: var(--text-muted); font-size: 0.95rem; }
-        
-        .auth-form-group { margin-bottom: 16px; }
-        .auth-form-group label { display: block; margin-bottom: 8px; font-weight: 500; font-size: 0.95rem; }
-        
-        .btn-auth {
-            width: 100%; padding: 14px; margin-top: 10px;
-            background: linear-gradient(135deg, var(--primary), var(--primary-hover));
-            color: white; border: none; border-radius: 12px;
-            font-size: 1rem; font-weight: 600; cursor: pointer;
+
+        .brand-description {
+            color: var(--text-muted);
+            font-size: 1.05rem;
+            line-height: 1.7;
+            margin-bottom: 40px;
+        }
+
+        /* Steps */
+        .steps-list {
+            display: flex;
+            flex-direction: column;
+            gap: 20px;
+            text-align: left;
+        }
+
+        .step-item {
+            display: flex;
+            align-items: flex-start;
+            gap: 16px;
+            padding: 16px 20px;
+            background: rgba(255, 255, 255, 0.04);
+            border: 1px solid rgba(255, 255, 255, 0.06);
+            border-radius: 14px;
             transition: all 0.3s;
         }
-        .btn-auth:hover { transform: translateY(-2px); box-shadow: 0 10px 20px -10px rgba(99, 102, 241, 0.5); }
-        
-        .auth-links { text-align: center; margin-top: 24px; font-size: 0.95rem; color: var(--text-muted); }
-        .auth-links a { color: var(--primary); text-decoration: none; font-weight: 600; transition: 0.2s; }
-        .auth-links a:hover { color: #818cf8; }
-        
-        .validation-summary-errors { color: var(--danger); font-size: 0.9rem; margin-bottom: 20px; padding: 12px; background: rgba(239, 68, 68, 0.1); border-radius: 8px; list-style: none; }
-        .validation-summary-errors ul { padding-left: 0; margin-bottom: 0; list-style-type: none; }
-        .field-validation-error { color: var(--danger); font-size: 0.85rem; margin-top: 6px; display: block; }
+
+        .step-item:hover {
+            background: rgba(99, 102, 241, 0.08);
+            border-color: rgba(99, 102, 241, 0.2);
+            transform: translateX(4px);
+        }
+
+        .step-number {
+            width: 36px;
+            height: 36px;
+            border-radius: 50%;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            font-size: 0.85rem;
+            font-weight: 700;
+            flex-shrink: 0;
+        }
+
+        .step-number.s1 { background: rgba(99, 102, 241, 0.2); color: #818cf8; }
+        .step-number.s2 { background: rgba(236, 72, 153, 0.2); color: #f472b6; }
+        .step-number.s3 { background: rgba(249, 115, 22, 0.2); color: #fb923c; }
+
+        .step-info h4 {
+            font-size: 0.95rem;
+            font-weight: 600;
+            margin-bottom: 4px;
+            color: var(--text-main);
+        }
+
+        .step-info p {
+            font-size: 0.85rem;
+            color: var(--text-muted);
+            line-height: 1.5;
+        }
+
+        /* --- Right Panel (Form) --- */
+        .auth-right {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            position: relative;
+            z-index: 1;
+            padding: 60px;
+        }
+
+        .auth-card {
+            width: 100%;
+            max-width: 480px;
+            animation: slideUp 0.7s cubic-bezier(0.16, 1, 0.3, 1);
+        }
+
+        @@keyframes slideUp {
+            from { opacity: 0; transform: translateY(30px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
+        .auth-card-header {
+            margin-bottom: 32px;
+        }
+
+        .auth-card-header h1 {
+            font-size: 1.85rem;
+            font-weight: 700;
+            margin-bottom: 8px;
+            letter-spacing: -0.02em;
+        }
+
+        .auth-card-header p {
+            color: var(--text-muted);
+            font-size: 1rem;
+        }
+
+        /* --- Form Styles --- */
+        .auth-form-group {
+            margin-bottom: 18px;
+        }
+
+        .auth-form-group label {
+            display: block;
+            margin-bottom: 8px;
+            font-weight: 600;
+            font-size: 0.88rem;
+            text-transform: uppercase;
+            letter-spacing: 0.05em;
+            color: var(--text-muted);
+        }
+
+        .input-wrapper {
+            position: relative;
+            display: flex;
+            align-items: center;
+        }
+
+        .input-wrapper i.input-icon {
+            position: absolute;
+            left: 16px;
+            color: var(--text-muted);
+            font-size: 1rem;
+            transition: color 0.3s;
+            z-index: 2;
+        }
+
+        .input-wrapper input {
+            width: 100%;
+            padding: 15px 16px 15px 48px;
+            background: var(--input-bg);
+            border: 2px solid transparent;
+            border-radius: 14px;
+            color: var(--text-main);
+            font-size: 0.95rem;
+            font-family: 'Inter', sans-serif;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            outline: none;
+        }
+
+        .input-wrapper input::placeholder {
+            color: rgba(148, 163, 184, 0.6);
+        }
+
+        .input-wrapper input:hover {
+            border-color: rgba(99, 102, 241, 0.3);
+            background: rgba(255, 255, 255, 0.06);
+        }
+
+        .input-wrapper input:focus {
+            border-color: var(--primary);
+            background: rgba(99, 102, 241, 0.06);
+            box-shadow: 0 0 0 4px rgba(99, 102, 241, 0.12);
+        }
+
+        .input-wrapper input:focus + i.input-icon,
+        .input-wrapper input:focus ~ i.input-icon {
+            color: var(--primary);
+        }
+
+        .toggle-password {
+            position: absolute;
+            right: 16px;
+            background: none;
+            border: none;
+            color: var(--text-muted);
+            cursor: pointer;
+            padding: 4px;
+            font-size: 1rem;
+            transition: color 0.3s;
+            z-index: 2;
+        }
+
+        .toggle-password:hover {
+            color: var(--primary);
+        }
+
+        /* --- Password Strength --- */
+        .password-strength {
+            margin-top: 10px;
+            display: flex;
+            gap: 6px;
+            align-items: center;
+        }
+
+        .strength-bar {
+            flex: 1;
+            height: 4px;
+            border-radius: 2px;
+            background: rgba(255, 255, 255, 0.08);
+            transition: background 0.3s;
+        }
+
+        .strength-bar.active.weak { background: #ef4444; }
+        .strength-bar.active.medium { background: #f59e0b; }
+        .strength-bar.active.strong { background: #10b981; }
+
+        .strength-text {
+            font-size: 0.78rem;
+            font-weight: 600;
+            min-width: 60px;
+            text-align: right;
+        }
+
+        .strength-text.weak { color: #ef4444; }
+        .strength-text.medium { color: #f59e0b; }
+        .strength-text.strong { color: #10b981; }
+
+        /* --- Submit Button --- */
+        .btn-auth {
+            width: 100%;
+            padding: 16px;
+            background: linear-gradient(135deg, #6366f1, #8b5cf6);
+            color: white;
+            border: none;
+            border-radius: 14px;
+            font-size: 1rem;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.3s cubic-bezier(0.16, 1, 0.3, 1);
+            position: relative;
+            overflow: hidden;
+            font-family: 'Inter', sans-serif;
+            letter-spacing: 0.02em;
+            margin-top: 8px;
+        }
+
+        .btn-auth::before {
+            content: '';
+            position: absolute;
+            top: 0; left: -100%;
+            width: 100%; height: 100%;
+            background: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent);
+            transition: left 0.6s;
+        }
+
+        .btn-auth:hover {
+            transform: translateY(-2px);
+            box-shadow: 0 14px 34px -10px rgba(99, 102, 241, 0.55);
+        }
+
+        .btn-auth:hover::before {
+            left: 100%;
+        }
+
+        .btn-auth:active {
+            transform: translateY(0);
+        }
+
+        /* --- Divider --- */
+        .auth-divider {
+            display: flex;
+            align-items: center;
+            margin: 24px 0;
+            gap: 16px;
+        }
+
+        .auth-divider::before,
+        .auth-divider::after {
+            content: '';
+            flex: 1;
+            height: 1px;
+            background: var(--border-color);
+        }
+
+        .auth-divider span {
+            color: var(--text-muted);
+            font-size: 0.85rem;
+            font-weight: 500;
+        }
+
+        /* --- Auth Links --- */
+        .auth-links {
+            text-align: center;
+            margin-top: 24px;
+            font-size: 0.95rem;
+            color: var(--text-muted);
+        }
+
+        .auth-links a {
+            color: #818cf8;
+            text-decoration: none;
+            font-weight: 600;
+            transition: all 0.3s;
+            position: relative;
+        }
+
+        .auth-links a::after {
+            content: '';
+            position: absolute;
+            bottom: -2px;
+            left: 0;
+            width: 0;
+            height: 2px;
+            background: linear-gradient(90deg, #818cf8, #c084fc);
+            transition: width 0.3s;
+            border-radius: 1px;
+        }
+
+        .auth-links a:hover::after {
+            width: 100%;
+        }
+
+        .auth-links a:hover {
+            color: #a78bfa;
+        }
+
+        /* --- Validation --- */
+        .validation-summary-errors {
+            color: var(--danger);
+            font-size: 0.9rem;
+            margin-bottom: 20px;
+            padding: 14px 18px;
+            background: rgba(239, 68, 68, 0.08);
+            border: 1px solid rgba(239, 68, 68, 0.15);
+            border-radius: 12px;
+            list-style: none;
+            animation: shakeX 0.5s;
+        }
+
+        .validation-summary-errors ul {
+            padding-left: 0;
+            margin-bottom: 0;
+            list-style-type: none;
+        }
+
+        .field-validation-error {
+            color: #f87171;
+            font-size: 0.82rem;
+            margin-top: 6px;
+            display: block;
+            padding-left: 4px;
+        }
+
+        @@keyframes shakeX {
+            0%, 100% { transform: translateX(0); }
+            20% { transform: translateX(-6px); }
+            40% { transform: translateX(6px); }
+            60% { transform: translateX(-4px); }
+            80% { transform: translateX(4px); }
+        }
+
+        /* --- Floating Particles --- */
+        .particles {
+            position: fixed;
+            top: 0; left: 0;
+            width: 100%; height: 100%;
+            pointer-events: none;
+            z-index: 0;
+            overflow: hidden;
+        }
+
+        .particle {
+            position: absolute;
+            border-radius: 50%;
+            opacity: 0.15;
+            animation: particleFloat linear infinite;
+        }
+
+        @@keyframes particleFloat {
+            0% { transform: translateY(100vh) rotate(0deg); }
+            100% { transform: translateY(-100px) rotate(720deg); }
+        }
+
+        /* --- Responsive --- */
+        @@media (max-width: 900px) {
+            .auth-left { display: none; }
+            .auth-right { padding: 32px 24px; }
+        }
     </style>
 </head>
 <body class="dark-mode">
-    <div class="auth-container">
-        <div class="auth-box">
-            <div class="auth-title">
-                <h1>Tạo tài khoản</h1>
-                <p>Khởi đầu không gian sáng tạo của bạn</p>
+    <!-- Floating Particles -->
+    <div class="particles" id="particles"></div>
+
+    <div class="auth-page">
+        <!-- Left Panel -->
+        <div class="auth-left">
+            <div class="auth-left-content">
+                <div class="brand-logo">
+                    <i class="fas fa-layer-group"></i>
+                </div>
+                <h2 class="brand-tagline">Bắt đầu hành trình sáng tạo</h2>
+                <p class="brand-description">
+                    Chỉ cần vài bước đơn giản để tạo tài khoản và 
+                    bắt đầu thiết kế slide chuyên nghiệp.
+                </p>
+                <div class="steps-list">
+                    <div class="step-item">
+                        <div class="step-number s1">1</div>
+                        <div class="step-info">
+                            <h4>Tạo tài khoản</h4>
+                            <p>Điền thông tin cơ bản để bắt đầu</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number s2">2</div>
+                        <div class="step-info">
+                            <h4>Chọn mẫu yêu thích</h4>
+                            <p>Hàng trăm template đẹp mắt đang chờ bạn</p>
+                        </div>
+                    </div>
+                    <div class="step-item">
+                        <div class="step-number s3">3</div>
+                        <div class="step-info">
+                            <h4>Sáng tạo & Chia sẻ</h4>
+                            <p>Tùy chỉnh và chia sẻ với mọi người</p>
+                        </div>
+                    </div>
+                </div>
             </div>
+        </div>
 
-            <form asp-action="Register" method="post">
-                <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
-
-                <div class="auth-form-group">
-                    <label asp-for="Username">Tên hiển thị</label>
-                    <input asp-for="Username" placeholder="Nguyễn Văn A" autofocus />
-                    <span asp-validation-for="Username" class="field-validation-error"></span>
+        <!-- Right Panel -->
+        <div class="auth-right">
+            <div class="auth-card">
+                <div class="auth-card-header">
+                    <h1>Tạo tài khoản mới ✨</h1>
+                    <p>Khởi đầu không gian sáng tạo của bạn</p>
                 </div>
 
-                <div class="auth-form-group">
-                    <label asp-for="Email">Email</label>
-                    <input asp-for="Email" placeholder="you@example.com" />
-                    <span asp-validation-for="Email" class="field-validation-error"></span>
+                <form asp-action="Register" method="post" id="registerForm">
+                    <div asp-validation-summary="ModelOnly" class="validation-summary-errors"></div>
+
+                    <div class="auth-form-group">
+                        <label asp-for="Username">Tên hiển thị</label>
+                        <div class="input-wrapper">
+                            <input asp-for="Username" placeholder="Nguyễn Văn A" autofocus />
+                            <i class="fas fa-user input-icon"></i>
+                        </div>
+                        <span asp-validation-for="Username" class="field-validation-error"></span>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label asp-for="Email">Email</label>
+                        <div class="input-wrapper">
+                            <input asp-for="Email" placeholder="name@company.com" />
+                            <i class="fas fa-envelope input-icon"></i>
+                        </div>
+                        <span asp-validation-for="Email" class="field-validation-error"></span>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label asp-for="Password">Mật khẩu</label>
+                        <div class="input-wrapper">
+                            <input asp-for="Password" placeholder="Ít nhất 6 ký tự" id="passwordInput" oninput="checkStrength(this.value)" />
+                            <i class="fas fa-lock input-icon"></i>
+                            <button type="button" class="toggle-password" onclick="togglePassword('passwordInput', 'toggleIcon1')">
+                                <i class="fas fa-eye" id="toggleIcon1"></i>
+                            </button>
+                        </div>
+                        <div class="password-strength" id="strengthMeter" style="display:none;">
+                            <div class="strength-bar" id="bar1"></div>
+                            <div class="strength-bar" id="bar2"></div>
+                            <div class="strength-bar" id="bar3"></div>
+                            <div class="strength-bar" id="bar4"></div>
+                            <span class="strength-text" id="strengthText"></span>
+                        </div>
+                        <span asp-validation-for="Password" class="field-validation-error"></span>
+                    </div>
+
+                    <div class="auth-form-group">
+                        <label asp-for="ConfirmPassword">Xác nhận mật khẩu</label>
+                        <div class="input-wrapper">
+                            <input asp-for="ConfirmPassword" placeholder="Nhập lại mật khẩu" id="confirmPasswordInput" />
+                            <i class="fas fa-shield-halved input-icon"></i>
+                            <button type="button" class="toggle-password" onclick="togglePassword('confirmPasswordInput', 'toggleIcon2')">
+                                <i class="fas fa-eye" id="toggleIcon2"></i>
+                            </button>
+                        </div>
+                        <span asp-validation-for="ConfirmPassword" class="field-validation-error"></span>
+                    </div>
+
+                    <button type="submit" class="btn-auth">
+                        <span>Đăng ký ngay</span>
+                    </button>
+                </form>
+
+                <div class="auth-divider">
+                    <span>hoặc</span>
                 </div>
 
-                <div class="auth-form-group">
-                    <label asp-for="Password">Mật khẩu</label>
-                    <input asp-for="Password" placeholder="Ít nhất 6 ký tự" />
-                    <span asp-validation-for="Password" class="field-validation-error"></span>
+                <div class="auth-links">
+                    Đã có tài khoản? <a href="/Account/Login">Đăng nhập</a>
                 </div>
-
-                <div class="auth-form-group">
-                    <label asp-for="ConfirmPassword">Xác nhận mật khẩu</label>
-                    <input asp-for="ConfirmPassword" placeholder="Nhập lại mật khẩu" />
-                    <span asp-validation-for="ConfirmPassword" class="field-validation-error"></span>
-                </div>
-
-                <button type="submit" class="btn-auth">Đăng ký</button>
-            </form>
-
-            <div class="auth-links">
-                Đã có tài khoản? <a href="/Account/Login">Đăng nhập</a>
             </div>
         </div>
     </div>
+
+    <script>
+        // Toggle password visibility
+        function togglePassword(inputId, iconId) {
+            const input = document.getElementById(inputId);
+            const icon = document.getElementById(iconId);
+            if (input.type === 'password') {
+                input.type = 'text';
+                icon.classList.replace('fa-eye', 'fa-eye-slash');
+            } else {
+                input.type = 'password';
+                icon.classList.replace('fa-eye-slash', 'fa-eye');
+            }
+        }
+
+        // Password strength checker
+        function checkStrength(password) {
+            const meter = document.getElementById('strengthMeter');
+            const bars = [document.getElementById('bar1'), document.getElementById('bar2'), document.getElementById('bar3'), document.getElementById('bar4')];
+            const text = document.getElementById('strengthText');
+            
+            if (!password) {
+                meter.style.display = 'none';
+                return;
+            }
+            meter.style.display = 'flex';
+
+            let score = 0;
+            if (password.length >= 6) score++;
+            if (password.length >= 10) score++;
+            if (/[A-Z]/.test(password) && /[a-z]/.test(password)) score++;
+            if (/[0-9]/.test(password) && /[^A-Za-z0-9]/.test(password)) score++;
+
+            const levels = [
+                { label: 'Yếu', cls: 'weak' },
+                { label: 'Trung bình', cls: 'medium' },
+                { label: 'Khá', cls: 'medium' },
+                { label: 'Mạnh', cls: 'strong' }
+            ];
+
+            const level = levels[Math.min(score, 3)];
+
+            bars.forEach((bar, i) => {
+                bar.className = 'strength-bar';
+                if (i < score) {
+                    bar.classList.add('active', level.cls);
+                }
+            });
+
+            text.textContent = level.label;
+            text.className = 'strength-text ' + level.cls;
+        }
+
+        // Generate floating particles
+        function createParticles() {
+            const container = document.getElementById('particles');
+            const colors = ['#6366f1', '#a855f7', '#f97316', '#ec4899', '#818cf8'];
+            
+            for (let i = 0; i < 20; i++) {
+                const particle = document.createElement('div');
+                particle.classList.add('particle');
+                const size = Math.random() * 6 + 3;
+                const color = colors[Math.floor(Math.random() * colors.length)];
+                particle.style.width = size + 'px';
+                particle.style.height = size + 'px';
+                particle.style.background = color;
+                particle.style.left = Math.random() * 100 + '%';
+                particle.style.animationDuration = (Math.random() * 15 + 10) + 's';
+                particle.style.animationDelay = (Math.random() * 10) + 's';
+                container.appendChild(particle);
+            }
+        }
+        createParticles();
+
+        // Add input focus effect
+        document.querySelectorAll('.input-wrapper input').forEach(input => {
+            input.addEventListener('focus', function() {
+                this.closest('.input-wrapper').style.transform = 'scale(1.01)';
+            });
+            input.addEventListener('blur', function() {
+                this.closest('.input-wrapper').style.transform = 'scale(1)';
+            });
+        });
+    </script>
 </body>
 </html>

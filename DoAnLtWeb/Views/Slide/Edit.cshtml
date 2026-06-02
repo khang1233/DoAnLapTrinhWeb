@@ -33,6 +33,8 @@
                 <a href="/Home/Index" class="btn-icon" style="text-decoration:none;"><i class="fa-solid fa-arrow-left"></i></a>
                 <span id="current-project-name" contenteditable="true">@Model.Title</span>
                 <span id="save-status" class="text-muted" style="font-size: 0.8rem; margin-left: 10px;"><i class="fa-solid fa-cloud-check"></i> Đã lưu</span>
+                <button id="btn-undo" onclick="undo()" class="btn-icon" style="margin-left: 15px; opacity: 0.4;" title="Hoàn tác (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+                <button id="btn-redo" onclick="redo()" class="btn-icon" style="opacity: 0.4;" title="Làm lại (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
             </div>
             <div class="editor-topbar-tools">
                 @if (User.Identity.Name == "Admin" || User.Identity.Name == "admin" || User.Claims.Any(c => c.Value == "admin@slidify.com"))
@@ -43,7 +45,7 @@
                 <button onclick="generateWithAI()" class="btn-icon" style="color: #a855f7;" title="Thiết kế bằng AI (Đang phát triển)"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Design</button>
                 
                 <button onclick="resizeCanvasPrompt()" class="btn-icon" title="Đổi kích thước Slide"><i class="fa-solid fa-expand"></i> Resize</button>
-                <button onclick="showToast('Tính năng Trình chiếu đang phát triển!', 'info')" class="btn-icon"><i class="fa-solid fa-play"></i> Trình bày</button>
+                <button onclick="startPresentation()" class="btn-icon"><i class="fa-solid fa-play"></i> Trình bày</button>
                 <button onclick="showToast('Tính năng Chia sẻ đang phát triển!', 'info')" class="btn-icon"><i class="fa-solid fa-share-nodes"></i> Chia sẻ</button>
                 <button onclick="savePresentationManually()" class="btn-success"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
                 <button onclick="exportToImage()" class="btn-icon"><i class="fa-solid fa-image"></i> Tải ảnh</button>
@@ -75,6 +77,14 @@
                 
                 <label title="Khoảng cách dòng" style="margin-left: 10px;"><i class="fa-solid fa-arrows-up-down"></i></label>
                 <input type="range" id="prop-line-height" min="0.5" max="3" step="0.1" value="1.16" oninput="updateObjectProperty('lineHeight', this.value)" style="width: 60px;">
+                
+                <select id="prop-text-effect" onchange="applyTextEffect(this.value)" title="Hiệu ứng chữ" style="margin-left: 10px; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.85rem; padding: 4px 8px; border-radius: 6px; cursor: pointer; outline:none; font-family:'Inter'; font-weight:600;">
+                    <option value="none" style="background:#141e38; color:#fff;">Hiệu ứng: Không</option>
+                    <option value="hollow" style="background:#141e38; color:#fff;">Rỗng (Hollow)</option>
+                    <option value="neon" style="background:#141e38; color:#fff;">Neon Phát sáng</option>
+                    <option value="outline" style="background:#141e38; color:#fff;">Đường viền</option>
+                    <option value="shadow" style="background:#141e38; color:#fff;">Bóng đổ</option>
+                </select>
             </div>
             <div class="prop-group" id="prop-shape-group" style="display:none;">
                 <label title="Màu tô (Fill)"><i class="fa-solid fa-fill"></i></label>
@@ -95,6 +105,8 @@
                 <input type="range" id="prop-opacity" class="range-slider" min="0" max="1" step="0.05" value="1" oninput="updateObjectProperty('opacity', this.value)" style="width: 80px;">
             </div>
             <div class="prop-group">
+                <button class="btn-icon" id="btn-group-objects" onclick="groupSelectedObjects()" title="Nhóm các đối tượng (Group)" style="display:none; color: var(--primary);"><i class="fa-solid fa-object-group"></i> Nhóm</button>
+                <button class="btn-icon" id="btn-ungroup-objects" onclick="ungroupSelectedObjects()" title="Rã nhóm các đối tượng (Ungroup)" style="display:none; color: var(--primary);"><i class="fa-solid fa-object-ungroup"></i> Rã nhóm</button>
                 <button class="btn-icon" onclick="bringForward()" title="Lên trên"><i class="fa-solid fa-arrow-up-long"></i> Lên trên</button>
                 <button class="btn-icon" onclick="sendBackward()" title="Xuống dưới"><i class="fa-solid fa-arrow-down-long"></i> Xuống dưới</button>
                 <button class="btn-icon" style="color:var(--danger)" onclick="deleteSelected()" title="Xóa"><i class="fa-solid fa-trash"></i> Xóa</button>
@@ -150,6 +162,23 @@
                     </div>
                 </div>
 
+                <!-- Bottom Status Bar (Canva Style) -->
+                <div class="editor-status-bar" style="height: 40px; background: var(--panel-bg); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 45; flex-shrink: 0; backdrop-filter: blur(20px);">
+                    <div style="display: flex; align-items: center; gap: 15px;">
+                        <span id="page-info" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">1 / 1</span>
+                    </div>
+                    <div style="display: flex; align-items: center; gap: 10px;">
+                        <button onclick="zoomOut()" class="btn-icon" style="padding: 4px 8px;" title="Thu nhỏ"><i class="fa-solid fa-minus"></i></button>
+                        <input type="range" id="zoom-slider" min="0.25" max="3" step="0.05" value="1" oninput="setZoom(this.value)" style="width: 100px; accent-color: var(--primary);">
+                        <span id="zoom-level" style="font-size: 0.85rem; color: var(--text-muted); width: 40px; text-align: right;">100%</span>
+                        <button onclick="zoomIn()" class="btn-icon" style="padding: 4px 8px;" title="Phóng to"><i class="fa-solid fa-plus"></i></button>
+                        <button onclick="zoomToFit()" class="btn-icon" style="padding: 4px 8px;" title="Vừa màn hình"><i class="fa-solid fa-expand"></i></button>
+                    </div>
+                    <div>
+                        <button onclick="startPresentation()" class="btn-icon" style="padding: 4px 8px;" title="Trình chiếu toàn màn hình"><i class="fa-solid fa-circle-play"></i> Trình chiếu</button>
+                    </div>
+                </div>
+
                 <!-- Bottom Slide Panel (Canva Style) -->
                 <div class="editor-bottom-thumbnails">
                     <div id="slides-list" class="slides-list-horizontal">
@@ -202,6 +231,22 @@
     <!-- Toast Notification -->
     <div id="toast" class="toast">Message here</div>
 
+    <!-- Presentation Overlay -->
+    <div id="presentation-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 99999; display: none; flex-direction: column; justify-content: center; align-items: center;">
+        <img id="presentation-slide-img" style="max-width: 95vw; max-height: 85vh; object-fit: contain; transition: opacity 0.2s ease-in-out;" src="" alt="Slide">
+        <div class="pres-controls" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 20px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 10px 20px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.15);">
+            <select id="pres-transition" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-family:'Inter'; outline:none; cursor:pointer; margin-right: 10px; backdrop-filter: blur(10px);">
+                <option value="fade" style="background: #111; color: white;">Hiệu ứng: Fade</option>
+                <option value="slide" style="background: #111; color: white;">Hiệu ứng: Slide</option>
+                <option value="zoom" style="background: #111; color: white;">Hiệu ứng: Zoom</option>
+            </select>
+            <button class="pres-btn" onclick="prevPresentationSlide()" title="Trang trước" style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s;"><i class="fa-solid fa-chevron-left"></i></button>
+            <span id="pres-page-info" style="color: white; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 0.95rem;">1 / 1</span>
+            <button class="pres-btn" onclick="nextPresentationSlide()" title="Trang sau" style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s;"><i class="fa-solid fa-chevron-right"></i></button>
+            <button class="pres-btn" onclick="exitPresentation()" title="Thoát" style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s; margin-left: 10px;"><i class="fa-solid fa-xmark"></i></button>
+        </div>
+    </div>
+
     <!-- Real-time Collaboration Placeholder -->
     <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script> -->
     <!-- <script>
@@ -210,6 +255,6 @@
         // connection.start().catch(err => console.error(err.toString()));
     </script> -->
 
-    <script src="~/js/slide-editor.js"></script>
+    <script src="~/js/slide-editor.js" asp-append-version="true"></script>
 </body>
 </html>

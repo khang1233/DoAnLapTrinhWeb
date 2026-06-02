@@ -21,14 +21,22 @@ namespace DoAnLtWeb.Controllers
             _context = context;
         }
 
-        public async Task<IActionResult> Index(string category = null)
+        public async Task<IActionResult> Index(string category = null, string search = null)
         {
             // Lấy ID user hiện tại từ Claims
             var userIdStr = User.FindFirstValue(ClaimTypes.NameIdentifier);
             if (!int.TryParse(userIdStr, out int userId)) return RedirectToAction("Login", "Account");
 
-            var myProjects = await _context.Presentations
-                .Where(p => p.UserId == userId && !p.IsTemplate)
+            var myProjectsQuery = _context.Presentations
+                .Include(p => p.Slides)
+                .Where(p => p.UserId == userId && !p.IsTemplate);
+
+            if (!string.IsNullOrEmpty(search))
+            {
+                myProjectsQuery = myProjectsQuery.Where(p => p.Title.Contains(search));
+            }
+
+            var myProjects = await myProjectsQuery
                 .OrderByDescending(p => p.UpdatedAt)
                 .ToListAsync();
 
@@ -37,12 +45,17 @@ namespace DoAnLtWeb.Controllers
             {
                 templatesQuery = templatesQuery.Where(p => p.Category == category);
             }
+            if (!string.IsNullOrEmpty(search))
+            {
+                templatesQuery = templatesQuery.Where(p => p.Title.Contains(search));
+            }
             var templates = await templatesQuery.OrderByDescending(p => p.CreatedAt).ToListAsync();
 
             dynamic model = new ExpandoObject();
             model.MyProjects = myProjects;
             model.Templates = templates;
             model.ActiveCategory = category;
+            model.SearchQuery = search;
 
             return View(model);
         }

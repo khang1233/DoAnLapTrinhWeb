@@ -7,6 +7,12 @@ let currentSlideIndex = 0;
 let clipboard = null;
 let activeDrawer = null;
 let autoSaveTimeout = null;
+let undoStack = [];
+let redoStack = [];
+let isUndoRedoAction = false;
+let isLoadingSlide = false;
+let currentZoom = 1;
+let presentationIndex = 0;
 
 const DEFAULT_FONT = 'Inter'; // Sử dụng Inter thay vì Times New Roman cho hiện đại
 
@@ -27,6 +33,7 @@ window.onload = () => {
     }
 
     initCanvas();
+    initAlignmentGuides();
     initDragAndDrop();
     initContextMenu();
     initKeyboardShortcuts();
@@ -63,36 +70,89 @@ function initCanvas() {
         canvas.requestRenderAll();
         triggerAutoSave(); 
     });
+
+    // Zoom with Ctrl+Mouse Wheel
+    const canvasContainer = document.getElementById('canvas-container');
+    if (canvasContainer) {
+        canvasContainer.addEventListener('wheel', (e) => {
+            if (e.ctrlKey) {
+                e.preventDefault();
+                const delta = e.deltaY > 0 ? -0.05 : 0.05;
+                setZoom(currentZoom + delta);
+            }
+        }, { passive: false });
+    }
 }
 
-/* --- AUTO SAVE SYSTEM --- */
+/* --- AUTO SAVE SYSTEM (DEBOUNCED - Pure Manual Save) --- */
+let saveStateDebounceTimeout = null;
 function triggerAutoSave() {
-    saveCurrentSlideStateToMemory();
-    
+    // Show 'Chưa lưu' immediately to give visual feedback
     const statusEl = document.getElementById('save-status');
-    if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-spinner fa-spin"></i> Đang lưu...';
-    
-    clearTimeout(autoSaveTimeout);
-    autoSaveTimeout = setTimeout(() => {
-        savePresentationToBackend();
-    }, 2000); // 2s debounce for Auto-save
+    if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-circle-dot text-warning"></i> Chưa lưu';
+
+    clearTimeout(saveStateDebounceTimeout);
+    saveStateDebounceTimeout = setTimeout(() => {
+        saveCurrentSlideStateToMemory();
+        saveState();
+    }, 300); // 300ms debounce prevents CPU-blocking serialization lags during typing or dragging!
 }
 
 function saveCurrentSlideStateToMemory() {
-    if(!slideDataArray[currentSlideIndex]) return;
-    slideDataArray[currentSlideIndex].ElementsJson = JSON.stringify(canvas.toJSON(['id', 'name', 'selectable', 'hasControls']));
-    slideDataArray[currentSlideIndex].BackgroundColor = canvas.backgroundColor;
+    try {
+        if(!slideDataArray || !slideDataArray[currentSlideIndex]) return;
+        
+        slideDataArray[currentSlideIndex].ElementsJson = JSON.stringify(canvas.toJSON(['id', 'name', 'selectable', 'hasControls']));
+        
+        // Support gradient backgrounds safe serialization
+        if (canvas.backgroundColor && typeof canvas.backgroundColor === 'object') {
+            slideDataArray[currentSlideIndex].BackgroundColor = canvas.backgroundColor.colorStops?.[0]?.color || '#ffffff';
+        } else {
+            slideDataArray[currentSlideIndex].BackgroundColor = canvas.backgroundColor || '#ffffff';
+        }
+        
+        // Keep track of background image to save to DB
+        if (canvas.backgroundImage && typeof canvas.backgroundImage.getSrc === 'function') {
+            slideDataArray[currentSlideIndex].BackgroundImage = canvas.backgroundImage.getSrc();
+        } else if (!canvas.backgroundImage) {
+            slideDataArray[currentSlideIndex].BackgroundImage = '';
+        }
+    } catch (e) {
+        console.error("Error in saveCurrentSlideStateToMemory:", e);
+    }
 }
 
-async function savePresentationToBackend() {
+async function savePresentationToBackend(isManual = false) {
     saveCurrentSlideStateToMemory();
     
-    // Generate Thumbnail (Base64) with low quality for fast transfer
-    const thumbnailDataUrl = canvas.toDataURL({
-        format: 'jpeg',
-        quality: 0.3,
-        multiplier: 0.5
-    });
+    let thumbnailDataUrl = "";
+    if (isManual) {
+        // Generate Thumbnail using an off-screen StaticCanvas to prevent main canvas corruption/freezing
+        try {
+            const tempCanvasEl = document.createElement('canvas');
+            tempCanvasEl.width = 800;
+            tempCanvasEl.height = 450;
+            const tempCanvas = new fabric.StaticCanvas(tempCanvasEl);
+            
+            const jsonData = canvas.toJSON(['id', 'name', 'selectable', 'hasControls']);
+            await new Promise((resolve) => {
+                tempCanvas.loadFromJSON(jsonData, () => {
+                    tempCanvas.renderAll();
+                    resolve();
+                });
+            });
+            
+            thumbnailDataUrl = tempCanvas.toDataURL({
+                format: 'jpeg',
+                quality: 0.3,
+                multiplier: 0.5
+            });
+            
+            tempCanvas.dispose();
+        } catch (e) {
+            console.warn("Could not generate thumbnail on temp canvas:", e);
+        }
+    }
 
     const titleEl = document.getElementById('current-project-name');
     const projectTitle = titleEl ? titleEl.innerText : "Untitled";
@@ -121,9 +181,182 @@ async function savePresentationToBackend() {
 
 function savePresentationManually() {
     clearTimeout(autoSaveTimeout);
-    savePresentationToBackend();
+    savePresentationToBackend(true); // Pass true to generate and save the thumbnail
     showToast('Đã lưu bản thuyết trình', 'success');
 }
+
+/* --- UNDO / REDO SYSTEM --- */
+function saveState() {
+    if (isUndoRedoAction || isLoadingSlide) return;
+    const json = JSON.stringify(canvas.toJSON(['id', 'name', 'selectable', 'hasControls']));
+    undoStack.push(json);
+    if (undoStack.length > 50) undoStack.shift();
+    redoStack = [];
+    updateUndoRedoButtons();
+}
+
+function undo() {
+    if (undoStack.length <= 1) return;
+    isUndoRedoAction = true;
+    redoStack.push(undoStack.pop());
+    const prevState = undoStack[undoStack.length - 1];
+    canvas.loadFromJSON(JSON.parse(prevState), () => {
+        canvas.renderAll();
+        isUndoRedoAction = false;
+        updateUndoRedoButtons();
+        saveCurrentSlideStateToMemory();
+    });
+}
+
+function redo() {
+    if (redoStack.length === 0) return;
+    isUndoRedoAction = true;
+    const nextState = redoStack.pop();
+    undoStack.push(nextState);
+    canvas.loadFromJSON(JSON.parse(nextState), () => {
+        canvas.renderAll();
+        isUndoRedoAction = false;
+        updateUndoRedoButtons();
+        saveCurrentSlideStateToMemory();
+    });
+}
+
+function updateUndoRedoButtons() {
+    const undoBtn = document.getElementById('btn-undo');
+    const redoBtn = document.getElementById('btn-redo');
+    if (undoBtn) undoBtn.style.opacity = undoStack.length <= 1 ? '0.4' : '1';
+    if (redoBtn) redoBtn.style.opacity = redoStack.length === 0 ? '0.4' : '1';
+}
+
+/* --- ZOOM SYSTEM --- */
+function setZoom(level) {
+    currentZoom = Math.max(0.25, Math.min(3, level));
+    const wrapper = document.querySelector('.canvas-wrapper');
+    if (wrapper) {
+        wrapper.style.transform = `scale(${currentZoom})`;
+        wrapper.style.transformOrigin = 'center center';
+    }
+    updateZoomDisplay();
+}
+
+function zoomIn() { setZoom(currentZoom + 0.1); }
+function zoomOut() { setZoom(currentZoom - 0.1); }
+function zoomToFit() { setZoom(1); }
+
+function updateZoomDisplay() {
+    const el = document.getElementById('zoom-level');
+    if (el) el.textContent = Math.round(currentZoom * 100) + '%';
+    const slider = document.getElementById('zoom-slider');
+    if (slider) slider.value = currentZoom;
+}
+
+/* --- PRESENTATION MODE --- */
+function startPresentation() {
+    saveCurrentSlideStateToMemory();
+    presentationIndex = currentSlideIndex;
+    const overlay = document.getElementById('presentation-overlay');
+    if (!overlay) return;
+    overlay.style.display = 'flex';
+    document.documentElement.requestFullscreen?.().catch(() => {});
+    renderPresentationSlide();
+    document.addEventListener('keydown', presentationKeyHandler);
+}
+
+function exitPresentation() {
+    const overlay = document.getElementById('presentation-overlay');
+    if (overlay) overlay.style.display = 'none';
+    if (document.fullscreenElement) {
+        document.exitFullscreen?.().catch(() => {});
+    }
+    document.removeEventListener('keydown', presentationKeyHandler);
+}
+
+function presentationKeyHandler(e) {
+    if (e.key === 'Escape') { e.preventDefault(); exitPresentation(); }
+    else if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); nextPresentationSlide(); }
+    else if (e.key === 'ArrowLeft') { e.preventDefault(); prevPresentationSlide(); }
+}
+
+function nextPresentationSlide() {
+    if (presentationIndex < slideDataArray.length - 1) {
+        presentationIndex++;
+        renderPresentationSlide();
+    }
+}
+
+function prevPresentationSlide() {
+    if (presentationIndex > 0) {
+        presentationIndex--;
+        renderPresentationSlide();
+    }
+}
+
+async function renderPresentationSlide() {
+    const slide = slideDataArray[presentationIndex];
+    const imgEl = document.getElementById('presentation-slide-img');
+    const pageInfo = document.getElementById('pres-page-info');
+    if (!imgEl) return;
+
+    const transitionType = document.getElementById('pres-transition')?.value || 'fade';
+
+    // Set transition styles based on transition type
+    if (transitionType === 'fade') {
+        imgEl.style.transition = 'opacity 0.25s ease-in-out';
+        imgEl.style.transform = 'none';
+        imgEl.style.opacity = '0';
+    } else if (transitionType === 'slide') {
+        imgEl.style.transition = 'all 0.3s cubic-bezier(0.25, 1, 0.5, 1)';
+        imgEl.style.transform = 'translateX(50px)';
+        imgEl.style.opacity = '0';
+    } else if (transitionType === 'zoom') {
+        imgEl.style.transition = 'all 0.3s cubic-bezier(0.34, 1.56, 0.64, 1)';
+        imgEl.style.transform = 'scale(0.9)';
+        imgEl.style.opacity = '0';
+    }
+
+    const tempCanvasEl = document.createElement('canvas');
+    tempCanvasEl.width = 800;
+    tempCanvasEl.height = 450;
+    const tempCanvas = new fabric.StaticCanvas(tempCanvasEl);
+    
+    // Support loading gradient backgrounds in presentation as well
+    if (slide.ElementsJson && slide.ElementsJson !== '[]') {
+        try {
+            const data = JSON.parse(slide.ElementsJson);
+            await new Promise((resolve) => {
+                tempCanvas.loadFromJSON(data, () => {
+                    tempCanvas.renderAll();
+                    resolve();
+                });
+            });
+        } catch (e) {
+            tempCanvas.backgroundColor = slide.BackgroundColor || '#ffffff';
+            tempCanvas.renderAll();
+        }
+    } else {
+        tempCanvas.backgroundColor = slide.BackgroundColor || '#ffffff';
+        tempCanvas.renderAll();
+    }
+
+    imgEl.src = tempCanvas.toDataURL({ format: 'png', multiplier: 2 });
+    tempCanvas.dispose();
+
+    setTimeout(() => { 
+        imgEl.style.opacity = '1'; 
+        imgEl.style.transform = 'none';
+    }, 50);
+
+    if (pageInfo) pageInfo.textContent = `${presentationIndex + 1} / ${slideDataArray.length}`;
+}
+
+document.addEventListener('fullscreenchange', () => {
+    if (!document.fullscreenElement) {
+        const overlay = document.getElementById('presentation-overlay');
+        if (overlay && overlay.style.display === 'flex') {
+            exitPresentation();
+        }
+    }
+});
 
 /* --- EXPORT TOOLS --- */
 function resizeCanvasPrompt() {
@@ -151,38 +384,129 @@ function resizeCanvasPrompt() {
     showToast(`Đã resize thành ${newW}x${newH}`);
 }
 
-function exportToImage() {
+async function exportToImage() {
     saveCurrentSlideStateToMemory();
-    const a = document.createElement('a'); 
-    a.download = `slide-${currentSlideIndex + 1}.png`;
-    a.href = canvas.toDataURL({ format: 'png', multiplier: 2 }); 
-    a.click();
+    showToast('Đang tạo ảnh tải xuống...', 'info');
+    
+    try {
+        const tempCanvasEl = document.createElement('canvas');
+        tempCanvasEl.width = 800;
+        tempCanvasEl.height = 450;
+        const tempCanvas = new fabric.StaticCanvas(tempCanvasEl);
+        
+        const jsonData = canvas.toJSON(['id', 'name', 'selectable', 'hasControls']);
+        await new Promise((resolve) => {
+            tempCanvas.loadFromJSON(jsonData, () => {
+                tempCanvas.renderAll();
+                resolve();
+            });
+        });
+        
+        const dataURL = tempCanvas.toDataURL({ format: 'png', multiplier: 2 });
+        tempCanvas.dispose();
+        
+        const a = document.createElement('a'); 
+        a.download = `slide-${currentSlideIndex + 1}.png`;
+        a.href = dataURL;
+        a.click();
+        showToast('Tải ảnh thành công!', 'success');
+    } catch (e) {
+        console.error("Export image error:", e);
+        showToast("Không thể tải ảnh do lỗi bảo mật CORS hoặc giới hạn trình duyệt", "error");
+    }
 }
 
 async function exportToPDF() {
     saveCurrentSlideStateToMemory();
-    showToast('Đang tạo PDF, vui lòng chờ...', 'info');
+    showToast('Đang khởi tạo xuất file PDF...', 'info');
     const { jsPDF } = window.jspdf;
     
     // Tạo doc khổ chuẩn 16:9 ngang (297x167 mm)
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [297, 167] });
     
-    const originalIndex = currentSlideIndex;
-    
-    for (let i = 0; i < slideDataArray.length; i++) {
-        loadSlide(i);
-        // Chờ render xong
-        await new Promise(r => setTimeout(r, 100));
+    try {
+        const tempCanvasEl = document.createElement('canvas');
+        tempCanvasEl.width = 800;
+        tempCanvasEl.height = 450;
+        const tempCanvas = new fabric.StaticCanvas(tempCanvasEl);
         
-        const imgData = canvas.toDataURL({ format: 'png', multiplier: 2 });
+        for (let i = 0; i < slideDataArray.length; i++) {
+            const slide = slideDataArray[i];
+            
+            tempCanvas.clear();
+            tempCanvas.backgroundColor = slide.BackgroundColor || '#ffffff';
+            
+            // Helper to load background image and render
+            const loadAndRender = () => {
+                return new Promise((resolve) => {
+                    if (slide.BackgroundImage) {
+                        fabric.Image.fromURL(slide.BackgroundImage, function(img) {
+                            if (img) {
+                                const scale = Math.max(tempCanvas.width / img.width, tempCanvas.height / img.height);
+                                img.set({
+                                    scaleX: scale,
+                                    scaleY: scale,
+                                    originX: 'left',
+                                    originY: 'top'
+                                });
+                                tempCanvas.setBackgroundImage(img, () => {
+                                    tempCanvas.renderAll();
+                                    resolve();
+                                });
+                            } else {
+                                resolve();
+                            }
+                        }, { crossOrigin: 'anonymous' });
+                    } else {
+                        resolve();
+                    }
+                });
+            };
+            
+            if (slide.ElementsJson && slide.ElementsJson !== '[]') {
+                try {
+                    const data = JSON.parse(slide.ElementsJson);
+                    await new Promise((resolve) => {
+                        tempCanvas.loadFromJSON(data, async () => {
+                            await loadAndRender();
+                            resolve();
+                        });
+                    });
+                } catch (e) {
+                    console.error("Lỗi parse JSON slide:", e);
+                    await loadAndRender();
+                }
+            } else {
+                await loadAndRender();
+            }
+            
+            let imgData = "";
+            try {
+                imgData = tempCanvas.toDataURL({ format: 'png', multiplier: 2 });
+            } catch (e) {
+                console.error("Error exporting slide " + i + " to image for PDF:", e);
+            }
+            
+            if (i > 0) pdf.addPage();
+            if (imgData) {
+                pdf.addImage(imgData, 'PNG', 0, 0, 297, 167);
+            } else {
+                pdf.setFillColor(240, 240, 240);
+                pdf.rect(0, 0, 297, 167, 'F');
+                pdf.setTextColor(150, 150, 150);
+                pdf.setFont("helvetica", "normal");
+                pdf.setFontSize(14);
+                pdf.text("Slide " + (i + 1) + " (Lỗi xuất ảnh do bảo mật CORS)", 50, 80);
+            }
+        }
         
-        if (i > 0) pdf.addPage();
-        pdf.addImage(imgData, 'PNG', 0, 0, 297, 167);
+        tempCanvas.dispose();
+        pdf.save('Presentation.pdf');
+        showToast('Tải PDF thành công!', 'success');
+    } catch (e) {
+        console.error("Export PDF error:", e);
+        showToast("Lỗi khi xuất PDF", "error");
     }
-    
-    loadSlide(originalIndex);
-    pdf.save('Presentation.pdf');
-    showToast('Tải PDF thành công!', 'success');
 }
 
 /* --- SLIDE MANAGEMENT --- */
@@ -203,22 +527,82 @@ function loadSlide(index, skipSave = false) {
     if (!skipSave) {
         saveCurrentSlideStateToMemory(); 
     }
+    isLoadingSlide = true;
     currentSlideIndex = index;
     const slide = slideDataArray[currentSlideIndex];
+    
     canvas.clear();
     canvas.backgroundColor = slide.BackgroundColor || '#ffffff';
     
+    const finishLoad = () => {
+        if (slide.BackgroundImage) {
+            try {
+                fabric.Image.fromURL(slide.BackgroundImage, function(img) {
+                    if (img) {
+                        const scale = Math.max(canvas.width / img.width, canvas.height / img.height);
+                        img.set({
+                            scaleX: scale,
+                            scaleY: scale,
+                            originX: 'left',
+                            originY: 'top'
+                        });
+                        canvas.setBackgroundImage(img, () => {
+                            canvas.renderAll();
+                            postLoad();
+                        });
+                    } else {
+                        canvas.setBackgroundImage(null, () => {
+                            canvas.renderAll();
+                            postLoad();
+                        });
+                    }
+                }, { 
+                    crossOrigin: 'anonymous',
+                    onerror: () => {
+                        console.warn("Failed to load background image:", slide.BackgroundImage);
+                        canvas.setBackgroundImage(null, () => {
+                            canvas.renderAll();
+                            postLoad();
+                        });
+                    }
+                });
+            } catch (err) {
+                console.error("Error setting background image:", err);
+                canvas.setBackgroundImage(null, () => {
+                    canvas.renderAll();
+                    postLoad();
+                });
+            }
+        } else {
+            canvas.setBackgroundImage(null, () => {
+                canvas.renderAll();
+                postLoad();
+            });
+        }
+    };
+
+    const postLoad = () => {
+        renderSlideThumbnails();
+        isLoadingSlide = false;
+        undoStack = [];
+        redoStack = [];
+        saveState();
+        updateUndoRedoButtons();
+    };
+
     if (slide.ElementsJson && slide.ElementsJson !== '[]') {
         try {
             const data = JSON.parse(slide.ElementsJson);
             canvas.loadFromJSON(data, function() {
-                canvas.renderAll();
-                console.log("Nạp dữ liệu mẫu thành công!");
+                finishLoad();
             });
-        } catch(e) { console.error("Lỗi parse JSON Fabric:", e); }
+        } catch(e) { 
+            console.error("Lỗi parse JSON Fabric:", e); 
+            finishLoad(); 
+        }
+    } else {
+        finishLoad();
     }
-    canvas.renderAll();
-    renderSlideThumbnails();
 }
 
 function deleteSlide(e, index) {
@@ -232,6 +616,24 @@ function deleteSlide(e, index) {
     loadSlide(currentSlideIndex);
     renderSlideThumbnails();
     triggerAutoSave();
+}
+
+function duplicateSlide(e, index) {
+    e.stopPropagation();
+    saveCurrentSlideStateToMemory();
+    const original = slideDataArray[index];
+    const clone = {
+        PageNumber: index + 2,
+        BackgroundColor: original.BackgroundColor,
+        ElementsJson: original.ElementsJson
+    };
+    slideDataArray.splice(index + 1, 0, clone);
+    slideDataArray.forEach((s, i) => s.PageNumber = i + 1);
+    currentSlideIndex = index + 1;
+    loadSlide(currentSlideIndex);
+    renderSlideThumbnails();
+    triggerAutoSave();
+    showToast('Đã nhân bản slide', 'success');
 }
 
 function renderSlideThumbnails() {
@@ -271,14 +673,23 @@ function renderSlideThumbnails() {
             }
         };
         
+        let thumbBg = `background: ${slide.BackgroundColor || '#ffffff'};`;
+        if (slide.BackgroundImage) {
+            thumbBg = `background: url('${slide.BackgroundImage}') no-repeat center center; background-size: cover;`;
+        }
         div.innerHTML = `<span class="thumb-num">${index + 1}</span>
-            <button class="thumb-del" onclick="deleteSlide(event, ${index})"><i class="fa-solid fa-xmark"></i></button>
-            <div class="thumb-placeholder" style="background:${slide.BackgroundColor}; width:100%; height:100%;"></div>`;
+            <button class="thumb-del" onclick="deleteSlide(event, ${index})" title="Xóa"><i class="fa-solid fa-xmark"></i></button>
+            <button class="thumb-dup" onclick="duplicateSlide(event, ${index})" title="Nhân bản"><i class="fa-solid fa-copy"></i></button>
+            <div class="thumb-placeholder" style="${thumbBg} width:100%; height:100%;"></div>`;
         list.appendChild(div);
     });
     
     const activeThumb = list.querySelector('.slide-thumb-h.active');
     if (activeThumb) activeThumb.scrollIntoView({ behavior: 'smooth', inline: 'center', block: 'nearest' });
+
+    // Update page info in status bar
+    const pageInfo = document.getElementById('page-info');
+    if (pageInfo) pageInfo.textContent = `${currentSlideIndex + 1} / ${slideDataArray.length}`;
 }
 
 /* --- DRAG & DROP LOGIC --- */
@@ -456,7 +867,7 @@ function addImageToCanvas(url) {
         img.set({ left: 50, top: 50, id: _generateId(), name: 'Hình ảnh' });
         canvas.add(img); canvas.setActiveObject(img);
         triggerAutoSave();
-    });
+    }, { crossOrigin: 'anonymous' });
 }
 
 /* --- DRAWING TOOLS LOGIC --- */
@@ -520,11 +931,17 @@ function showPropertiesPanel() {
     
     const shadowProp = document.getElementById('prop-shadow');
     if(shadowProp) shadowProp.checked = !!activeObj.shadow;
-        const opacityProp = document.getElementById('prop-opacity');
+    const opacityProp = document.getElementById('prop-opacity');
     if(opacityProp) opacityProp.value = activeObj.opacity !== undefined ? activeObj.opacity : 1;
     
     const isText = activeObj.type === 'i-text' || activeObj.type === 'text';
     const isShape = activeObj.type === 'rect' || activeObj.type === 'circle' || activeObj.type === 'triangle';
+
+    // Show or hide Group/Ungroup buttons based on selection
+    const btnGroup = document.getElementById('btn-group-objects');
+    const btnUngroup = document.getElementById('btn-ungroup-objects');
+    if (btnGroup) btnGroup.style.display = (activeObj && activeObj.type === 'activeSelection') ? 'inline-flex' : 'none';
+    if (btnUngroup) btnUngroup.style.display = (activeObj && activeObj.type === 'group') ? 'inline-flex' : 'none';
 
     const fontGroup = document.getElementById('prop-font-group');
     const shapeGroup = document.getElementById('prop-shape-group');
@@ -544,6 +961,22 @@ function showPropertiesPanel() {
             const btnI = document.getElementById('btn-italic'); if(btnI) btnI.classList.toggle('active', activeObj.fontStyle === 'italic');
             const btnU = document.getElementById('btn-underline'); if(btnU) btnU.classList.toggle('active', activeObj.underline);
             const btnS = document.getElementById('btn-strikethrough'); if(btnS) btnS.classList.toggle('active', activeObj.linethrough);
+
+            // Determine active text effect dropdown value
+            const effectProp = document.getElementById('prop-text-effect');
+            if (effectProp) {
+                if (activeObj.stroke && activeObj.fill === 'transparent') {
+                    effectProp.value = 'hollow';
+                } else if (activeObj.shadow && activeObj.shadow.blur > 10 && activeObj.shadow.offsetX === 0) {
+                    effectProp.value = 'neon';
+                } else if (activeObj.stroke && activeObj.strokeWidth > 0) {
+                    effectProp.value = 'outline';
+                } else if (activeObj.shadow && activeObj.shadow.offsetX > 0) {
+                    effectProp.value = 'shadow';
+                } else {
+                    effectProp.value = 'none';
+                }
+            }
         } else {
             fontGroup.classList.add('hidden');
             fontGroup.style.display = 'none';
@@ -714,6 +1147,8 @@ function initKeyboardShortcuts() {
         const activeObj = canvas?.getActiveObject();
         if (activeObj && activeObj.isEditing) return;
 
+        if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); return; }
+        if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); return; }
         if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelected(); }
         if (e.ctrlKey && e.key === 'c' && activeObj) { activeObj.clone(function(cloned) { clipboard = cloned; showToast('Đã copy', 'success'); }); }
         if (e.ctrlKey && e.key === 'v' && clipboard) {
@@ -780,7 +1215,7 @@ function showToast(msg, type = 'info') {
 
 function toggleDrawer(type, forceOpen = false) {
     const panel = document.getElementById('drawer-panel');
-    const tabs = ['design', 'elements', 'text', 'draw', 'upload'];
+    const tabs = ['design', 'elements', 'text', 'draw', 'upload', 'photos', 'bg'];
     
     tabs.forEach(t => {
         const el = document.getElementById(`tab-${t}`);
@@ -944,19 +1379,32 @@ function toggleDrawer(type, forceOpen = false) {
                 <h5 style="color:var(--text-main); margin:0; font-size: 0.9rem;">Màu đơn sắc</h5>
             </div>
             <div style="display:grid; grid-template-columns: repeat(5, 1fr); gap:8px; margin-bottom: 20px;">
-                <div style="height:40px; background:#ffffff; border:1px solid #ccc; border-radius:4px; cursor:pointer;" onclick="canvas.backgroundColor='#ffffff'; canvas.renderAll(); triggerAutoSave();"></div>
-                <div style="height:40px; background:#000000; border-radius:4px; cursor:pointer;" onclick="canvas.backgroundColor='#000000'; canvas.renderAll(); triggerAutoSave();"></div>
-                <div style="height:40px; background:#f8fafc; border:1px solid #ccc; border-radius:4px; cursor:pointer;" onclick="canvas.backgroundColor='#f8fafc'; canvas.renderAll(); triggerAutoSave();"></div>
-                <div style="height:40px; background:#1e293b; border-radius:4px; cursor:pointer;" onclick="canvas.backgroundColor='#1e293b'; canvas.renderAll(); triggerAutoSave();"></div>
-                <div style="height:40px; background:#fef08a; border-radius:4px; cursor:pointer;" onclick="canvas.backgroundColor='#fef08a'; canvas.renderAll(); triggerAutoSave();"></div>
-                <div style="height:40px; background:#fbcfe8; border-radius:4px; cursor:pointer;" onclick="canvas.backgroundColor='#fbcfe8'; canvas.renderAll(); triggerAutoSave();"></div>
-                <div style="height:40px; background:#bfdbfe; border-radius:4px; cursor:pointer;" onclick="canvas.backgroundColor='#bfdbfe'; canvas.renderAll(); triggerAutoSave();"></div>
-                <div style="height:40px; background:#bbf7d0; border-radius:4px; cursor:pointer;" onclick="canvas.backgroundColor='#bbf7d0'; canvas.renderAll(); triggerAutoSave();"></div>
+                <div style="height:40px; background:#ffffff; border:1px solid #ccc; border-radius:4px; cursor:pointer;" onclick="changeBackgroundColor('#ffffff')"></div>
+                <div style="height:40px; background:#000000; border-radius:4px; cursor:pointer;" onclick="changeBackgroundColor('#000000')"></div>
+                <div style="height:40px; background:#f8fafc; border:1px solid #ccc; border-radius:4px; cursor:pointer;" onclick="changeBackgroundColor('#f8fafc')"></div>
+                <div style="height:40px; background:#1e293b; border-radius:4px; cursor:pointer;" onclick="changeBackgroundColor('#1e293b')"></div>
+                <div style="height:40px; background:#fef08a; border-radius:4px; cursor:pointer;" onclick="changeBackgroundColor('#fef08a')"></div>
+                <div style="height:40px; background:#fbcfe8; border-radius:4px; cursor:pointer;" onclick="changeBackgroundColor('#fbcfe8')"></div>
+                <div style="height:40px; background:#bfdbfe; border-radius:4px; cursor:pointer;" onclick="changeBackgroundColor('#bfdbfe')"></div>
+                <div style="height:40px; background:#bbf7d0; border-radius:4px; cursor:pointer;" onclick="changeBackgroundColor('#bbf7d0')"></div>
+            </div>
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h5 style="color:var(--text-main); margin:0; font-size: 0.9rem;">Nền Gradient đa sắc</h5>
+            </div>
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom: 20px;">
+                <div style="height:40px; background:linear-gradient(135deg, #f97316, #facc15); border-radius:4px; cursor:pointer;" onclick="setBgGradient('#f97316', '#facc15')" title="Sunset Glow"></div>
+                <div style="height:40px; background:linear-gradient(135deg, #3b82f6, #8b5cf6); border-radius:4px; cursor:pointer;" onclick="setBgGradient('#3b82f6', '#8b5cf6')" title="Ocean Breeze"></div>
+                <div style="height:40px; background:linear-gradient(135deg, #ec4899, #f43f5e); border-radius:4px; cursor:pointer;" onclick="setBgGradient('#ec4899', '#f43f5e')" title="Romantic Pink"></div>
+                <div style="height:40px; background:linear-gradient(135deg, #10b981, #059669); border-radius:4px; cursor:pointer;" onclick="setBgGradient('#10b981', '#059669')" title="Fresh Green"></div>
+                <div style="height:40px; background:linear-gradient(135deg, #1e3a8a, #3b82f6); border-radius:4px; cursor:pointer;" onclick="setBgGradient('#1e3a8a', '#3b82f6')" title="Royal Corporate"></div>
+                <div style="height:40px; background:linear-gradient(135deg, #0f172a, #1e293b); border-radius:4px; cursor:pointer;" onclick="setBgGradient('#0f172a', '#1e293b')" title="Dark Slate"></div>
+                <div style="height:40px; background:linear-gradient(135deg, #c026d3, #06b6d4); border-radius:4px; cursor:pointer;" onclick="setBgGradient('#c026d3', '#06b6d4')" title="Cyberpunk"></div>
+                <div style="height:40px; background:linear-gradient(135deg, #ffd700, #ff8c00); border-radius:4px; cursor:pointer;" onclick="setBgGradient('#ffd700', '#ff8c00')" title="Golden Hour"></div>
             </div>
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h5 style="color:var(--text-main); margin:0; font-size: 0.9rem;">Chọn màu tùy biến</h5>
             </div>
-            <input type="color" onchange="canvas.backgroundColor=this.value; canvas.renderAll(); triggerAutoSave();" style="width:100%; height:40px; border:none; border-radius:4px; cursor:pointer;">
+            <input type="color" onchange="changeBackgroundColor(this.value)" style="width:100%; height:40px; border:none; border-radius:4px; cursor:pointer;">
         `;
     } else if (type === 'upload') {
         let uploadHtml = `
@@ -1007,4 +1455,279 @@ function getCategoryColor(category) {
         case 'Sáng tạo': return 'linear-gradient(135deg, #ec4899, #f97316)';
         default: return 'linear-gradient(135deg, #475569, #94a3b8)';
     }
+}
+
+/* --- ULTRA CANVA UPGRADES --- */
+
+// 1. Group & Ungroup Elements
+function groupSelectedObjects() {
+    if (!canvas) return;
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj || activeObj.type !== 'activeSelection') {
+        showToast('Vui lòng chọn nhiều đối tượng để nhóm!', 'error');
+        return;
+    }
+    activeObj.toGroup();
+    canvas.requestRenderAll();
+    triggerAutoSave();
+    showToast('Đã nhóm các đối tượng!', 'success');
+    showPropertiesPanel();
+}
+
+function ungroupSelectedObjects() {
+    if (!canvas) return;
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj || activeObj.type !== 'group') {
+        showToast('Vui lòng chọn một nhóm để rã!', 'error');
+        return;
+    }
+    activeObj.toActiveSelection();
+    canvas.requestRenderAll();
+    triggerAutoSave();
+    showToast('Đã rã nhóm đối tượng!', 'success');
+    showPropertiesPanel();
+}
+
+// 2. Canva Text Effects
+function applyTextEffect(effectName) {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj || (activeObj.type !== 'i-text' && activeObj.type !== 'text')) return;
+
+    if (activeObj.fill && activeObj.fill !== 'transparent') {
+        activeObj._prevFill = activeObj.fill;
+    }
+
+    if (effectName === 'none') {
+        activeObj.set({
+            fill: activeObj._prevFill || '#333333',
+            stroke: null,
+            strokeWidth: 0,
+            shadow: null
+        });
+    } else if (effectName === 'hollow') {
+        activeObj.set({
+            fill: 'transparent',
+            stroke: activeObj._prevFill || '#333333',
+            strokeWidth: 2,
+            shadow: null
+        });
+    } else if (effectName === 'neon') {
+        const glowColor = activeObj._prevFill || '#6366f1';
+        activeObj.set({
+            fill: glowColor,
+            stroke: null,
+            strokeWidth: 0,
+            shadow: new fabric.Shadow({
+                color: glowColor,
+                blur: 18,
+                offsetX: 0,
+                offsetY: 0
+            })
+        });
+    } else if (effectName === 'outline') {
+        activeObj.set({
+            fill: activeObj._prevFill || '#333333',
+            stroke: '#ffffff',
+            strokeWidth: 1.5,
+            shadow: null
+        });
+    } else if (effectName === 'shadow') {
+        activeObj.set({
+            fill: activeObj._prevFill || '#333333',
+            stroke: null,
+            strokeWidth: 0,
+            shadow: new fabric.Shadow({
+                color: 'rgba(0,0,0,0.5)',
+                blur: 8,
+                offsetX: 4,
+                offsetY: 4
+            })
+        });
+    }
+    
+    canvas.requestRenderAll();
+    triggerAutoSave();
+}
+
+// 3. Smart Snap Guides
+let aligningLineColor = 'rgba(236, 72, 153, 0.8)';
+let aligningLineWidth = 1.5;
+let alignSnapThreshold = 10;
+
+function initAlignmentGuides() {
+    if (!canvas) return;
+
+    let vGuides = [];
+    let hGuides = [];
+
+    canvas.on('object:moving', function(e) {
+        if (!canvas) return;
+        const obj = e.target;
+        if (!obj) return;
+
+        vGuides = [];
+        hGuides = [];
+
+        const canvasWidth = canvas.width;
+        const canvasHeight = canvas.height;
+
+        const objCenter = obj.getCenterPoint();
+        const objWidth = obj.getScaledWidth();
+        const objHeight = obj.getScaledHeight();
+
+        const objLeft = objCenter.x - objWidth / 2;
+        const objRight = objCenter.x + objWidth / 2;
+        const objTop = objCenter.y - objHeight / 2;
+        const objBottom = objCenter.y + objHeight / 2;
+
+        let snappedX = false;
+        let snappedY = false;
+
+        // Canvas Center horizontal snap
+        if (Math.abs(objCenter.x - canvasWidth / 2) < alignSnapThreshold) {
+            obj.set({ left: canvasWidth / 2 - objWidth / 2 * obj.scaleX + (obj.left - (objCenter.x - objWidth / 2)) });
+            obj.setCoords();
+            vGuides.push(canvasWidth / 2);
+            snappedX = true;
+        }
+
+        // Canvas Center vertical snap
+        if (Math.abs(objCenter.y - canvasHeight / 2) < alignSnapThreshold) {
+            obj.set({ top: canvasHeight / 2 - objHeight / 2 * obj.scaleY + (obj.top - (objCenter.y - objHeight / 2)) });
+            obj.setCoords();
+            hGuides.push(canvasHeight / 2);
+            snappedY = true;
+        }
+
+        // Snap to other objects
+        canvas.getObjects().forEach(function(otherObj) {
+            if (otherObj === obj || !otherObj.selectable) return;
+
+            const otherCenter = otherObj.getCenterPoint();
+            const otherWidth = otherObj.getScaledWidth();
+            const otherHeight = otherObj.getScaledHeight();
+
+            const otherLeft = otherCenter.x - otherWidth / 2;
+            const otherRight = otherCenter.x + otherWidth / 2;
+            const otherTop = otherCenter.y - otherHeight / 2;
+            const otherBottom = otherCenter.y + otherHeight / 2;
+
+            if (!snappedX) {
+                if (Math.abs(objLeft - otherLeft) < alignSnapThreshold) {
+                    obj.set({ left: otherLeft });
+                    obj.setCoords();
+                    vGuides.push(otherLeft);
+                    snappedX = true;
+                } else if (Math.abs(objCenter.x - otherCenter.x) < alignSnapThreshold) {
+                    obj.set({ left: otherCenter.x - objWidth / 2 });
+                    obj.setCoords();
+                    vGuides.push(otherCenter.x);
+                    snappedX = true;
+                } else if (Math.abs(objRight - otherRight) < alignSnapThreshold) {
+                    obj.set({ left: otherRight - objWidth });
+                    obj.setCoords();
+                    vGuides.push(otherRight);
+                    snappedX = true;
+                }
+            }
+
+            if (!snappedY) {
+                if (Math.abs(objTop - otherTop) < alignSnapThreshold) {
+                    obj.set({ top: otherTop });
+                    obj.setCoords();
+                    hGuides.push(otherTop);
+                    snappedY = true;
+                } else if (Math.abs(objCenter.y - otherCenter.y) < alignSnapThreshold) {
+                    obj.set({ top: otherCenter.y - objHeight / 2 });
+                    obj.setCoords();
+                    hGuides.push(otherCenter.y);
+                    snappedY = true;
+                } else if (Math.abs(objBottom - otherBottom) < alignSnapThreshold) {
+                    obj.set({ top: otherBottom - objHeight });
+                    obj.setCoords();
+                    hGuides.push(otherBottom);
+                    snappedY = true;
+                }
+            }
+        });
+
+        canvas.requestRenderAll();
+    });
+
+    canvas.on('before:render', function() {
+        if (canvas) canvas.clearContext(canvas.contextTop);
+    });
+
+    canvas.on('after:render', function() {
+        if (!canvas || (!vGuides.length && !hGuides.length)) return;
+
+        const ctx = canvas.contextTop;
+        if (!ctx) return;
+
+        ctx.save();
+        ctx.strokeStyle = aligningLineColor;
+        ctx.lineWidth = aligningLineWidth;
+        ctx.setLineDash([5, 5]);
+
+        const zoom = canvas.getZoom();
+
+        vGuides.forEach(function(x) {
+            ctx.beginPath();
+            ctx.moveTo(x * zoom, 0);
+            ctx.lineTo(x * zoom, canvas.height * zoom);
+            ctx.stroke();
+        });
+
+        hGuides.forEach(function(y) {
+            ctx.beginPath();
+            ctx.moveTo(0, y * zoom);
+            ctx.lineTo(canvas.width * zoom, y * zoom);
+            ctx.stroke();
+        });
+
+        ctx.restore();
+    });
+
+    canvas.on('object:modified', function() {
+        vGuides = [];
+        hGuides = [];
+        canvas.requestRenderAll();
+    });
+}
+
+// 4. Gradient backgrounds
+function setBgGradient(color1, color2) {
+    if (!canvas) return;
+    
+    const grad = new fabric.Gradient({
+        type: 'linear',
+        coords: { x1: 0, y1: 0, x2: canvas.width, y2: canvas.height },
+        colorStops: [
+            { offset: 0, color: color1 },
+            { offset: 1, color: color2 }
+        ]
+    });
+    
+    canvas.setBackgroundImage(null, () => {
+        canvas.backgroundColor = grad;
+        canvas.renderAll();
+        if (slideDataArray[currentSlideIndex]) {
+            slideDataArray[currentSlideIndex].BackgroundImage = '';
+        }
+        triggerAutoSave();
+        showToast('Đã áp dụng nền Gradient', 'success');
+    });
+}
+
+function changeBackgroundColor(color) {
+    if (!canvas) return;
+    canvas.setBackgroundImage(null, () => {
+        canvas.backgroundColor = color;
+        canvas.renderAll();
+        if (slideDataArray[currentSlideIndex]) {
+            slideDataArray[currentSlideIndex].BackgroundImage = '';
+            slideDataArray[currentSlideIndex].BackgroundColor = color;
+        }
+        triggerAutoSave();
+    });
 }
