@@ -1,0 +1,10 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1920" height="1080" viewBox="0 0 1920 1080"><rect x="0" y="0" width="1920" height="1080" fill="#3B352E"/>
+<g id="shape-2" data-name="TextBox 2">
+<rect x="108" y="299.15" width="1287.64" height="346.87" fill="none"/>
+<text x="108" y="431.19" text-anchor="start" xml:space="preserve" font-family="&quot;Vollkorn Bold&quot;, sans-serif" font-size="155.33" fill="#F6F2E5" letter-spacing="-3.11"><tspan fill="#F6F2E5" font-size="155.33" letter-spacing="-3.11">TIÊU ĐỀ</tspan></text>
+<text x="108" y="617.59" text-anchor="start" xml:space="preserve" font-family="&quot;Vollkorn Bold&quot;, sans-serif" font-size="155.33" fill="#F6F2E5" letter-spacing="-3.11"><tspan fill="#F6F2E5" font-size="155.33" letter-spacing="-3.11">CỦA BẠN TẠI ĐÂY</tspan></text>
+</g>
+<g id="shape-3" data-name="TextBox 3">
+<rect x="108" y="726.45" width="692.62" height="58.02" fill="none"/>
+<text x="108" y="762.71" text-anchor="start" xml:space="preserve" font-family="&quot;Public Sans&quot;, sans-serif" font-size="42.67" fill="#F6F2E5" letter-spacing="0.85"><tspan fill="#F6F2E5" font-size="42.67" letter-spacing="0.85">Thêm một mô tả ngắn</tspan></text>
+</g></svg>

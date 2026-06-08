@@ -176,6 +176,7 @@ body.light-mode {
     padding: 16px; background: var(--input-bg); border-radius: 12px;
     cursor: grab; margin-bottom: 12px; transition: all 0.2s;
     border: 1px solid transparent; display: flex; align-items: center; justify-content: center;
+    color: var(--text-main);
 }
 .draggable-item:hover { background: var(--hover-bg); border-color: var(--border-color); transform: translateY(-2px); }
 

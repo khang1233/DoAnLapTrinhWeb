@@ -1,0 +1,114 @@
+@model List<DoAnLtWeb.Models.VipPlanViewModel>
+@{
+    ViewData["Title"] = "Nang cap VIP — Slidify";
+    var isVip = ViewBag.IsVip is bool b && b;
+    var currentPlan = ViewBag.CurrentPlan as string ?? "Free";
+}
+
+<style>
+.upgrade-page { min-height: 100vh; background: radial-gradient(ellipse 80% 60% at 50% -10%, rgba(124,58,237,0.22) 0%, transparent 60%), linear-gradient(180deg, #020617 0%, #0a0f1e 100%); padding: 48px 24px; color: #fff; font-family: 'Inter', sans-serif; }
+.upgrade-hero { text-align: center; max-width: 680px; margin: 0 auto 56px; }
+.upgrade-hero-label { font-size: 0.78rem; font-weight: 700; letter-spacing: 0.16em; text-transform: uppercase; color: #a78bfa; margin-bottom: 16px; }
+.upgrade-hero-title { font-size: clamp(2rem, 5vw, 3.2rem); font-weight: 800; line-height: 1.1; margin: 0 0 16px; background: linear-gradient(135deg, #fff 30%, #c4b5fd 100%); -webkit-background-clip: text; -webkit-text-fill-color: transparent; background-clip: text; }
+.upgrade-hero-sub { font-size: 1.05rem; color: #94a3b8; line-height: 1.7; margin: 0; }
+.plans-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(290px, 1fr)); gap: 24px; max-width: 900px; margin: 0 auto; align-items: stretch; }
+.plan-card { position: relative; border-radius: 28px; padding: 32px 28px; display: flex; flex-direction: column; gap: 0; transition: transform 0.2s; }
+.plan-card:hover { transform: translateY(-4px); }
+.plan-card.free { background: rgba(15, 23, 42, 0.9); border: 1px solid rgba(255,255,255,0.08); }
+.plan-card.vip { background: linear-gradient(160deg, rgba(124,58,237,0.32) 0%, rgba(15,23,42,0.95) 60%); border: 1px solid rgba(167,139,250,0.4); box-shadow: 0 0 60px -20px rgba(124,58,237,0.5), 0 32px 64px -32px rgba(0,0,0,0.8); }
+.plan-rec-badge { position: absolute; top: -14px; left: 50%; transform: translateX(-50%); white-space: nowrap; padding: 6px 16px; border-radius: 999px; background: linear-gradient(90deg, #7c3aed, #6d28d9); color: #ede9fe; font-size: 0.75rem; font-weight: 800; letter-spacing: 0.06em; text-transform: uppercase; box-shadow: 0 4px 20px rgba(124,58,237,0.5); }
+.plan-name { font-size: 1.2rem; font-weight: 700; color: #94a3b8; margin-bottom: 6px; }
+.plan-price { font-size: 2.8rem; font-weight: 900; color: #fff; line-height: 1; margin-bottom: 4px; }
+.plan-period { font-size: 0.85rem; color: #64748b; margin-bottom: 16px; }
+.plan-desc { font-size: 0.92rem; color: #94a3b8; line-height: 1.6; margin-bottom: 24px; min-height: 44px; }
+.plan-cta-free { display: block; padding: 14px; text-align: center; border-radius: 14px; border: 1px solid rgba(255,255,255,0.1); color: #64748b; font-weight: 700; margin-bottom: 28px; font-size: 0.95rem; cursor: default; }
+.plan-cta-vip { display: block; padding: 14px; text-align: center; border-radius: 14px; background: linear-gradient(90deg, #7c3aed, #4f46e5); color: #fff; font-weight: 800; font-size: 1rem; border: none; cursor: pointer; margin-bottom: 28px; transition: opacity 0.15s; width: 100%; }
+.plan-cta-vip:hover { opacity: 0.88; }
+.plan-features { display: flex; flex-direction: column; gap: 12px; }
+.plan-feature { display: flex; align-items: flex-start; gap: 12px; font-size: 0.9rem; color: #cbd5e1; line-height: 1.5; }
+.feature-check { flex-shrink: 0; width: 22px; height: 22px; border-radius: 50%; display: flex; align-items: center; justify-content: center; font-size: 12px; font-weight: 800; }
+.feature-check.free-check { background: rgba(100,116,139,0.25); color: #64748b; }
+.feature-check.vip-check { background: rgba(124,58,237,0.3); color: #c4b5fd; }
+.billing-note { max-width: 700px; margin: 40px auto 0; padding: 20px 24px; border-radius: 20px; background: rgba(15,23,42,0.8); border: 1px solid rgba(255,255,255,0.07); color: #94a3b8; font-size: 0.88rem; line-height: 1.7; text-align: center; }
+.alert-error { max-width: 700px; margin: 0 auto 28px; padding: 14px 18px; border-radius: 14px; background: rgba(239,68,68,0.12); border: 1px solid rgba(248,113,113,0.3); color: #fca5a5; }
+.alert-info { max-width: 700px; margin: 0 auto 28px; padding: 14px 18px; border-radius: 14px; background: rgba(34,197,94,0.12); border: 1px solid rgba(74,222,128,0.3); color: #86efac; }
+.back-link { display: inline-flex; align-items: center; gap: 8px; padding: 10px 18px; border-radius: 999px; border: 1px solid rgba(255,255,255,0.12); color: #94a3b8; text-decoration: none; font-size: 0.88rem; margin-bottom: 40px; }
+.back-link:hover { border-color: rgba(255,255,255,0.2); color: #fff; }
+.vip-active-banner { max-width: 900px; margin: 0 auto 28px; padding: 18px 24px; border-radius: 20px; background: linear-gradient(90deg, rgba(5,150,105,0.2), rgba(16,185,129,0.12)); border: 1px solid rgba(110,231,183,0.3); display: flex; align-items: center; gap: 14px; color: #6ee7b7; font-weight: 600; }
+</style>
+
+<div class="upgrade-page">
+    <div style="max-width:900px; margin:0 auto;">
+        <a href="/Home/Index" class="back-link">&#8592; Quay lai dashboard</a>
+
+        @if (TempData["BillingError"] != null)
+        {
+            <div class="alert-error">@TempData["BillingError"]</div>
+        }
+        @if (TempData["BillingInfo"] != null)
+        {
+            <div class="alert-info">@TempData["BillingInfo"]</div>
+        }
+    </div>
+
+    <div class="upgrade-hero">
+        <div class="upgrade-hero-label">Slidify Premium</div>
+        <h1 class="upgrade-hero-title">Mo khoa toan bo suc manh cua Slidify</h1>
+        <p class="upgrade-hero-sub">Template dai (tu 22 slide), component VIP, infographic blocks, chia se slide cho nhom — chi voi 10.000 VND / thang.</p>
+    </div>
+
+    @if (isVip)
+    {
+        <div class="vip-active-banner">
+            <span style="font-size:1.5rem;">★</span>
+            <div>
+                <div style="font-size:1rem;">Ban dang la thanh vien <strong>VIP</strong>. Tat ca tinh nang premium da duoc mo khoa.</div>
+            </div>
+        </div>
+    }
+
+    <div class="plans-grid">
+        @foreach (var plan in Model)
+        {
+            var isCurrentPlan = (plan.Amount == 0 && !isVip) || (isVip && plan.Amount > 0);
+            var cardClass = plan.IsRecommended ? "plan-card vip" : "plan-card free";
+            <div class="@cardClass">
+                @if (plan.IsRecommended)
+                {
+                    <div class="plan-rec-badge">&#9733; Khuyen dung</div>
+                }
+                <div class="plan-name">@plan.PlanName</div>
+                <div class="plan-price">@(plan.Amount == 0 ? "Mien phi" : $"{(int)(plan.Amount/1000)}K")</div>
+                <div class="plan-period">@(plan.Amount == 0 ? "mai mai" : "/ thang")</div>
+                <div class="plan-desc">@plan.Description</div>
+
+                @if (plan.Amount == 0)
+                {
+                    <div class="plan-cta-free">@(isVip ? "Goi co ban" : "Goi hien tai")</div>
+                }
+                else
+                {
+                    <form asp-action="CreatePayment" method="post">
+                        @Html.AntiForgeryToken()
+                        <input type="hidden" name="PlanName" value="@plan.PlanName" />
+                        <button type="submit" class="plan-cta-vip">@(isCurrentPlan && isVip ? "Gia han VIP" : "Nang cap len VIP")</button>
+                    </form>
+                }
+
+                <div class="plan-features">
+                    @foreach (var feature in plan.Features)
+                    {
+                        <div class="plan-feature">
+                            <span class="feature-check @(plan.IsRecommended ? "vip-check" : "free-check")">@(plan.IsRecommended ? "★" : "+")</span>
+                            <span>@feature</span>
+                        </div>
+                    }
+                </div>
+            </div>
+        }
+    </div>
+
+    <div class="billing-note">
+        <strong style="color:#e2e8f0;">Luu y thanh toan:</strong> He thong tao ma VietQR lien ket voi tai khoan MBBank. Sau khi chuyen khoan, bam <em>Da chuyen khoan</em> de bao he thong. Giao dich se len VIP sau khi admin xac nhan thu cong.
+    </div>
+</div>

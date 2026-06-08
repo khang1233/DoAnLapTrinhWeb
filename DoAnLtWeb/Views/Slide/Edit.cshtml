@@ -1,260 +1,725 @@
 @model DoAnLtWeb.Models.Presentation
-
 @{
-    ViewData["Title"] = Model.Title;
-    Layout = null; // Use a standalone layout for the editor (Canva-like full screen)
+    Layout = null;
+    var options = new System.Text.Json.JsonSerializerOptions { PropertyNamingPolicy = null };
+    var slidesJson = System.Text.Json.JsonSerializer.Serialize(
+        Model.Slides.OrderBy(s => s.PageNumber).Select(s => new {
+            s.PageNumber, s.BackgroundColor, s.BackgroundImage, s.ElementsJson
+        }), options
+    );
+    bool isVip = ViewBag.IsVip is bool b && b;
 }
 <!DOCTYPE html>
 <html lang="vi">
 <head>
-    <meta charset="UTF-8">
-    <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>@Model.Title - Slidify Editor</title>
-    <!-- Fonts & Icons -->
-    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;600;800&family=Montserrat:wght@400;700&family=Playfair+Display:wght@700&family=Oswald:wght@500&display=swap" rel="stylesheet">
-    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
-    <link rel="stylesheet" href="~/css/styles.css?v=2">
-    <!-- Fabric.js -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
-    <!-- jsPDF -->
-    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@Model.Title — Slidify Editor</title>
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Be+Vietnam+Pro:wght@400;500;600;700;800&family=Bebas+Neue&family=DM+Sans:wght@400;500;700&family=DM+Serif+Display&family=Inter:wght@300;400;500;600;700;800&family=Lobster&family=Manrope:wght@400;500;700;800&family=Merriweather:wght@400;700&family=Montserrat:wght@400;500;600;700;800&family=Nunito:wght@400;600;700;800&family=Open+Sans:wght@400;600;700&family=Oswald:wght@400;500;700&family=Pacifico&family=Playfair+Display:wght@400;700;800&family=Plus+Jakarta+Sans:wght@400;600;700;800&family=Poppins:wght@300;400;500;600;700;800&family=Quicksand:wght@400;500;700&family=Raleway:wght@400;500;700&family=Roboto:wght@400;500;700&family=Roboto+Mono:wght@400;500;700&family=Roboto+Slab:wght@400;500;700&family=Source+Sans+3:wght@400;600;700&family=Space+Grotesk:wght@400;500;700&family=Work+Sans:wght@400;500;700&display=swap" rel="stylesheet">
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.0/css/all.min.css" rel="stylesheet">
+    <link rel="stylesheet" href="~/css/styles.css" />
+    <style>
+        html, body { height: 100%; overflow: hidden; }
+        body { display: flex; flex-direction: column; background: #0f172a; }
+
+        /* ===== TOP BAR ===== */
+        .editor-topbar {
+            height: 60px;
+            background: #1e293b;
+            border-bottom: 1px solid rgba(255,255,255,0.07);
+            display: flex;
+            align-items: center;
+            padding: 0 16px;
+            gap: 10px;
+            z-index: 100;
+            flex-shrink: 0;
+        }
+        .topbar-logo { display:flex;align-items:center;gap:8px;text-decoration:none;color:#f8fafc;font-weight:800;font-size:1.05rem;letter-spacing:-0.03em;flex-shrink:0; }
+        .topbar-logo-dot { width:8px;height:8px;background:#818cf8;border-radius:50%; }
+        .topbar-divider { width:1px;height:26px;background:rgba(255,255,255,0.09);flex-shrink:0;margin:0 2px; }
+        .topbar-spacer { flex:1; }
+        .topbar-btn { background:transparent;border:1px solid transparent;color:#64748b;width:34px;height:34px;border-radius:7px;cursor:pointer;font-size:0.95rem;display:flex;align-items:center;justify-content:center;transition:0.15s;flex-shrink:0; }
+        .topbar-btn:hover { color:#f8fafc;background:rgba(255,255,255,0.07); }
+        .topbar-btn:disabled { opacity:0.3;cursor:not-allowed; }
+        .zoom-controls { display:flex;align-items:center;gap:6px;background:rgba(255,255,255,0.05);border-radius:9px;padding:4px 10px;flex-shrink:0; }
+        #zoom-level { color:#64748b;font-size:0.8rem;min-width:34px;text-align:center; }
+        #zoom-slider { width:70px;accent-color:#818cf8; }
+        .btn-present { background:rgba(99,102,241,0.12);border:1px solid rgba(99,102,241,0.35);color:#818cf8;padding:6px 13px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:600;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;transition:0.2s;flex-shrink:0; }
+        .btn-present:hover { background:rgba(99,102,241,0.25);border-color:#818cf8; }
+        .btn-save { background:#818cf8;border:none;color:#fff;padding:6px 15px;border-radius:8px;cursor:pointer;font-size:0.85rem;font-weight:700;font-family:'Inter',sans-serif;display:flex;align-items:center;gap:6px;transition:0.2s;flex-shrink:0; }
+        .btn-save:hover { background:#6366f1;box-shadow:0 4px 12px rgba(99,102,241,0.4); }
+        #current-project-name { background:transparent;border:1px solid transparent;color:#f8fafc;font-size:0.9rem;font-weight:500;padding:4px 9px;border-radius:7px;outline:none;font-family:'Inter',sans-serif;max-width:220px; }
+        #current-project-name:hover,#current-project-name:focus { border-color:rgba(255,255,255,0.18);background:rgba(255,255,255,0.05); }
+        #save-status { font-size:0.78rem;color:#64748b;display:flex;align-items:center;gap:5px;white-space:nowrap;flex-shrink:0; }
+
+        /* ===== MAIN BODY ===== */
+        .editor-body { display:flex;flex:1;overflow:hidden;min-height:0; }
+
+        /* ===== LEFT SIDEBAR ===== */
+        .editor-sidebar { width:70px;background:#1e293b;border-right:1px solid rgba(255,255,255,0.06);display:flex;flex-direction:column;align-items:center;padding:14px 0;gap:2px;z-index:20;flex-shrink:0;overflow-y:auto; }
+        .sidebar-tool { width:54px;height:54px;border-radius:10px;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:4px;color:#475569;cursor:pointer;border:none;background:transparent;transition:0.18s;font-family:'Inter',sans-serif; }
+        .sidebar-tool i { font-size:1.2rem; }
+        .sidebar-tool span { font-size:0.6rem;font-weight:500; }
+        .sidebar-tool:hover { color:#f8fafc;background:rgba(255,255,255,0.07); }
+        .sidebar-tool.active { color:#818cf8;background:rgba(99,102,241,0.12); }
+        .sidebar-sep { width:34px;height:1px;background:rgba(255,255,255,0.06);margin:5px 0; }
+
+        /* ===== LEFT DRAWER ===== */
+        .editor-drawer { width:0;background:#182236;border-right:1px solid transparent;overflow:hidden;transition:width 0.26s cubic-bezier(0.16,1,0.3,1),border-color 0.26s;flex-shrink:0;z-index:15; }
+        .editor-drawer.active { width:314px;border-right-color:rgba(255,255,255,0.06);overflow-y:auto; }
+        #drawer-panel { padding:18px;min-height:100%; }
+        .drawer-title { font-size:0.98rem;font-weight:700;color:#f8fafc;margin-bottom:14px;letter-spacing:-0.02em; }
+
+        /* ===== Text presets in the "Văn bản" drawer ===== */
+        .text-preset {
+            padding:14px 16px; margin-bottom:10px; border-radius:11px;
+            background:linear-gradient(180deg, rgba(124,92,255,0.06), rgba(34,211,238,0.03));
+            border:1px solid rgba(255,255,255,0.06);
+            cursor:pointer; transition:transform .15s, background .15s, border-color .15s;
+        }
+        .text-preset:hover { transform:translateY(-2px); background:linear-gradient(180deg, rgba(124,92,255,0.12), rgba(34,211,238,0.06)); border-color:rgba(124,92,255,0.35); }
+        .text-preset-label {
+            font-size:0.66rem; letter-spacing:0.08em; text-transform:uppercase;
+            color:#7C5CFF; font-weight:700; margin-bottom:8px;
+        }
+        .text-preset-preview { line-height:1.3; }
+
+        /* ===== Element cards in the "Elements" drawer ===== */
+        .elem-card-bg {
+            background:linear-gradient(180deg, rgba(255,255,255,0.04), rgba(255,255,255,0.01));
+            border:1px solid rgba(255,255,255,0.06);
+            transition:transform .15s, background .15s, border-color .15s;
+        }
+        .elem-card-bg:hover {
+            transform:translateY(-2px);
+            background:linear-gradient(180deg, rgba(124,92,255,0.12), rgba(34,211,238,0.05));
+            border-color:rgba(124,92,255,0.4);
+        }
+        .elem-card-locked { opacity:0.55; }
+
+        /* ===== Upload dropzone ===== */
+        .upload-dropzone {
+            display:flex; flex-direction:column; align-items:center; justify-content:center;
+            padding:28px 16px; border:2px dashed rgba(129,140,248,0.4); border-radius:14px;
+            background:linear-gradient(180deg, rgba(129,140,248,0.06), rgba(99,102,241,0.02));
+            cursor:pointer; transition:border-color .15s, background .15s;
+        }
+        .upload-dropzone:hover { border-color:#818cf8; background:rgba(129,140,248,0.12); }
+        .upload-dropzone-icon { font-size:2rem; color:#818cf8; margin-bottom:10px; }
+        .upload-dropzone-title { font-size:0.95rem; font-weight:700; color:#f8fafc; }
+        .upload-dropzone-sub { font-size:0.83rem; color:#94a3b8; margin-top:4px; }
+        .upload-dropzone-sub u { color:#818cf8; text-decoration:none; font-weight:600; }
+        .upload-dropzone-hint { font-size:0.72rem; color:#64748b; margin-top:10px; }
+        .upload-thumb { aspect-ratio:1; border-radius:9px; overflow:hidden; cursor:pointer; background:#0f172a; border:1px solid rgba(255,255,255,0.05); transition:transform .15s, border-color .15s; }
+        .upload-thumb:hover { transform:translateY(-2px); border-color:#818cf8; }
+        .upload-thumb img { width:100%; height:100%; object-fit:cover; display:block; }
+
+        /* ===== Photo library ===== */
+        .photo-chip {
+            padding:5px 11px; border-radius:99px; border:1px solid rgba(255,255,255,0.08);
+            background:rgba(255,255,255,0.04); color:#cbd5e1; font-size:0.74rem; font-weight:600;
+            cursor:pointer; font-family:'Inter',sans-serif; transition:background .15s, color .15s;
+        }
+        .photo-chip:hover { background:rgba(129,140,248,0.16); color:#fff; }
+        .photo-card { aspect-ratio:1; border-radius:8px; overflow:hidden; cursor:pointer; background:#1e293b; position:relative; transition:transform .15s; }
+        .photo-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px -8px rgba(99,102,241,0.5); }
+        .photo-card img { width:100%; height:100%; object-fit:cover; display:block; }
+
+        /* ===== Floating element toolbar (Canva-style) ===== */
+        .floating-toolbar {
+            position:absolute; display:none; flex-wrap:wrap; align-items:center; gap:4px;
+            padding:6px; background:#ffffff; border-radius:10px; box-shadow:0 6px 24px rgba(0,0,0,0.18);
+            z-index:300; font-family:'Inter', sans-serif;
+        }
+        .floating-toolbar.is-visible { display:flex; }
+        .ft-btn {
+            background:transparent; border:none; padding:6px 9px; border-radius:6px;
+            color:#1f2937; font-size:0.83rem; cursor:pointer; display:inline-flex; align-items:center; gap:4px;
+            font-family:inherit; font-weight:500;
+        }
+        .ft-btn:hover { background:rgba(99,102,241,0.12); color:#4f46e5; }
+        .ft-btn.is-active { background:rgba(99,102,241,0.18); color:#4f46e5; }
+        .ft-sep { width:1px; height:18px; background:rgba(0,0,0,0.08); margin:0 2px; }
+        .ft-select { border:1px solid rgba(0,0,0,0.1); border-radius:6px; padding:4px 8px; font-size:0.78rem; background:#fff; font-family:inherit; color:#1f2937; cursor:pointer; }
+        .ft-color-swatch { width:18px; height:18px; border-radius:4px; border:1px solid rgba(0,0,0,0.15); }
+        .ft-num { width:50px; border:1px solid rgba(0,0,0,0.1); border-radius:6px; padding:4px 6px; font-size:0.78rem; text-align:center; font-family:inherit; }
+        .ft-iconbtn { width:30px; height:30px; padding:0; display:inline-flex; align-items:center; justify-content:center; }
+        .ft-iconbtn.danger:hover { background:rgba(239,68,68,0.12); color:#dc2626; }
+        .drawer-section-title { font-size:0.68rem;font-weight:700;color:#475569;text-transform:uppercase;letter-spacing:0.08em;margin:14px 0 7px; }
+
+        /* ===== CANVAS AREA ===== */
+        .editor-canvas-area { flex:1;display:flex;flex-direction:column;overflow:hidden;background:#0f172a;position:relative;min-width:0; }
+
+        /* ===== SUB TOOLBAR ===== */
+        #sub-toolbar { display:none;align-items:center;gap:6px;padding:5px 14px;background:#1a2744;border-bottom:1px solid rgba(255,255,255,0.07);flex-wrap:wrap;min-height:46px;flex-shrink:0; }
+        #sub-toolbar.visible { display:flex; }
+        .prop-group { display:flex;align-items:center;gap:5px; }
+        .prop-sep { width:1px;height:20px;background:rgba(255,255,255,0.09);margin:0 3px; }
+        .prop-label { font-size:0.7rem;color:#475569;white-space:nowrap; }
+        #sub-toolbar select,#sub-toolbar input[type="number"] { background:rgba(255,255,255,0.06);border:1px solid rgba(255,255,255,0.09);color:#f8fafc;font-size:0.8rem;padding:3px 7px;border-radius:5px;cursor:pointer;font-family:'Inter',sans-serif; }
+        #sub-toolbar select { min-width:96px; }
+        #sub-toolbar input[type="number"] { width:50px;text-align:center; }
+        #sub-toolbar input[type="color"] { width:28px;height:28px;border:2px solid rgba(255,255,255,0.14);border-radius:50%;cursor:pointer;background:transparent;padding:0; }
+        #sub-toolbar input[type="color"]::-webkit-color-swatch-wrapper { padding:0; }
+        #sub-toolbar input[type="color"]::-webkit-color-swatch { border:none;border-radius:50%; }
+        #sub-toolbar input[type="range"] { width:68px;accent-color:#818cf8; }
+        #sub-toolbar input[type="checkbox"] { width:15px;height:15px;accent-color:#818cf8;cursor:pointer; }
+        .btn-format { background:transparent;border:none;color:#94a3b8;width:29px;height:29px;border-radius:5px;cursor:pointer;display:flex;align-items:center;justify-content:center;font-size:0.88rem;transition:0.12s; }
+        .btn-format:hover { background:rgba(255,255,255,0.07);color:#f8fafc; }
+        .btn-format.active { background:rgba(99,102,241,0.18);color:#818cf8; }
+        #btn-group-objects,#btn-ungroup-objects { display:none;background:rgba(255,255,255,0.05);border:1px solid rgba(255,255,255,0.1);color:#f8fafc;padding:3px 9px;border-radius:5px;cursor:pointer;font-size:0.78rem;font-family:'Inter',sans-serif; }
+        #prop-font-group { display:none;align-items:center;gap:6px; }
+        #prop-shape-group { display:none;align-items:center;gap:6px; }
+
+        /* ===== CANVAS CONTAINER ===== */
+        #canvas-container { flex:1;overflow:auto;display:flex;align-items:center;justify-content:center;padding:36px;background:#0f172a; }
+        .canvas-wrapper { box-shadow:0 32px 72px -16px rgba(0,0,0,0.8),0 0 0 1px rgba(255,255,255,0.04);border-radius:5px;overflow:hidden; }
+
+        /* ===== BOTTOM THUMBNAIL BAR ===== */
+        .editor-bottom-bar { height:130px;background:#111827;border-top:1px solid rgba(255,255,255,0.06);display:flex;align-items:center;padding:0 18px;gap:0;flex-shrink:0;overflow-x:auto;z-index:50; }
+        #slides-list { display:flex;gap:12px;align-items:center; }
+        .slide-thumb-h { width:132px;height:75px;background:white;border-radius:5px;border:2px solid transparent;cursor:pointer;position:relative;transition:0.18s;flex-shrink:0;overflow:hidden;box-shadow:0 2px 8px rgba(0,0,0,0.35); }
+        .slide-thumb-h:hover { transform:translateY(-3px);box-shadow:0 6px 18px rgba(0,0,0,0.45);border-color:rgba(129,140,248,0.45); }
+        .slide-thumb-h.active { border-color:#818cf8;box-shadow:0 0 0 3px rgba(129,140,248,0.22); }
+        .thumb-num { position:absolute;bottom:3px;left:3px;background:rgba(0,0,0,0.6);color:white;font-size:0.62rem;font-weight:600;padding:1px 4px;border-radius:3px; }
+        .thumb-del { position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.85);color:white;border:none;border-radius:50%;width:17px;height:17px;font-size:0.52rem;cursor:pointer;opacity:0;transition:0.14s;display:flex;align-items:center;justify-content:center; }
+        .slide-thumb-h:hover .thumb-del { opacity:1; }
+        .thumb-del:hover { background:#dc2626; }
+        .btn-add-slide-horizontal { width:132px;height:75px;border:2px dashed rgba(255,255,255,0.12);border-radius:5px;background:transparent;color:rgba(255,255,255,0.25);font-size:1.3rem;cursor:pointer;transition:0.18s;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:12px; }
+        .btn-add-slide-horizontal:hover { border-color:#818cf8;color:#818cf8;background:rgba(99,102,241,0.05); }
+        #page-info { font-size:0.76rem;color:#475569;white-space:nowrap;margin-left:auto;padding-left:12px;flex-shrink:0; }
+
+        /* ===== CONTEXT MENU ===== */
+        .custom-context-menu { position:fixed;background:#1e2d45;border:1px solid rgba(255,255,255,0.1);border-radius:11px;min-width:206px;padding:5px;z-index:9999;box-shadow:0 16px 44px rgba(0,0,0,0.55);display:none;opacity:0;transform:translateY(7px);transition:0.14s; }
+        .custom-context-menu.active { display:block;opacity:1;transform:translateY(0); }
+        .context-menu-item { padding:8px 11px;border-radius:7px;cursor:pointer;display:flex;align-items:center;gap:9px;font-size:0.85rem;color:#e2e8f0;transition:0.13s;position:relative; }
+        .context-menu-item:hover { background:#818cf8;color:#fff; }
+        .context-menu-item i { width:15px;text-align:center;color:#475569; }
+        .context-menu-item:hover i { color:#fff; }
+        .context-divider { height:1px;background:rgba(255,255,255,0.07);margin:3px 0; }
+        .has-submenu:hover .context-submenu { display:block;opacity:1; }
+        .context-submenu { position:absolute;left:100%;top:-5px;background:#1e2d45;border:1px solid rgba(255,255,255,0.1);border-radius:10px;min-width:176px;padding:5px;box-shadow:0 16px 44px rgba(0,0,0,0.55);display:none;margin-left:5px; }
+
+        /* ===== TOAST ===== */
+        #toast { position:fixed;bottom:26px;left:50%;transform:translateX(-50%) translateY(14px);background:#334155;color:#f8fafc;padding:9px 20px;border-radius:999px;font-size:0.88rem;font-weight:500;font-family:'Inter',sans-serif;box-shadow:0 8px 24px rgba(0,0,0,0.38);z-index:10000;opacity:0;visibility:hidden;transition:0.22s cubic-bezier(0.16,1,0.3,1);pointer-events:none; }
+        #toast.show { opacity:1;visibility:visible;transform:translateX(-50%) translateY(0); }
+
+        /* ===== PRESENTATION OVERLAY ===== */
+        #presentation-overlay { position:fixed;inset:0;background:#000;z-index:99999;display:none;flex-direction:column;align-items:center;justify-content:center;cursor:pointer;user-select:none; }
+        #presentation-overlay.active { display:flex; }
+        #presentation-slide-img { max-width:100vw;max-height:100vh;width:auto;height:auto;object-fit:contain; }
+        .pres-controls { position:absolute;bottom:18px;left:50%;transform:translateX(-50%);display:flex;align-items:center;gap:14px;background:rgba(0,0,0,0.45);padding:8px 14px;border-radius:99px;backdrop-filter:blur(6px);opacity:0;transition:opacity .25s; }
+        #presentation-overlay:hover .pres-controls { opacity:1; }
+        #pres-page-info { color:rgba(255,255,255,0.8);font-size:0.85rem;min-width:55px;text-align:center;font-family:'Inter',sans-serif; }
+        #pres-transition { background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.14);color:#fff;padding:5px 9px;border-radius:7px;font-size:0.8rem;font-family:'Inter',sans-serif; }
+        .pres-hint { position:absolute;top:18px;left:50%;transform:translateX(-50%);color:rgba(255,255,255,0.55);font-size:0.78rem;font-family:'Inter',sans-serif;background:rgba(0,0,0,0.4);padding:5px 12px;border-radius:99px;opacity:0;transition:opacity .25s;pointer-events:none; }
+        #presentation-overlay:hover .pres-hint { opacity:1; }
+        .pres-btn { background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.14);color:#fff;width:42px;height:42px;border-radius:50%;cursor:pointer;font-size:1rem;display:flex;align-items:center;justify-content:center;transition:0.18s; }
+        .pres-btn:hover { background:rgba(255,255,255,0.2); }
+        #pres-page-info { color:rgba(255,255,255,0.55);font-size:0.85rem;min-width:55px;text-align:center; }
+        #pres-transition { background:rgba(255,255,255,0.1);border:1px solid rgba(255,255,255,0.14);color:#fff;padding:5px 9px;border-radius:7px;font-size:0.8rem;font-family:'Inter',sans-serif; }
+
+        /* ===== TEMPLATE CARDS ===== */
+        #templates-grid { display:grid;grid-template-columns:1fr 1fr;gap:9px; }
+        .template-item { cursor:pointer;border-radius:9px;overflow:hidden;border:2px solid transparent;transition:0.18s;background:rgba(255,255,255,0.04); }
+        .template-item:hover { border-color:rgba(129,140,248,0.5);transform:translateY(-2px); }
+        .template-thumb { width:100%;height:86px;object-fit:cover;display:block;background:#1e3a5f; }
+        .template-thumb-placeholder { width:100%;height:86px;background:linear-gradient(135deg,#1e3a5f 0%,#1e293b 100%);display:flex;align-items:center;justify-content:center;color:#475569;font-size:1.3rem; }
+        .template-info { padding:7px 9px; }
+        .template-info-title { font-size:0.8rem;font-weight:600;color:#f1f5f9;white-space:nowrap;overflow:hidden;text-overflow:ellipsis; }
+        .template-info-meta { font-size:0.67rem;color:#475569;margin-top:2px;display:flex;justify-content:space-between;align-items:center; }
+        .template-vip-badge { background:rgba(124,58,237,0.85);color:#fff;font-size:0.63rem;font-weight:700;padding:2px 6px;border-radius:999px; }
+    </style>
 </head>
 <body class="dark-mode">
 
-    <!-- Store Presentation Data for JS -->
+    <!-- Hidden data -->
     <input type="hidden" id="presentation-id" value="@Model.Id" />
-    <input type="hidden" id="presentation-data" value='@Html.Raw(System.Text.Json.JsonSerializer.Serialize(Model.Slides.Select(s => new { s.PageNumber, s.BackgroundColor, s.BackgroundImage, s.ElementsJson })))' />
+    <input type="hidden" id="presentation-data" value='@Html.Raw(slidesJson.Replace("'", "&#39;"))' />
+    <input type="hidden" id="user-is-vip" value="@isVip.ToString().ToLower()" />
 
-    <!-- Editor Section (Canva/PowerPoint Clone) -->
-    <div id="editor-section" style="display: flex; flex-direction: column; height: 100vh;">
-        <!-- Top Toolbar -->
-        <div class="editor-topbar">
-            <div class="editor-topbar-title">
-                <a href="/Home/Index" class="btn-icon" style="text-decoration:none;"><i class="fa-solid fa-arrow-left"></i></a>
-                <span id="current-project-name" contenteditable="true">@Model.Title</span>
-                <span id="save-status" class="text-muted" style="font-size: 0.8rem; margin-left: 10px;"><i class="fa-solid fa-cloud-check"></i> Đã lưu</span>
-                <button id="btn-undo" onclick="undo()" class="btn-icon" style="margin-left: 15px; opacity: 0.4;" title="Hoàn tác (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
-                <button id="btn-redo" onclick="redo()" class="btn-icon" style="opacity: 0.4;" title="Làm lại (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
-            </div>
-            <div class="editor-topbar-tools">
-                @if (User.Identity.Name == "Admin" || User.Identity.Name == "admin" || User.Claims.Any(c => c.Value == "admin@slidify.com"))
-                {
-                    <button onclick="publishAsTemplate()" class="btn-icon" style="color: #f59e0b;" title="Dành cho Admin"><i class="fa-solid fa-crown"></i> Đăng làm Mẫu</button>
-                }
-                <!-- AI Generation Placeholder -->
-                <button onclick="generateWithAI()" class="btn-icon" style="color: #a855f7;" title="Thiết kế bằng AI (Đang phát triển)"><i class="fa-solid fa-wand-magic-sparkles"></i> AI Design</button>
-                
-                <button onclick="resizeCanvasPrompt()" class="btn-icon" title="Đổi kích thước Slide"><i class="fa-solid fa-expand"></i> Resize</button>
-                <button onclick="startPresentation()" class="btn-icon"><i class="fa-solid fa-play"></i> Trình bày</button>
-                <button onclick="showToast('Tính năng Chia sẻ đang phát triển!', 'info')" class="btn-icon"><i class="fa-solid fa-share-nodes"></i> Chia sẻ</button>
-                <button onclick="savePresentationManually()" class="btn-success"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
-                <button onclick="exportToImage()" class="btn-icon"><i class="fa-solid fa-image"></i> Tải ảnh</button>
-                <button onclick="exportToPDF()" class="btn-icon"><i class="fa-solid fa-file-pdf"></i> Tải PDF</button>
-            </div>
+    <!-- ===== TOP BAR ===== -->
+    <header class="editor-topbar">
+        <a href="/Home/Index" class="topbar-logo">
+            <div class="topbar-logo-dot"></div>
+            Slidify
+        </a>
+        <div class="topbar-divider"></div>
+        <input type="text" id="current-project-name" class="topbar-project-name" value="@Model.Title" maxlength="120" />
+        <div class="topbar-spacer"></div>
+        <span id="save-status" class="topbar-save-status"><i class="fa-solid fa-circle-check" style="color:#10b981"></i> Đã lưu</span>
+        <div class="topbar-divider"></div>
+        <button class="topbar-btn" id="btn-undo" title="Hoàn tác (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
+        <button class="topbar-btn" id="btn-redo" title="Làm lại (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
+        <div class="topbar-divider"></div>
+        <div class="zoom-controls">
+            <button class="topbar-btn" style="width:26px;height:26px;font-size:0.78rem;" onclick="setZoom(currentZoom - 0.1)" title="Thu nhỏ"><i class="fa-solid fa-minus"></i></button>
+            <input type="range" id="zoom-slider" min="0.3" max="2" step="0.05" value="1" oninput="setZoom(parseFloat(this.value))">
+            <span id="zoom-level">100%</span>
+            <button class="topbar-btn" style="width:26px;height:26px;font-size:0.78rem;" onclick="setZoom(currentZoom + 0.1)" title="Phóng to"><i class="fa-solid fa-plus"></i></button>
         </div>
+        <div class="topbar-divider"></div>
+        <button class="btn-present" onclick="openSubmitTemplateDialog()" title="Đề xuất làm mẫu"><i class="fa-solid fa-paper-plane"></i> Đề xuất làm mẫu</button>
+        <button class="btn-present" onclick="openShareDialog()" title="Chia sẻ slide cho nhóm"><i class="fa-solid fa-user-group"></i> Chia sẻ</button>
+        <button class="btn-present" onclick="startPresentation()"><i class="fa-solid fa-play"></i> Trình chiếu</button>
+        <button class="btn-save" onclick="savePresentationToBackend(true)"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
+    </header>
 
-        <!-- Canva Style Sub-toolbar (Properties) -->
-        <div class="editor-sub-toolbar" id="sub-toolbar" style="visibility: hidden;">
-            <div class="prop-group" id="prop-font-group">
-                <select id="prop-font-family" onchange="updateObjectProperty('fontFamily', this.value)">
-                    <option value="Inter">Inter</option>
-                    <option value="Montserrat">Montserrat</option>
-                    <option value="Playfair Display">Playfair Display</option>
-                    <option value="Oswald">Oswald</option>
-                    <option value="Arial">Arial</option>
-                    <option value="Times New Roman">Times New Roman</option>
-                </select>
-                <input type="number" id="prop-font-size" onchange="updateObjectProperty('fontSize', this.value)" min="10" max="200" title="Cỡ chữ">
-                <input type="color" id="prop-color" onchange="updateObjectProperty('fill', this.value)" title="Màu chữ" style="width: 30px; height: 30px; padding: 0; border: none; cursor: pointer; background: transparent;">
-                <button class="btn-format" id="btn-bold" onclick="toggleFormat('fontWeight', 'bold', 'normal')" title="In đậm (Ctrl+B)"><b>B</b></button>
-                <button class="btn-format" id="btn-italic" onclick="toggleFormat('fontStyle', 'italic', 'normal')" title="In nghiêng (Ctrl+I)"><i>I</i></button>
-                <button class="btn-format" id="btn-underline" onclick="toggleFormat('underline', true, false)" title="Gạch chân (Ctrl+U)"><u>U</u></button>
-                <button class="btn-format" id="btn-strikethrough" onclick="toggleFormat('linethrough', true, false)" title="Gạch ngang">S</button>
-                <button class="btn-format" id="btn-uppercase" onclick="toggleUppercase()" title="Chữ hoa">aA</button>
-                <button class="btn-format" id="btn-align-left" onclick="updateObjectProperty('textAlign', 'left')"><i class="fa-solid fa-align-left"></i></button>
-                <button class="btn-format" id="btn-align-center" onclick="updateObjectProperty('textAlign', 'center')"><i class="fa-solid fa-align-center"></i></button>
-                <button class="btn-format" id="btn-align-right" onclick="updateObjectProperty('textAlign', 'right')"><i class="fa-solid fa-align-right"></i></button>
-                
-                <label title="Khoảng cách dòng" style="margin-left: 10px;"><i class="fa-solid fa-arrows-up-down"></i></label>
-                <input type="range" id="prop-line-height" min="0.5" max="3" step="0.1" value="1.16" oninput="updateObjectProperty('lineHeight', this.value)" style="width: 60px;">
-                
-                <select id="prop-text-effect" onchange="applyTextEffect(this.value)" title="Hiệu ứng chữ" style="margin-left: 10px; background: transparent; border: 1px solid var(--border-color); color: var(--text-main); font-size: 0.85rem; padding: 4px 8px; border-radius: 6px; cursor: pointer; outline:none; font-family:'Inter'; font-weight:600;">
-                    <option value="none" style="background:#141e38; color:#fff;">Hiệu ứng: Không</option>
-                    <option value="hollow" style="background:#141e38; color:#fff;">Rỗng (Hollow)</option>
-                    <option value="neon" style="background:#141e38; color:#fff;">Neon Phát sáng</option>
-                    <option value="outline" style="background:#141e38; color:#fff;">Đường viền</option>
-                    <option value="shadow" style="background:#141e38; color:#fff;">Bóng đổ</option>
-                </select>
-            </div>
-            <div class="prop-group" id="prop-shape-group" style="display:none;">
-                <label title="Màu tô (Fill)"><i class="fa-solid fa-fill"></i></label>
-                <input type="color" id="prop-fill-color" onchange="updateObjectProperty('fill', this.value)">
-                
-                <label title="Màu viền (Stroke)" style="margin-left: 10px;"><i class="fa-solid fa-pen-fancy"></i></label>
-                <input type="color" id="prop-stroke-color" onchange="updateObjectProperty('stroke', this.value)">
-                
-                <label title="Độ dày viền (Stroke Width)" style="margin-left: 10px;"><i class="fa-solid fa-border-none"></i></label>
-                <input type="number" id="prop-stroke-width" min="0" max="50" onchange="updateObjectProperty('strokeWidth', this.value)">
-            </div>
-            
-            <div class="prop-group">
-                <label title="Bóng đổ (Shadow)"><i class="fa-solid fa-moon"></i></label>
-                <input type="checkbox" id="prop-shadow" onchange="toggleShadow(this.checked)">
-
-                <label title="Độ trong suốt (Opacity)" style="margin-left: 10px;"><i class="fa-solid fa-chess-board"></i></label>
-                <input type="range" id="prop-opacity" class="range-slider" min="0" max="1" step="0.05" value="1" oninput="updateObjectProperty('opacity', this.value)" style="width: 80px;">
-            </div>
-            <div class="prop-group">
-                <button class="btn-icon" id="btn-group-objects" onclick="groupSelectedObjects()" title="Nhóm các đối tượng (Group)" style="display:none; color: var(--primary);"><i class="fa-solid fa-object-group"></i> Nhóm</button>
-                <button class="btn-icon" id="btn-ungroup-objects" onclick="ungroupSelectedObjects()" title="Rã nhóm các đối tượng (Ungroup)" style="display:none; color: var(--primary);"><i class="fa-solid fa-object-ungroup"></i> Rã nhóm</button>
-                <button class="btn-icon" onclick="bringForward()" title="Lên trên"><i class="fa-solid fa-arrow-up-long"></i> Lên trên</button>
-                <button class="btn-icon" onclick="sendBackward()" title="Xuống dưới"><i class="fa-solid fa-arrow-down-long"></i> Xuống dưới</button>
-                <button class="btn-icon" style="color:var(--danger)" onclick="deleteSelected()" title="Xóa"><i class="fa-solid fa-trash"></i> Xóa</button>
-            </div>
-        </div>
-
-        <div class="editor-workspace" style="flex: 1; display: flex; overflow: hidden;">
-            <!-- Left Sidebar (Canva Tools) -->
-            <div class="editor-sidebar">
-                <div class="sidebar-tool" id="tab-design" onclick="toggleDrawer('design')" title="Mẫu">
-                    <i class="fa-solid fa-wand-magic-sparkles"></i>
-                    <span>Mẫu</span>
-                </div>
-                <div class="sidebar-tool" id="tab-elements" onclick="toggleDrawer('elements')" title="Thành phần">
-                    <i class="fa-solid fa-shapes"></i>
-                    <span>Thành phần</span>
-                </div>
-                <div class="sidebar-tool" id="tab-text" onclick="toggleDrawer('text')" title="Văn bản">
-                    <i class="fa-solid fa-font"></i>
-                    <span>Văn bản</span>
-                </div>
-                <div class="sidebar-tool" id="tab-photos" onclick="toggleDrawer('photos')" title="Ảnh (Mới)">
-                    <i class="fa-solid fa-image"></i>
-                    <span>Ảnh</span>
-                </div>
-                <div class="sidebar-tool" id="tab-bg" onclick="toggleDrawer('bg')" title="Nền (Mới)">
-                    <i class="fa-solid fa-fill-drip"></i>
-                    <span>Nền</span>
-                </div>
-                <div class="sidebar-tool" id="tab-upload" onclick="toggleDrawer('upload')" title="Tải lên">
-                    <i class="fa-solid fa-cloud-arrow-up"></i>
-                    <span>Tải lên</span>
-                </div>
-                <input type="file" id="upload-img-input" accept="image/png, image/jpeg, image/svg+xml" class="hidden" onchange="uploadImageReal(event)">
-                <div class="sidebar-tool" id="tab-draw" onclick="toggleDrawer('draw')" title="Vẽ">
-                    <i class="fa-solid fa-pen-nib"></i>
-                    <span>Vẽ</span>
-                </div>
-            </div>
-
-            <!-- Drawer Panel -->
-            <div class="editor-drawer" id="drawer-panel">
-                <!-- Content gets injected by JS -->
-            </div>
-
-            <!-- Main Canvas & Bottom Thumbnails Area -->
-            <div style="flex: 1; display: flex; flex-direction: column; overflow: hidden; position: relative;">
-                <!-- Main Canvas -->
-                <div class="editor-canvas-container" id="canvas-container">
-                    <div class="canvas-wrapper">
-                        <!-- Default 16:9 ratio -->
-                        <canvas id="canvas" width="800" height="450"></canvas>
-                    </div>
-                </div>
-
-                <!-- Bottom Status Bar (Canva Style) -->
-                <div class="editor-status-bar" style="height: 40px; background: var(--panel-bg); border-top: 1px solid var(--border-color); border-bottom: 1px solid var(--border-color); display: flex; align-items: center; justify-content: space-between; padding: 0 20px; z-index: 45; flex-shrink: 0; backdrop-filter: blur(20px);">
-                    <div style="display: flex; align-items: center; gap: 15px;">
-                        <span id="page-info" style="font-size: 0.85rem; color: var(--text-muted); font-weight: 500;">1 / 1</span>
-                    </div>
-                    <div style="display: flex; align-items: center; gap: 10px;">
-                        <button onclick="zoomOut()" class="btn-icon" style="padding: 4px 8px;" title="Thu nhỏ"><i class="fa-solid fa-minus"></i></button>
-                        <input type="range" id="zoom-slider" min="0.25" max="3" step="0.05" value="1" oninput="setZoom(this.value)" style="width: 100px; accent-color: var(--primary);">
-                        <span id="zoom-level" style="font-size: 0.85rem; color: var(--text-muted); width: 40px; text-align: right;">100%</span>
-                        <button onclick="zoomIn()" class="btn-icon" style="padding: 4px 8px;" title="Phóng to"><i class="fa-solid fa-plus"></i></button>
-                        <button onclick="zoomToFit()" class="btn-icon" style="padding: 4px 8px;" title="Vừa màn hình"><i class="fa-solid fa-expand"></i></button>
-                    </div>
-                    <div>
-                        <button onclick="startPresentation()" class="btn-icon" style="padding: 4px 8px;" title="Trình chiếu toàn màn hình"><i class="fa-solid fa-circle-play"></i> Trình chiếu</button>
-                    </div>
-                </div>
-
-                <!-- Bottom Slide Panel (Canva Style) -->
-                <div class="editor-bottom-thumbnails">
-                    <div id="slides-list" class="slides-list-horizontal">
-                        <!-- Slide Thumbnails go here -->
-                    </div>
-                    <button class="btn-add-slide-horizontal" onclick="addNewSlide()" title="Thêm trang mới">
-                        <i class="fa-solid fa-plus"></i>
-                    </button>
-                </div>
-            </div>
-            <!-- /End Canvas + Thumbnails column -->
-
-            <!-- Context Menu -->
-            <div id="context-menu" class="custom-context-menu">
-                <div class="context-menu-item" onclick="contextAction('copy')">
-                    <i class="fa-regular fa-copy"></i> Sao chép <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted)">Ctrl+C</span>
-                </div>
-                <div class="context-menu-item" onclick="contextAction('paste')">
-                    <i class="fa-regular fa-paste"></i> Dán <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted)">Ctrl+V</span>
-                </div>
-                <div class="context-menu-item" onclick="contextAction('duplicate')">
-                    <i class="fa-regular fa-clone"></i> Tạo bản sao <span style="margin-left:auto;font-size:0.75rem;color:var(--text-muted)">Ctrl+D</span>
-                </div>
-                <div class="context-divider"></div>
-                <div class="context-menu-item has-submenu">
-                    <i class="fa-solid fa-layer-group"></i> Lớp
-                    <i class="fa-solid fa-chevron-right" style="margin-left:auto; font-size: 0.75rem"></i>
-                    <div class="context-submenu">
-                        <div class="context-menu-item" onclick="contextAction('bringForward')"><i class="fa-solid fa-angle-up"></i> Tiến một lớp</div>
-                        <div class="context-menu-item" onclick="contextAction('bringToFront')"><i class="fa-solid fa-angles-up"></i> Lên trước</div>
-                        <div class="context-menu-item" onclick="contextAction('sendBackward')"><i class="fa-solid fa-angle-down"></i> Lùi một lớp</div>
-                        <div class="context-menu-item" onclick="contextAction('sendToBack')"><i class="fa-solid fa-angles-down"></i> Xuống cuối</div>
-                    </div>
-                </div>
-                <div class="context-divider"></div>
-                <div class="context-menu-item" onclick="contextAction('lock')" id="context-btn-lock">
-                    <i class="fa-solid fa-lock"></i> Khóa
-                </div>
-                <div class="context-divider"></div>
-                <div class="context-menu-item" onclick="contextAction('addPage')">
-                    <i class="fa-solid fa-plus"></i> Thêm trang
-                </div>
-                <div class="context-menu-item" onclick="contextAction('delete')" style="color:var(--danger)">
-                    <i class="fa-solid fa-trash"></i> Xóa
-                </div>
-            </div>
-        </div>
-    </div>
-
-    <!-- Toast Notification -->
-    <div id="toast" class="toast">Message here</div>
-
-    <!-- Presentation Overlay -->
-    <div id="presentation-overlay" style="position: fixed; top: 0; left: 0; width: 100vw; height: 100vh; background: #000; z-index: 99999; display: none; flex-direction: column; justify-content: center; align-items: center;">
-        <img id="presentation-slide-img" style="max-width: 95vw; max-height: 85vh; object-fit: contain; transition: opacity 0.2s ease-in-out;" src="" alt="Slide">
-        <div class="pres-controls" style="position: absolute; bottom: 20px; left: 50%; transform: translateX(-50%); display: flex; align-items: center; gap: 20px; background: rgba(255, 255, 255, 0.1); backdrop-filter: blur(10px); padding: 10px 20px; border-radius: 30px; border: 1px solid rgba(255, 255, 255, 0.15);">
-            <select id="pres-transition" style="background: rgba(255,255,255,0.15); border: 1px solid rgba(255,255,255,0.3); color: white; padding: 6px 12px; border-radius: 20px; font-size: 0.85rem; font-family:'Inter'; outline:none; cursor:pointer; margin-right: 10px; backdrop-filter: blur(10px);">
-                <option value="fade" style="background: #111; color: white;">Hiệu ứng: Fade</option>
-                <option value="slide" style="background: #111; color: white;">Hiệu ứng: Slide</option>
-                <option value="zoom" style="background: #111; color: white;">Hiệu ứng: Zoom</option>
+    <div id="submit-template-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#1e293b; color:#f8fafc; padding:28px; border-radius:14px; width:440px; max-width:92vw; border:1px solid rgba(255,255,255,0.08);">
+            <h3 style="margin:0 0 6px; font-size:1.1rem;">Đề xuất làm mẫu</h3>
+            <p style="margin:0 0 18px; color:#94a3b8; font-size:0.85rem;">Yêu cầu được gửi tới quản trị viên. Nếu được duyệt, bộ slide này sẽ xuất hiện trong thư viện mẫu chung.</p>
+            <label style="display:block; font-size:0.78rem; color:#94a3b8; margin-bottom:4px;">Tên mẫu</label>
+            <input id="st-title" type="text" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:#0f172a; color:#f8fafc; font-family:inherit; margin-bottom:12px;" />
+            <label style="display:block; font-size:0.78rem; color:#94a3b8; margin-bottom:4px;">Chủ đề</label>
+            <select id="st-cat" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:#0f172a; color:#f8fafc; font-family:inherit; margin-bottom:12px;">
+                <option>Kinh doanh</option>
+                <option>Giáo dục</option>
+                <option>Marketing</option>
+                <option>Công nghệ</option>
+                <option>Khởi nghiệp</option>
+                <option>Sáng tạo</option>
+                <option>Sự kiện &amp; Cá nhân</option>
+                <option>Đa dụng</option>
             </select>
-            <button class="pres-btn" onclick="prevPresentationSlide()" title="Trang trước" style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s;"><i class="fa-solid fa-chevron-left"></i></button>
-            <span id="pres-page-info" style="color: white; font-weight: 600; font-family: 'Inter', sans-serif; font-size: 0.95rem;">1 / 1</span>
-            <button class="pres-btn" onclick="nextPresentationSlide()" title="Trang sau" style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s;"><i class="fa-solid fa-chevron-right"></i></button>
-            <button class="pres-btn" onclick="exitPresentation()" title="Thoát" style="background: transparent; border: none; color: white; font-size: 1.2rem; cursor: pointer; width: 40px; height: 40px; display: flex; align-items: center; justify-content: center; border-radius: 50%; transition: background 0.2s; margin-left: 10px;"><i class="fa-solid fa-xmark"></i></button>
+            <label style="display:block; font-size:0.78rem; color:#94a3b8; margin-bottom:4px;">Ghi chú cho admin (tuỳ chọn)</label>
+            <textarea id="st-note" rows="3" style="width:100%; padding:8px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.1); background:#0f172a; color:#f8fafc; font-family:inherit; margin-bottom:18px; resize:vertical;"></textarea>
+            <div style="display:flex; justify-content:flex-end; gap:8px;">
+                <button class="btn-present" onclick="closeSubmitTemplateDialog()">Huỷ</button>
+                <button class="btn-save" onclick="submitTemplateRequest()"><i class="fa-solid fa-paper-plane"></i> Gửi đề xuất</button>
+            </div>
         </div>
     </div>
 
-    <!-- Real-time Collaboration Placeholder -->
-    <!-- <script src="https://cdnjs.cloudflare.com/ajax/libs/microsoft-signalr/7.0.5/signalr.min.js"></script> -->
-    <!-- <script>
-        // const connection = new signalR.HubConnectionBuilder().withUrl("/slideHub").build();
-        // connection.on("ReceiveSlideUpdate", (data) => { /* Update canvas */ });
-        // connection.start().catch(err => console.error(err.toString()));
-    </script> -->
+    <script>
+        function openSubmitTemplateDialog() {
+            document.getElementById('st-title').value = document.title.split('—')[0].trim() || '';
+            document.getElementById('submit-template-modal').style.display = 'flex';
+        }
+        function closeSubmitTemplateDialog() {
+            document.getElementById('submit-template-modal').style.display = 'none';
+        }
+        async function submitTemplateRequest() {
+            const pid = @Model.Id;
+            const body = {
+                Title: document.getElementById('st-title').value.trim(),
+                Category: document.getElementById('st-cat').value,
+                Note: document.getElementById('st-note').value.trim()
+            };
+            try {
+                const r = await fetch('/Slide/SubmitAsTemplate?id=' + pid, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(body)
+                });
+                if (!r.ok) throw new Error(r.statusText);
+                const data = await r.json();
+                closeSubmitTemplateDialog();
+                if (data.alreadyPending) {
+                    alert('Bộ slide này đã có yêu cầu đang chờ duyệt.');
+                } else {
+                    alert('Đã gửi đề xuất tới quản trị viên. Cảm ơn bạn!');
+                }
+            } catch (e) {
+                alert('Không gửi được đề xuất: ' + e.message);
+            }
+        }
 
-    <script src="~/js/slide-editor.js" asp-append-version="true"></script>
+        // ===== Share modal =====
+        const PRESENTATION_ID = @Model.Id;
+        const VIEWER_IS_VIP = @((bool)ViewBag.IsVip ? "true" : "false");
+        const VIEWER_IS_OWNER = @((ViewBag.IsOwner is bool b && b) ? "true" : "false");
+        const VIEWER_SHARED_PERM = @Html.Raw(System.Text.Json.JsonSerializer.Serialize(ViewBag.SharedPermission as string));
+
+        function openShareDialog() {
+            const modal = document.getElementById('share-modal');
+            const body = document.getElementById('share-modal-body');
+            if (!VIEWER_IS_OWNER) {
+                body.innerHTML = `
+                    <h3 style="margin:0 0 8px;">Chia sẻ slide</h3>
+                    <p style="color:#94a3b8; font-size:0.86rem; margin:0 0 14px;">Chỉ chủ slide mới có thể tạo và quản lý liên kết chia sẻ.</p>
+                    <div style="display:flex; justify-content:flex-end;">
+                        <button class="btn-present" onclick="closeShareDialog()">Đóng</button>
+                    </div>
+                `;
+                modal.style.display = 'flex';
+                return;
+            }
+            if (!VIEWER_IS_VIP) {
+                body.innerHTML = `
+                    <h3 style="margin:0 0 8px;"><i class="fa-solid fa-crown" style="color:#f4b400;"></i> Cần VIP để chia sẻ</h3>
+                    <p style="color:#94a3b8; font-size:0.88rem; line-height:1.55; margin:0 0 16px;">Tính năng chia sẻ cộng tác chỉ dành cho thành viên VIP — <strong style="color:#f8fafc;">người được mời thì không cần VIP</strong>. Nâng cấp ngay để làm bài nhóm.</p>
+                    <div style="display:flex; gap:8px; justify-content:flex-end;">
+                        <button class="btn-present" onclick="closeShareDialog()">Để sau</button>
+                        <a class="btn-save" href="/Billing/Upgrade" style="text-decoration:none;"><i class="fa-solid fa-crown"></i> Nâng cấp VIP</a>
+                    </div>
+                `;
+                modal.style.display = 'flex';
+                return;
+            }
+            body.innerHTML = `<div style="text-align:center; padding:20px;"><i class="fa-solid fa-spinner fa-spin" style="color:#818cf8; font-size:1.4rem;"></i></div>`;
+            modal.style.display = 'flex';
+            initShareModal();
+        }
+
+        function closeShareDialog() {
+            document.getElementById('share-modal').style.display = 'none';
+        }
+
+        async function initShareModal() {
+            // Ensure a share exists; CreateShare is idempotent.
+            try {
+                const create = await fetch(`/Slide/CreateShare?id=${PRESENTATION_ID}`, { method: 'POST' });
+                const cdata = await create.json();
+                if (!cdata.ok) {
+                    document.getElementById('share-modal-body').innerHTML = `<p style="color:#fca5a5;">${cdata.message || 'Không tạo được liên kết.'}</p>`;
+                    return;
+                }
+                await renderShareModal();
+            } catch (e) {
+                document.getElementById('share-modal-body').innerHTML = `<p style="color:#fca5a5;">Lỗi mạng: ${e.message}</p>`;
+            }
+        }
+
+        async function renderShareModal() {
+            const r = await fetch(`/Slide/ShareMembers?id=${PRESENTATION_ID}`);
+            const data = await r.json();
+            const share = data.share || {};
+            const members = data.members || [];
+            const url = share.url || '';
+            const isActive = !!share.isActive;
+            const memberRows = members.length === 0
+                ? `<div style="text-align:center; color:#64748b; font-size:0.85rem; padding:14px;">Chưa ai tham gia. Gửi liên kết trên cho bạn bè.</div>`
+                : members.map(m => `
+                    <div style="display:flex; align-items:center; gap:10px; padding:10px 12px; border-radius:9px; background:#0f172a; border:1px solid rgba(255,255,255,0.05); margin-bottom:6px;">
+                        <div style="width:34px; height:34px; border-radius:50%; background:linear-gradient(135deg,#7c5cff,#22d3ee); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:700;">${(m.email||'?').substring(0,1).toUpperCase()}</div>
+                        <div style="flex:1; min-width:0;">
+                            <div style="font-size:0.88rem; font-weight:600; color:#f8fafc; white-space:nowrap; overflow:hidden; text-overflow:ellipsis;">${m.email}</div>
+                            <div style="font-size:0.72rem; color:#94a3b8;">Tham gia ${new Date(m.joinedAt).toLocaleDateString('vi-VN')}</div>
+                        </div>
+                        <select class="ft-select" style="background:#1e293b; color:#f1f5f9; border-color:rgba(255,255,255,0.08);" onchange="setMemberPerm(${m.id}, this.value)">
+                            <option value="Editor" ${m.permission === 'Editor' ? 'selected' : ''}>Có thể sửa</option>
+                            <option value="Viewer" ${m.permission === 'Viewer' ? 'selected' : ''}>Chỉ xem</option>
+                        </select>
+                        <button onclick="kickMember(${m.id})" title="Mời ra khỏi nhóm" style="background:none; border:none; color:#ef4444; cursor:pointer; padding:6px 8px; border-radius:6px;">
+                            <i class="fa-solid fa-user-xmark"></i>
+                        </button>
+                    </div>
+                `).join('');
+
+            document.getElementById('share-modal-body').innerHTML = `
+                <h3 style="margin:0 0 4px; display:flex; align-items:center; gap:8px;"><i class="fa-solid fa-user-group" style="color:#818cf8;"></i> Chia sẻ slide</h3>
+                <p style="color:#94a3b8; font-size:0.85rem; margin:0 0 16px;">Gửi liên kết cho thành viên — họ <strong style="color:#f8fafc;">không cần VIP</strong> để tham gia.</p>
+
+                <label style="display:block; font-size:0.78rem; color:#94a3b8; margin-bottom:6px;">Liên kết tham gia</label>
+                <div style="display:flex; gap:6px; margin-bottom:14px;">
+                    <input id="share-url" readonly value="${url}" style="flex:1; padding:9px 12px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); background:#0f172a; color:#f8fafc; font-family:'JetBrains Mono', monospace; font-size:0.82rem;" />
+                    <button class="btn-save" onclick="copyShareUrl()"><i class="fa-solid fa-copy"></i> Copy</button>
+                </div>
+
+                <label style="display:flex; align-items:center; gap:8px; font-size:0.84rem; color:#cbd5e1; margin-bottom:18px; cursor:pointer;">
+                    <input type="checkbox" ${isActive ? 'checked' : ''} onchange="toggleShareActive(this.checked)" />
+                    Cho phép thành viên mới tham gia bằng liên kết
+                </label>
+
+                <div style="font-size:0.82rem; font-weight:700; color:#cbd5e1; margin-bottom:8px;">Thành viên (${members.length})</div>
+                <div style="max-height:240px; overflow-y:auto;">${memberRows}</div>
+
+                <div style="display:flex; justify-content:flex-end; margin-top:18px;">
+                    <button class="btn-present" onclick="closeShareDialog()">Đóng</button>
+                </div>
+            `;
+        }
+
+        function copyShareUrl() {
+            const el = document.getElementById('share-url');
+            navigator.clipboard?.writeText(el.value);
+            showToast('Đã copy liên kết chia sẻ', 'success');
+        }
+        async function toggleShareActive(v) {
+            const fd = new FormData(); fd.append('id', PRESENTATION_ID); fd.append('active', v ? 'true' : 'false');
+            await fetch('/Slide/ToggleShare', { method: 'POST', body: fd });
+        }
+        async function kickMember(memberId) {
+            if (!confirm('Mời thành viên này ra khỏi nhóm?')) return;
+            const fd = new FormData(); fd.append('id', PRESENTATION_ID); fd.append('memberId', memberId);
+            await fetch('/Slide/RemoveShareMember', { method: 'POST', body: fd });
+            renderShareModal();
+        }
+        async function setMemberPerm(memberId, permission) {
+            const fd = new FormData(); fd.append('id', PRESENTATION_ID); fd.append('memberId', memberId); fd.append('permission', permission);
+            await fetch('/Slide/SetShareMemberPermission', { method: 'POST', body: fd });
+        }
+
+        // ===== Editor sync polling (collaborative-lite) =====
+        // Every 4s, ask the server when the deck was last saved. If it advanced past our local
+        // memory while we're not currently editing, refresh the slide list so we see the other
+        // user's changes.
+        let _lastSyncTs = null;
+        async function pollSync() {
+            try {
+                const r = await fetch(`/Slide/SyncCheck?id=${PRESENTATION_ID}`);
+                if (!r.ok) return;
+                const d = await r.json();
+                if (!_lastSyncTs) { _lastSyncTs = d.updatedAt; return; }
+                if (d.updatedAt !== _lastSyncTs) {
+                    _lastSyncTs = d.updatedAt;
+                    // Only reload if the user isn't currently dragging/typing.
+                    if (!canvas || canvas.getActiveObject()) return;
+                    if (typeof showToast === 'function') showToast('Một thành viên đã chỉnh sửa — đang tải lại…', 'info');
+                    setTimeout(() => window.location.reload(), 600);
+                }
+            } catch (e) { /* ignore */ }
+        }
+        setInterval(pollSync, 4000);
+    </script>
+
+    <!-- ===== SHARE MODAL ===== -->
+    <div id="share-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#1e293b; color:#f8fafc; padding:24px; border-radius:14px; width:520px; max-width:92vw; border:1px solid rgba(255,255,255,0.08);" id="share-modal-body"></div>
+    </div>
+
+    <!-- ===== MAIN BODY ===== -->
+    <div class="editor-body">
+
+        <!-- Left sidebar tabs -->
+        <nav class="editor-sidebar">
+            <button class="sidebar-tool" id="tab-design" onclick="toggleDrawer('design')" title="Mẫu thiết kế">
+                <i class="fa-solid fa-swatchbook"></i>
+                <span>Mẫu</span>
+            </button>
+            <button class="sidebar-tool" id="tab-elements" onclick="toggleDrawer('elements')" title="Thành phần">
+                <i class="fa-solid fa-shapes"></i>
+                <span>Elements</span>
+            </button>
+            <button class="sidebar-tool" id="tab-text" onclick="toggleDrawer('text')" title="Văn bản">
+                <i class="fa-solid fa-font"></i>
+                <span>Văn bản</span>
+            </button>
+            <div class="sidebar-sep"></div>
+            <button class="sidebar-tool" id="tab-draw" onclick="toggleDrawer('draw')" title="Vẽ tự do">
+                <i class="fa-solid fa-pen-nib"></i>
+                <span>Vẽ</span>
+            </button>
+            <button class="sidebar-tool" id="tab-upload" onclick="toggleDrawer('upload')" title="Tải ảnh lên">
+                <i class="fa-solid fa-cloud-arrow-up"></i>
+                <span>Upload</span>
+            </button>
+            <button class="sidebar-tool" id="tab-photos" onclick="toggleDrawer('photos')" title="Thư viện ảnh">
+                <i class="fa-solid fa-image"></i>
+                <span>Ảnh</span>
+            </button>
+            <button class="sidebar-tool" id="tab-bg" onclick="toggleDrawer('bg')" title="Màu nền slide">
+                <i class="fa-solid fa-palette"></i>
+                <span>Nền</span>
+            </button>
+            <div class="sidebar-sep"></div>
+            <button class="sidebar-tool" onclick="toggleTheme()" title="Đổi theme">
+                <i class="fa-solid fa-circle-half-stroke"></i>
+                <span>Theme</span>
+            </button>
+        </nav>
+
+        <!-- Sliding drawer -->
+        <aside class="editor-drawer" id="left-drawer">
+            <div id="drawer-panel"></div>
+        </aside>
+
+        <!-- Canvas + sub-toolbar area -->
+        <div class="editor-canvas-area">
+
+            <!-- Properties sub-toolbar -->
+            <div id="sub-toolbar">
+                <div class="prop-group">
+                    <label class="prop-label">Màu</label>
+                    <input type="color" id="prop-color" value="#111827" title="Màu chính">
+                </div>
+                <div class="prop-sep"></div>
+
+                <div class="prop-group" id="prop-font-group">
+                    <select id="prop-font-family" title="Font chữ">
+                        <option value="Inter">Inter</option>
+                        <option value="Playfair Display">Playfair Display</option>
+                        <option value="Georgia">Georgia</option>
+                        <option value="Arial">Arial</option>
+                        <option value="Helvetica">Helvetica</option>
+                        <option value="Times New Roman">Times New Roman</option>
+                        <option value="Courier New">Courier New</option>
+                        <option value="Roboto">Roboto</option>
+                        <option value="Lato">Lato</option>
+                        <option value="Montserrat">Montserrat</option>
+                        <option value="Open Sans">Open Sans</option>
+                    </select>
+                    <input type="number" id="prop-font-size" value="36" min="8" max="200" title="Cỡ chữ">
+                    <div class="prop-sep"></div>
+                    <button class="btn-format" id="btn-bold" title="Đậm (Ctrl+B)"><i class="fa-solid fa-bold"></i></button>
+                    <button class="btn-format" id="btn-italic" title="Nghiêng (Ctrl+I)"><i class="fa-solid fa-italic"></i></button>
+                    <button class="btn-format" id="btn-underline" title="Gạch dưới"><i class="fa-solid fa-underline"></i></button>
+                    <button class="btn-format" id="btn-strikethrough" title="Gạch ngang"><i class="fa-solid fa-strikethrough"></i></button>
+                    <div class="prop-sep"></div>
+                    <label class="prop-label">Nền chữ</label>
+                    <input type="color" id="prop-bg-color" value="#ffffff" title="Màu nền chữ">
+                    <div class="prop-sep"></div>
+                    <label class="prop-label">Dòng</label>
+                    <input type="number" id="prop-line-height" value="1.2" min="0.8" max="4" step="0.1" style="width:50px;" title="Giãn dòng">
+                    <div class="prop-sep"></div>
+                    <label class="prop-label">Hiệu ứng</label>
+                    <select id="prop-text-effect" title="Hiệu ứng chữ">
+                        <option value="none">Thường</option>
+                        <option value="hollow">Rỗng</option>
+                        <option value="neon">Neon</option>
+                        <option value="outline">Viền</option>
+                        <option value="shadow">Bóng</option>
+                    </select>
+                </div>
+
+                <div class="prop-group" id="prop-shape-group">
+                    <label class="prop-label">Fill</label>
+                    <input type="color" id="prop-fill-color" value="#6366f1" title="Màu fill">
+                    <label class="prop-label">Viền</label>
+                    <input type="color" id="prop-stroke-color" value="#000000" title="Màu viền">
+                    <input type="number" id="prop-stroke-width" value="0" min="0" max="20" style="width:50px;" title="Độ dày viền">
+                </div>
+
+                <div class="prop-sep"></div>
+                <div class="prop-group">
+                    <label class="prop-label">Mờ</label>
+                    <input type="range" id="prop-opacity" min="0" max="1" step="0.05" value="1" title="Độ mờ">
+                </div>
+                <div class="prop-sep"></div>
+                <div class="prop-group">
+                    <label class="prop-label">Bóng</label>
+                    <input type="checkbox" id="prop-shadow" title="Bóng đổ">
+                </div>
+                <div class="prop-sep"></div>
+                <div class="prop-group">
+                    <button id="btn-group-objects" onclick="groupSelectedObjects()">Nhóm</button>
+                    <button id="btn-ungroup-objects" onclick="ungroupSelectedObjects()">Tách</button>
+                </div>
+            </div>
+
+            <!-- Canvas -->
+            <div id="canvas-container">
+                <div class="canvas-wrapper">
+                    <canvas id="canvas" width="1280" height="720"></canvas></canvas>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- ===== BOTTOM SLIDE THUMBNAILS ===== -->
+    <div class="editor-bottom-bar">
+        <div id="slides-list"></div>
+        <button class="btn-add-slide-horizontal" onclick="addSlide()" title="Thêm slide">
+            <i class="fa-solid fa-plus"></i>
+        </button>
+        <span id="page-info"></span>
+    </div>
+
+    <!-- ===== CONTEXT MENU ===== -->
+    <div id="context-menu" class="custom-context-menu">
+        <div class="context-menu-item" onclick="copySelectedObject()"><i class="fa-regular fa-copy"></i> Sao chép</div>
+        <div class="context-menu-item" onclick="cutSelectedObject()"><i class="fa-solid fa-scissors"></i> Cắt</div>
+        <div class="context-menu-item" onclick="pasteObject()"><i class="fa-regular fa-clipboard"></i> Dán</div>
+        <div class="context-divider"></div>
+        <div class="context-menu-item has-submenu"><i class="fa-solid fa-layer-group"></i> Sắp xếp lớp
+            <div class="context-submenu">
+                <div class="context-menu-item" onclick="bringToFront()"><i class="fa-solid fa-angles-up"></i> Lên đầu</div>
+                <div class="context-menu-item" onclick="sendToBack()"><i class="fa-solid fa-angles-down"></i> Xuống cuối</div>
+                <div class="context-menu-item" onclick="bringForward()"><i class="fa-solid fa-angle-up"></i> Lên 1 lớp</div>
+                <div class="context-menu-item" onclick="sendBackward()"><i class="fa-solid fa-angle-down"></i> Xuống 1 lớp</div>
+            </div>
+        </div>
+        <div class="context-menu-item has-submenu"><i class="fa-solid fa-align-center"></i> Căn chỉnh
+            <div class="context-submenu">
+                <div class="context-menu-item" onclick="alignObject('left')"><i class="fa-solid fa-align-left"></i> Căn trái</div>
+                <div class="context-menu-item" onclick="alignObject('center')"><i class="fa-solid fa-align-center"></i> Căn giữa ngang</div>
+                <div class="context-menu-item" onclick="alignObject('right')"><i class="fa-solid fa-align-right"></i> Căn phải</div>
+                <div class="context-menu-item" onclick="alignObject('top')"><i class="fa-solid fa-arrow-up"></i> Căn trên</div>
+                <div class="context-menu-item" onclick="alignObject('middle')"><i class="fa-solid fa-arrows-up-down"></i> Căn giữa dọc</div>
+                <div class="context-menu-item" onclick="alignObject('bottom')"><i class="fa-solid fa-arrow-down"></i> Căn dưới</div>
+            </div>
+        </div>
+        <div class="context-divider"></div>
+        <div class="context-menu-item" id="context-btn-lock" onclick="toggleLockSelected()"><i class="fa-solid fa-lock"></i> Khóa</div>
+        <div class="context-menu-item" onclick="duplicateSelectedObject()"><i class="fa-regular fa-clone"></i> Nhân đôi</div>
+        <div class="context-divider"></div>
+        <div class="context-menu-item" onclick="deleteSelectedObjects()" style="color:#f87171;"><i class="fa-solid fa-trash" style="color:#f87171;"></i> Xóa</div>
+    </div>
+
+    <!-- ===== PRESENTATION OVERLAY ===== -->
+    <div id="presentation-overlay">
+        <div class="pres-hint">Click chuột trái / Space → trang tiếp · Chuột phải / ← → trang trước · ESC → thoát</div>
+        <div class="pres-control" style="position:absolute;top:18px;left:22px;display:flex;align-items:center;gap:8px;opacity:0;transition:opacity .25s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.2'">
+            <label style="color:rgba(255,255,255,0.45);font-size:0.78rem;">Chuyển cảnh:</label>
+            <select id="pres-transition" class="pres-control" onclick="event.stopPropagation()">
+                <option value="none">Không</option>
+                <option value="fade">Fade</option>
+                <option value="slide">Slide</option>
+                <option value="zoom">Zoom</option>
+            </select>
+        </div>
+        <img id="presentation-slide-img" src="" alt="Slide" draggable="false" />
+        <div class="pres-controls pres-control" onclick="event.stopPropagation()">
+            <button class="pres-btn pres-control" onclick="event.stopPropagation(); prevPresentationSlide()"><i class="fa-solid fa-chevron-left"></i></button>
+            <span id="pres-page-info">1 / 1</span>
+            <button class="pres-btn pres-control" onclick="event.stopPropagation(); nextPresentationSlide()"><i class="fa-solid fa-chevron-right"></i></button>
+        </div>
+        <button class="pres-btn pres-control" onclick="event.stopPropagation(); exitPresentation()" style="position:absolute;top:18px;right:22px;opacity:0.6;transition:opacity .25s;" onmouseover="this.style.opacity='1'" onmouseout="this.style.opacity='0.6'"><i class="fa-solid fa-xmark"></i></button>
+    </div>
+
+    <!-- ===== TOAST ===== -->
+    <div id="toast"></div>
+
+    <!-- Global hidden file input — used by the Upload tab dropzone and by paste-from-disk shortcuts. -->
+    <input type="file" id="upload-img-input" accept="image/*" style="display:none;" onchange="uploadImageReal(event)" />
+
+    <!-- Floating element toolbar (rendered into here on selection) -->
+    <div id="floating-toolbar" class="floating-toolbar"></div>
+
+    <!-- ===== SCRIPTS ===== -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <script src="~/js/slide-editor.js"></script>
+    <script src="~/js/slidify-vip-components.js"></script>
+    <script>
+        // Patch toggleDrawer to also animate the outer .editor-drawer panel
+        (function () {
+            var _orig = window.toggleDrawer;
+            window.toggleDrawer = function (type) {
+                var drawer = document.getElementById('left-drawer');
+                var allTabs = document.querySelectorAll('.sidebar-tool[id^="tab-"]');
+                var tab = document.getElementById('tab-' + type);
+
+                allTabs.forEach(function (t) { t.classList.remove('active'); });
+
+                // Run original first to let it update activeDrawer state
+                if (typeof _orig === 'function') _orig.call(window, type);
+
+                if (activeDrawer === type) {
+                    if (drawer) drawer.classList.add('active');
+                    if (tab) tab.classList.add('active');
+                } else {
+                    if (drawer) drawer.classList.remove('active');
+                }
+
+                setTimeout(function () {
+                    if (typeof zoomToFit === 'function') zoomToFit();
+                }, 300);
+            };
+        })();
+
+        function toggleTheme() {
+            var body = document.body;
+            if (body.classList.contains('dark-mode')) {
+                body.className = 'light-mode';
+                localStorage.setItem('theme', 'light-mode');
+            } else {
+                body.className = 'dark-mode';
+                localStorage.setItem('theme', 'dark-mode');
+            }
+        }
+    </script>
 </body>
 </html>

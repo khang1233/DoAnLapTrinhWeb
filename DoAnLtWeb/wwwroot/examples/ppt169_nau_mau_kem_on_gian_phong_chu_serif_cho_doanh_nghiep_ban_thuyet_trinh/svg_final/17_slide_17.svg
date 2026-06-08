@@ -1,0 +1,84 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1920" height="1080" viewBox="0 0 1920 1080"><defs><clipPath id="clip1" clipPathUnits="userSpaceOnUse"><path d="M 984.44 629.5 L 1039.44 629.5 L 1039.44 684.5 L 984.44 684.5 L 984.44 629.5 Z"/></clipPath><clipPath id="clip2" clipPathUnits="userSpaceOnUse"><path d="M 984.44 863.5 L 1039.44 863.5 L 1039.44 918.5 L 984.44 918.5 L 984.44 863.5 Z"/></clipPath><clipPath id="clip3" clipPathUnits="userSpaceOnUse"><path d="M 982.91 395.5 L 1040.97 395.5 L 1040.97 450.5 L 982.91 450.5 L 982.91 395.5 Z"/></clipPath><clipPath id="clip4" clipPathUnits="userSpaceOnUse"><path d="M 984.05 160.38 L 1039.83 160.38 L 1039.83 217.62 L 984.05 217.62 L 984.05 160.38 Z"/></clipPath></defs><rect x="0" y="0" width="1920" height="1080" fill="#F6F2E5"/>
+<g id="shape-2" data-name="Group 2">
+<g id="shape-3" data-name="Group 3">
+<g id="shape-4" data-name="Freeform 4">
+<path d="M 1011.94 593.51 C 976.87 593.51 948.45 621.94 948.45 657 C 948.45 692.06 976.87 720.49 1011.94 720.49 C 1047 720.49 1075.43 692.06 1075.43 657 C 1075.43 621.94 1047 593.51 1011.94 593.51 Z" fill="#3B352E" fill-opacity="0.0471"/>
+</g>
+</g>
+<g id="shape-5" data-name="Freeform 5">
+<image clip-path="url(#clip1)" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAABmJLR0QA/wD/AP+gvaeTAAABtklEQVRYhe3WP0sbYRzA8e/vMe0iHURILSJIpy4mtfQ6NA63+gYcdOpQ+gI6mEDFlmBp3kE7FDq3+AIchAwmoHEw2dy72lA1k2d+HfTwEHv/z8uQ7/g8D899eA7uHsGTbduFi8FJHeQdMEW29UG/PZic3mg2m447WPAskItB/wfIWsYQtymQqjP4Mw+sAgog7mzFKtWAz1eDUtvrdL9kiJEla+G7Im8AVPjQPuhtARiAysuFZaB+vXh7r9NtZIgB0Cfzz94C2wCi1CtWecWVPlXkCHiUMcI/4XzoXC5OzM0+/gryIlfMVQ/FyIwBsfOW3CS2AYp5MzwVTd6C241BQY1BQY0cqBC85O5anZ74zVesksbZd+ROaAwKSvzetSKNdqdbTfOBS69KH1XZ/N+87wkJuv7aKqd2UQvCBILSRIXBhAKlgQqLCQ1KgoqCiQSKg4qKiQyKgoqDiQUKg4qLiQ3yQyXBJALdhUqKgYAvdehNhE8ASTGQ4PrhLQ2I28j9XEcSdJY3wk3gr1GV3bwhboruGEGrQD9vDHDiGHlvWoe94wmGZZBfoKf379BT0J+O4fn+fu/3P4UXmo0QZpISAAAAAElFTkSuQmCC" x="984.44" y="629.5" width="55" height="55" preserveAspectRatio="none"/>
+<path d="M 984.44 629.5 L 1039.44 629.5 L 1039.44 684.5 L 984.44 684.5 L 984.44 629.5 Z" fill="none"/>
+</g>
+</g>
+<g id="shape-6" data-name="Group 6">
+<g id="shape-7" data-name="Group 7">
+<g id="shape-8" data-name="Freeform 8">
+<path d="M 1011.94 827.51 C 976.87 827.51 948.45 855.94 948.45 891 C 948.45 926.06 976.87 954.49 1011.94 954.49 C 1047 954.49 1075.43 926.06 1075.43 891 C 1075.43 855.94 1047 827.51 1011.94 827.51 Z" fill="#3B352E" fill-opacity="0.0471"/>
+</g>
+</g>
+<g id="shape-9" data-name="Freeform 9">
+<image clip-path="url(#clip2)" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACQAAAAkCAYAAADhAJiYAAAABmJLR0QA/wD/AP+gvaeTAAAA90lEQVRYhe3VMU4CURCA4X9maSy0sDIBb2DEhFCRWOqBbLiFN/AAegILyi0IFGQ7eltChBZ3LJTEUDghq/teMV/3mpc/szt5AnA7vLr8QB+BO+CUdm3NZCLYuJxXS/mOWQDnLYccWhfU/aLXvXgCBoljAE4M7SlfnykT9b3S/j/zCznT1AmHIsjTaXpBOavk53k0vLYm92U3oQjyRJDH3bK/3iJPdhOKIE8EeRq/ZZ5jtzS7CUWQJ4I8EeSR/369j5XdhCLIo8A2dcSewLuaySR1yJ5hryrYGFinjgFWO5UHLefVsqDug7yAbdrvsA3Y8065mU6rt0/GzzzKaeGkUQAAAABJRU5ErkJggg==" x="984.44" y="863.5" width="55" height="55" preserveAspectRatio="none"/>
+<path d="M 984.44 863.5 L 1039.44 863.5 L 1039.44 918.5 L 984.44 918.5 L 984.44 863.5 Z" fill="none"/>
+</g>
+</g>
+<g id="shape-10" data-name="Group 10">
+<g id="shape-11" data-name="Group 11">
+<g id="shape-12" data-name="Freeform 12">
+<path d="M 1011.94 359.51 C 976.87 359.51 948.45 387.94 948.45 423 C 948.45 458.06 976.87 486.49 1011.94 486.49 C 1047 486.49 1075.43 458.06 1075.43 423 C 1075.43 387.94 1047 359.51 1011.94 359.51 Z" fill="#3B352E" fill-opacity="0.0471"/>
+</g>
+</g>
+<g id="shape-13" data-name="Freeform 13">
+<image clip-path="url(#clip3)" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACYAAAAkCAYAAADl9UilAAAABmJLR0QA/wD/AP+gvaeTAAAB1ElEQVRYhe2WvW4TQRCAv9k7xzRYCmUk6jSYpIktgUWDBE9AmYeIkCANBakSEOIZEFTwBERKg3SKoriAEylcmxYikuoS304KvOJ0Bse+H5+l5KtmRzenTzuzqxWAB2t3bseYt8Aj4Caz5VRV9gTdDLphzyVlKPUVuDVjoTTHHnbly+H3PoAZ7lTVUgCLMd4btzD8ad+cYB+7yDD7mRqDNFxkqtQYh5+zvq/KhtSj3SDonRZiNCSPWN/68er+/tGvwmwSZG6lKhtlSUEOMalHu0WKpMncyvRM3V+7q/l1/jK3p/JabFqurFiE8szY2pKxtSUVfQ6cTVKY9+Yfj/Ii6IavE5lXnVZTVGX7stJSd6wm8ft0zlf7bpLaUsVie0PSucj3vUlqyxXzztbTOW/ASO5flDpjorJ1r9VEzv0PAFIbrKvqy8rFgLqo7ODHOwCqI539L1f2HsvMtdi0SOZ31ELUKPqdnyTzjpnzhYdFioz8P2uhVdnudJqLRcokyTNjyxrJt06r+aTdbjcu/3w6ss9YSQSHocAcn0oDlHaypkXgt4uNquxVKZNE0c8uNoJuAscV+jh+Dow8dQsTdMOeh10B+QR6MnsfPQH9ODCsHhyEP1z2Aj1UirAIdGg/AAAAAElFTkSuQmCC" x="982.91" y="395.5" width="58.07" height="55" preserveAspectRatio="none"/>
+<path d="M 982.91 395.5 L 1040.97 395.5 L 1040.97 450.5 L 982.91 450.5 L 982.91 395.5 Z" fill="none"/>
+</g>
+</g>
+<g id="shape-14" data-name="Group 14">
+<g id="shape-15" data-name="Group 15">
+<g id="shape-16" data-name="Freeform 16">
+<path d="M 1011.94 125.51 C 976.87 125.51 948.45 153.94 948.45 189 C 948.45 224.06 976.87 252.49 1011.94 252.49 C 1047 252.49 1075.43 224.06 1075.43 189 C 1075.43 153.94 1047 125.51 1011.94 125.51 Z" fill="#3B352E" fill-opacity="0.0471"/>
+</g>
+</g>
+<g id="shape-17" data-name="Freeform 17">
+<image clip-path="url(#clip4)" href="data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAACcAAAAoCAYAAAB99ePgAAAABmJLR0QA/wD/AP+gvaeTAAAEvUlEQVRYhc2YX2xTZRjGf+932gkbW+I/GCwbTM0MImVJN5jdIIskJhpMBKzhAuKNQWO4IAETLxAiCVGM4cYYxXg1JiaiISbeOmu2rrKyVDq2SATDlmzIH2+6jT9re14vto52f9rTUyI+d+f7nvd5np6e7z3fdwSXeKHZt9XAWaAyD23chu2RaPxnNx7GXTQwsI38wQAqBV4twcMdFJ5xZKDqiLdgrdtCcRhORf7zcAaod8itDwaDlluTotHS0lgHPOKQXnZ9+FKdGx+ZO9DW7PtWoUWRTlLm695YbDhnvqmxXcU+CmwuwqfboB90Rwd+zdHyr6tTY94C2QOcC0fjuxYNF2jy7RTh+6whG+gS0a886bJfpkzqmKB7iwg1B3JGvbrPJNWnmL2g2wFPZlaVYO/5+Kz/bLj29jVLkpNVg8BTiyjblLCAHOpc9VYk1oZCV++STZq6XXUgT7AcbonIp7MmNVl5MHMhAO3N66qTmEsgVQ8oQCm4LXZ6bU//4IgBmBLrk/9JMIByNeYYgLT5fZvUEGGBlVs0hAmUZSXrgGIIGLU4jPtgtgqnMPKityKxNNwXr/RWJJaqsBW0k+mH3w0EmyMeYBB4xYXAdaNmZ3f093D24MxK6wK62vwbTqrRH4DlxYorDApAW/P6vYp8BpQ5qhQmjNit3ecuxgtR2zau26BqhYEKh7lSInqop2/guAUwMnajf/XK6hCiL4MU2gaB6vs90Ys/OnEaGb15va5mxRTwkgP6TRVeC/cNdEJWz+npv9BDytMEhBctnca4d9n4F06CZWB7Kj5HmChAC5OyGnv74l2ZgZyGGI7FxkBOFBAJZTq4U0QikTuqhPKz5MS0/33M79aij+XXkOG884uWydX8hPm+88Kpajq/je0tLlZGN/9iU9XU3LH5d04lkdfFloZig80IP5t/WsbnDuU0381Nja222N8Bq/LIJE3KqumOxW46jRUI+JZLklGytkcLYMyoeaP7/P2+OXvnWpvW77PF7ioQDMCrnvQhp8EAJCmHCwQDWGWL3dXatH7fbJ3f7y9fYqZOguwuws8Wkdd7+i6cLUSc2cCeoahXpHbetcvetp6uffI0yK7CBTkQYMfqmhWJTa1bzg8NDelcQjAYtB4tt/aLyEmgyAOO+DyiDRLY6OsQZU+R4bKgQyJ0KNKbNvYtyzZPCBrAljdVWOtaVTglW5qfr01j/gDK3Qd84LiTtsxz1vDYjURtTfVSgS0PO9F96MeRvvhZA3DP9nwEjDzkRBmMVtyT4zDzoF67di1ZW1N9S2DHw80FoO+GYgP9kNXneqMXvgEii1SkgSsPyP3KjN5CiISjA6czF9mvL7VV9pO7tR4FPWph14ej8QZBDgKTLkNNqsiBcDTeYGHXgx6d1p+FPeM/25bmNcbWJt97CJuMaKdV/vhPoVAo54UcCPiWyxQfIrzjOJbypZZxpLc3fiN7uL293ZO+/c82W2U38Fs4Gv80e97VwWaz37/SNsmxwsxpeEmvDEUH/y7Wx/VxsLXZl6Dwl00QJsJ98Sqy/i6nKOETg/zliKZcxkUwKCmcXnbCEsERbyGUEu5PRyx19iMWQqE91qJIW9phpWnJe5RUEmmPdrj1+Bc/yqMwlewiqwAAAABJRU5ErkJggg==" x="984.05" y="160.38" width="55.78" height="57.24" preserveAspectRatio="none"/>
+<path d="M 984.05 160.38 L 1039.83 160.38 L 1039.83 217.62 L 984.05 217.62 L 984.05 160.38 Z" fill="none"/>
+</g>
+</g>
+<g id="shape-18" data-name="AutoShape 18">
+<rect x="0" y="0" width="796.88" height="1080" fill="#3B352E"/>
+</g>
+<g id="shape-19" data-name="TextBox 19">
+<rect x="124.14" y="456.56" width="548.6" height="156.89" fill="none"/>
+<text x="124.14" y="504.72" text-anchor="start" xml:space="preserve" font-family="&quot;Vollkorn Bold&quot;, sans-serif" font-size="56.67" fill="#F6F2E5"><tspan fill="#F6F2E5" font-size="56.67">Hãy viết chủ đề </tspan><tspan x="124.14" dy="68" fill="#F6F2E5" font-size="56.67">hoặc ý tưởng của </tspan><tspan x="124.14" dy="68" fill="#F6F2E5" font-size="56.67">bạn</tspan></text>
+</g>
+<g id="shape-20" data-name="TextBox 20">
+<rect x="1150.38" y="129.51" width="661.62" height="50.09" fill="none"/>
+<text x="1150.38" y="161.24" text-anchor="start" xml:space="preserve" font-family="&quot;Vollkorn Bold&quot;, sans-serif" font-size="37.33" fill="#3B352E"><tspan fill="#3B352E" font-size="37.33">Hãy thêm một điểm chính</tspan></text>
+</g>
+<g id="shape-21" data-name="TextBox 21">
+<rect x="1150.38" y="204.2" width="661.62" height="34.67" fill="none"/>
+<text x="1150.38" y="225.45" text-anchor="start" xml:space="preserve" font-family="&quot;Public Sans&quot;, sans-serif" font-size="25" fill="#3B352E"><tspan fill="#3B352E" font-size="25">Hãy trình bày ngắn gọn về những gì bạn muốn thảo luận.</tspan></text>
+</g>
+<g id="shape-22" data-name="TextBox 22">
+<rect x="1150.38" y="363.51" width="661.62" height="50.09" fill="none"/>
+<text x="1150.38" y="395.24" text-anchor="start" xml:space="preserve" font-family="&quot;Vollkorn Bold&quot;, sans-serif" font-size="37.33" fill="#3B352E"><tspan fill="#3B352E" font-size="37.33">Hãy thêm một điểm chính</tspan></text>
+</g>
+<g id="shape-23" data-name="TextBox 23">
+<rect x="1150.38" y="438.2" width="661.62" height="34.67" fill="none"/>
+<text x="1150.38" y="459.45" text-anchor="start" xml:space="preserve" font-family="&quot;Public Sans&quot;, sans-serif" font-size="25" fill="#3B352E"><tspan fill="#3B352E" font-size="25">Hãy trình bày ngắn gọn về những gì bạn muốn thảo luận.</tspan></text>
+</g>
+<g id="shape-24" data-name="TextBox 24">
+<rect x="1150.38" y="597.51" width="661.62" height="50.09" fill="none"/>
+<text x="1150.38" y="629.24" text-anchor="start" xml:space="preserve" font-family="&quot;Vollkorn Bold&quot;, sans-serif" font-size="37.33" fill="#3B352E"><tspan fill="#3B352E" font-size="37.33">Hãy thêm một điểm chính</tspan></text>
+</g>
+<g id="shape-25" data-name="TextBox 25">
+<rect x="1150.38" y="672.2" width="661.62" height="34.67" fill="none"/>
+<text x="1150.38" y="693.45" text-anchor="start" xml:space="preserve" font-family="&quot;Public Sans&quot;, sans-serif" font-size="25" fill="#3B352E"><tspan fill="#3B352E" font-size="25">Hãy trình bày ngắn gọn về những gì bạn muốn thảo luận.</tspan></text>
+</g>
+<g id="shape-26" data-name="TextBox 26">
+<rect x="1150.38" y="831.51" width="661.62" height="50.09" fill="none"/>
+<text x="1150.38" y="863.24" text-anchor="start" xml:space="preserve" font-family="&quot;Vollkorn Bold&quot;, sans-serif" font-size="37.33" fill="#3B352E"><tspan fill="#3B352E" font-size="37.33">Hãy thêm một điểm chính</tspan></text>
+</g>
+<g id="shape-27" data-name="TextBox 27">
+<rect x="1150.38" y="906.2" width="661.62" height="34.67" fill="none"/>
+<text x="1150.38" y="927.45" text-anchor="start" xml:space="preserve" font-family="&quot;Public Sans&quot;, sans-serif" font-size="25" fill="#3B352E"><tspan fill="#3B352E" font-size="25">Hãy trình bày ngắn gọn về những gì bạn muốn thảo luận.</tspan></text>
+</g></svg>

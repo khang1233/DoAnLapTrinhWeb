@@ -516,6 +516,15 @@
                     <span>hoặc</span>
                 </div>
 
+                <form asp-action="ExternalLogin" method="post">
+                    @Html.AntiForgeryToken()
+                    <input type="hidden" name="provider" value="Google" />
+                    <button type="submit" class="btn-auth" style="background:#fff; color:#1f2937;">
+                        <i class="fab fa-google"></i>
+                        <span>Đăng nhập bằng Google</span>
+                    </button>
+                </form>
+
                 <div class="auth-links">
                     Chưa có tài khoản? <a href="/Account/Register">Tạo tài khoản mới</a>
                 </div>

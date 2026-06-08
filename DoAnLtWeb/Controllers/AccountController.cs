@@ -1,7 +1,5 @@
-using Microsoft.AspNetCore.Authentication;
-using Microsoft.AspNetCore.Authentication.Cookies;
+using Microsoft.AspNetCore.Identity;
 using Microsoft.AspNetCore.Mvc;
-using DoAnLtWeb.Data;
 using DoAnLtWeb.Models;
 using System.Security.Claims;
 
@@ -9,11 +7,13 @@ namespace DoAnLtWeb.Controllers
 {
     public class AccountController : Controller
     {
-        private readonly AppDbContext _context;
+        private readonly UserManager<User> _userManager;
+        private readonly SignInManager<User> _signInManager;
 
-        public AccountController(AppDbContext context)
+        public AccountController(UserManager<User> userManager, SignInManager<User> signInManager)
         {
-            _context = context;
+            _userManager = userManager;
+            _signInManager = signInManager;
         }
 
         [HttpGet]
@@ -32,24 +32,31 @@ namespace DoAnLtWeb.Controllers
         {
             if (ModelState.IsValid)
             {
-                var user = _context.Users.FirstOrDefault(u => u.Email == model.Email);
-                if (user != null && BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
+                var user = await _userManager.FindByEmailAsync(model.Email);
+                if (user != null)
                 {
-                    var claims = new List<Claim>
+                    // Check if password hash is present and starts with $ (standard BCrypt hash formats start with $2a$, $2b$, $2y$, etc.)
+                    bool isBcrypt = !string.IsNullOrEmpty(user.PasswordHash) && user.PasswordHash.StartsWith("$");
+
+                    if (isBcrypt)
                     {
-                        new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                        new Claim(ClaimTypes.Name, user.Username),
-                        new Claim(ClaimTypes.Email, user.Email)
-                    };
-
-                    var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-                    await HttpContext.SignInAsync(
-                        CookieAuthenticationDefaults.AuthenticationScheme,
-                        new ClaimsPrincipal(claimsIdentity),
-                        new AuthenticationProperties { IsPersistent = true });
-
-                    return RedirectToAction("Index", "Home");
+                        if (BCrypt.Net.BCrypt.Verify(model.Password, user.PasswordHash))
+                        {
+                            // Upgrade to ASP.NET Core Identity PBKDF2 hash format
+                            user.PasswordHash = _userManager.PasswordHasher.HashPassword(user, model.Password);
+                            await _userManager.UpdateAsync(user);
+                            await _signInManager.SignInAsync(user, isPersistent: true);
+                            return RedirectToAction("Index", "Home");
+                        }
+                    }
+                    else
+                    {
+                        var result = await _signInManager.PasswordSignInAsync(user, model.Password, isPersistent: true, lockoutOnFailure: false);
+                        if (result.Succeeded)
+                        {
+                            return RedirectToAction("Index", "Home");
+                        }
+                    }
                 }
                 
                 ModelState.AddModelError(string.Empty, "Email hoặc Mật khẩu không chính xác.");
@@ -74,7 +81,8 @@ namespace DoAnLtWeb.Controllers
         {
             if (ModelState.IsValid)
             {
-                if (_context.Users.Any(u => u.Email == model.Email))
+                var existingUser = await _userManager.FindByEmailAsync(model.Email);
+                if (existingUser != null)
                 {
                     ModelState.AddModelError("Email", "Email này đã được sử dụng.");
                     return View(model);
@@ -83,29 +91,21 @@ namespace DoAnLtWeb.Controllers
                 var user = new User
                 {
                     Username = model.Username,
-                    Email = model.Email,
-                    PasswordHash = BCrypt.Net.BCrypt.HashPassword(model.Password)
+                    Email = model.Email
                 };
 
-                _context.Users.Add(user);
-                await _context.SaveChangesAsync();
+                var result = await _userManager.CreateAsync(user, model.Password);
+                if (result.Succeeded)
+                {
+                    await _signInManager.SignInAsync(user, isPersistent: true);
+                    return RedirectToAction("Index", "Home");
+                }
 
                 // Đăng nhập tự động sau khi đăng ký
-                var claims = new List<Claim>
+                foreach (var error in result.Errors)
                 {
-                    new Claim(ClaimTypes.NameIdentifier, user.Id.ToString()),
-                    new Claim(ClaimTypes.Name, user.Username),
-                    new Claim(ClaimTypes.Email, user.Email)
-                };
-
-                var claimsIdentity = new ClaimsIdentity(claims, CookieAuthenticationDefaults.AuthenticationScheme);
-
-                await HttpContext.SignInAsync(
-                    CookieAuthenticationDefaults.AuthenticationScheme,
-                    new ClaimsPrincipal(claimsIdentity),
-                    new AuthenticationProperties { IsPersistent = true });
-
-                return RedirectToAction("Index", "Home");
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
             }
 
             return View(model);
@@ -113,9 +113,83 @@ namespace DoAnLtWeb.Controllers
 
         [HttpPost]
         [ValidateAntiForgeryToken]
+        public IActionResult ExternalLogin(string provider, string? returnUrl = null)
+        {
+            var redirectUrl = Url.Action(nameof(ExternalLoginCallback), "Account", new { returnUrl });
+            var properties = _signInManager.ConfigureExternalAuthenticationProperties(provider, redirectUrl);
+            return Challenge(properties, provider);
+        }
+
+        [HttpGet]
+        public async Task<IActionResult> ExternalLoginCallback(string? returnUrl = null, string? remoteError = null)
+        {
+            returnUrl ??= Url.Content("~/");
+
+            if (remoteError != null)
+            {
+                ModelState.AddModelError(string.Empty, $"Lỗi đăng nhập Google: {remoteError}");
+                return View("Login", new LoginViewModel());
+            }
+
+            var info = await _signInManager.GetExternalLoginInfoAsync();
+            if (info == null)
+            {
+                ModelState.AddModelError(string.Empty, "Không lấy được thông tin đăng nhập Google.");
+                return View("Login", new LoginViewModel());
+            }
+
+            var signInResult = await _signInManager.ExternalLoginSignInAsync(info.LoginProvider, info.ProviderKey, isPersistent: true);
+            if (signInResult.Succeeded)
+            {
+                return LocalRedirect(returnUrl);
+            }
+
+            var email = info.Principal.FindFirstValue(ClaimTypes.Email);
+            if (string.IsNullOrWhiteSpace(email))
+            {
+                ModelState.AddModelError(string.Empty, "Tài khoản Google chưa cung cấp email.");
+                return View("Login", new LoginViewModel());
+            }
+
+            var user = await _userManager.FindByEmailAsync(email);
+            if (user == null)
+            {
+                user = new User
+                {
+                    Email = email,
+                    Username = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email
+                };
+
+                var createResult = await _userManager.CreateAsync(user);
+                if (!createResult.Succeeded)
+                {
+                    foreach (var error in createResult.Errors)
+                    {
+                        ModelState.AddModelError(string.Empty, error.Description);
+                    }
+                    return View("Login", new LoginViewModel());
+                }
+            }
+
+            var addLoginResult = await _userManager.AddLoginAsync(user, info);
+            if (!addLoginResult.Succeeded && !addLoginResult.Errors.Any(e => e.Code == "LoginAlreadyAssociated"))
+            {
+                foreach (var error in addLoginResult.Errors)
+                {
+                    ModelState.AddModelError(string.Empty, error.Description);
+                }
+                return View("Login", new LoginViewModel());
+            }
+
+            await _signInManager.SignInAsync(user, isPersistent: true);
+            return LocalRedirect(returnUrl);
+        }
+
+        [HttpPost]
+        [ValidateAntiForgeryToken]
         public async Task<IActionResult> Logout()
         {
-            await HttpContext.SignOutAsync(CookieAuthenticationDefaults.AuthenticationScheme);
+            await _signInManager.SignOutAsync();
             return RedirectToAction("Login", "Account");
         }
     }

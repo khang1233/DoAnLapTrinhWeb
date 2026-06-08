@@ -1,0 +1,121 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Được chia sẻ · Slidify";
+    Layout = null;
+    var sharedToMe = (System.Collections.IEnumerable)Model.SharedToMe;
+    var sharedByMe = (System.Collections.IEnumerable)Model.SharedByMe;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/styles.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        body { margin:0; background:#0B0F1A; color:#E8ECF5; font-family:'Inter',sans-serif; }
+        .sh-shell { max-width:1180px; margin:0 auto; padding:32px 40px 60px; }
+        .sh-topbar { display:flex; align-items:center; gap:12px; margin-bottom:18px; font-size:0.85rem; }
+        .sh-topbar a { color:#8893AD; text-decoration:none; }
+        .sh-topbar a:hover { color:#fff; }
+        h1 { font-family:'Plus Jakarta Sans',sans-serif; font-size:1.7rem; font-weight:800; margin:6px 0 6px; }
+        .sub { color:#8893AD; font-size:0.92rem; margin:0 0 30px; }
+        .sh-section { margin-bottom:36px; }
+        .sh-section-title { font-family:'Plus Jakarta Sans',sans-serif; font-size:1.12rem; font-weight:800; margin:0 0 14px; display:flex; align-items:center; gap:8px; }
+        .sh-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+        .sh-card { display:block; background:#131A2C; border:1px solid rgba(255,255,255,0.07); border-radius:14px; overflow:hidden; text-decoration:none; color:inherit; transition:transform .18s, border-color .18s, box-shadow .18s; }
+        .sh-card:hover { transform:translateY(-3px); border-color:rgba(255,255,255,0.12); box-shadow:0 18px 32px -20px rgba(124,92,255,0.45); }
+        .sh-thumb { aspect-ratio:16/9; background:#1e293b; position:relative; overflow:hidden; }
+        .sh-body { padding:12px 14px 14px; }
+        .sh-title { font-size:0.92rem; font-weight:700; margin:0 0 4px; }
+        .sh-meta { font-size:0.74rem; color:#8893AD; }
+        .sh-role { display:inline-block; padding:3px 8px; border-radius:99px; background:rgba(124,92,255,0.16); color:#c7baff; font-size:0.66rem; font-weight:700; margin-left:6px; }
+        .sh-role-owner { background:rgba(244,180,0,0.18); color:#fcd34d; }
+        .sh-role-viewer { background:rgba(148,163,184,0.18); color:#cbd5e1; }
+        .sh-empty { padding:36px 24px; border:1px dashed rgba(255,255,255,0.12); border-radius:14px; text-align:center; color:#8893AD; }
+        .sh-empty i { font-size:1.6rem; margin-bottom:10px; display:block; }
+    </style>
+</head>
+<body>
+    <div class="sh-shell">
+        <div class="sh-topbar">
+            <a href="/Home/Index"><i class="fa-solid fa-arrow-left"></i> Trang chủ</a>
+            <span style="color:#5C6679;">/</span>
+            <span style="color:#fff;">Được chia sẻ</span>
+        </div>
+        <h1><i class="fa-solid fa-user-group" style="color:#7C5CFF;"></i> Slide cộng tác nhóm</h1>
+        <p class="sub">Các bộ slide bạn đang làm chung — tự đồng bộ vài giây mỗi lần có thay đổi.</p>
+
+        <section class="sh-section">
+            <h2 class="sh-section-title"><i class="fa-solid fa-inbox" style="color:#22D3EE;"></i> Được mời tham gia</h2>
+            @{
+                int countToMe = 0;
+                foreach (var x in sharedToMe) countToMe++;
+            }
+            @if (countToMe == 0)
+            {
+                <div class="sh-empty">
+                    <i class="fa-regular fa-envelope-open"></i>
+                    Chưa có slide nào được chia sẻ cho bạn. Khi ai đó gửi liên kết, slide sẽ xuất hiện ở đây.
+                </div>
+            }
+            else
+            {
+                <div class="sh-grid">
+                    @foreach (var x in sharedToMe)
+                    {
+                        var p = (DoAnLtWeb.Models.Presentation)((dynamic)x).p;
+                        string role = ((dynamic)x).role;
+                        var owner = ((dynamic)x).owner as DoAnLtWeb.Models.User;
+                        var ownerEmail = owner?.Email ?? "?";
+                        var firstSlide = p.Slides?.FirstOrDefault();
+                        var bg = firstSlide?.BackgroundColor ?? "#1e293b";
+                        <a class="sh-card" href="/Slide/Edit/@p.Id">
+                            <div class="sh-thumb" style="background:@bg; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.4); font-size:0.78rem;">@p.Slides?.Count slide</div>
+                            <div class="sh-body">
+                                <div class="sh-title">@p.Title <span class="sh-role @(role == "Viewer" ? "sh-role-viewer" : "")">@(role == "Editor" ? "Có thể sửa" : "Chỉ xem")</span></div>
+                                <div class="sh-meta">Chia sẻ bởi @ownerEmail</div>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+
+        <section class="sh-section">
+            <h2 class="sh-section-title"><i class="fa-solid fa-share-nodes" style="color:#F4B400;"></i> Slide bạn đã chia sẻ</h2>
+            @{
+                int countByMe = 0;
+                foreach (var x in sharedByMe) countByMe++;
+            }
+            @if (countByMe == 0)
+            {
+                <div class="sh-empty">
+                    <i class="fa-regular fa-share-from-square"></i>
+                    Bạn chưa chia sẻ slide nào. Mở 1 dự án, bấm nút <strong style="color:#fff;">Chia sẻ</strong> ở thanh trên để tạo nhóm.
+                </div>
+            }
+            else
+            {
+                <div class="sh-grid">
+                    @foreach (var x in sharedByMe)
+                    {
+                        var p = (DoAnLtWeb.Models.Presentation)((dynamic)x).p;
+                        var firstSlide = p.Slides?.FirstOrDefault();
+                        var bg = firstSlide?.BackgroundColor ?? "#1e293b";
+                        <a class="sh-card" href="/Slide/Edit/@p.Id">
+                            <div class="sh-thumb" style="background:@bg; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.4); font-size:0.78rem;">@p.Slides?.Count slide</div>
+                            <div class="sh-body">
+                                <div class="sh-title">@p.Title <span class="sh-role sh-role-owner">Chủ nhóm</span></div>
+                                <div class="sh-meta">Cập nhật @p.UpdatedAt.ToLocalTime().ToString("dd/MM HH:mm")</div>
+                            </div>
+                        </a>
+                    }
+                </div>
+            }
+        </section>
+    </div>
+</body>
+</html>

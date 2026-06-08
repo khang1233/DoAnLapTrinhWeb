@@ -1,15 +1,24 @@
+using Microsoft.AspNetCore.Identity;
+using System.ComponentModel.DataAnnotations.Schema;
 using System.Text.Json.Serialization;
 
 namespace DoAnLtWeb.Models
 {
-    public class User
+    public class User : IdentityUser<int>
     {
-        public int Id { get; set; }
-        public string Username { get; set; } = string.Empty;
-        public string Email { get; set; } = string.Empty;
         [JsonIgnore]
-        public string PasswordHash { get; set; } = string.Empty;
-        
+        [NotMapped]
+        public string Username
+        {
+            get => UserName ?? string.Empty;
+            set => UserName = value;
+        }
+
+        public bool IsVip { get; set; } = false;
+        public DateTime? VipExpiresAt { get; set; }
+        public string VipPlanName { get; set; } = "Free";
+
         public List<Project> Projects { get; set; } = new();
+        public ICollection<PaymentTransaction> PaymentTransactions { get; set; } = new List<PaymentTransaction>();
     }
 }

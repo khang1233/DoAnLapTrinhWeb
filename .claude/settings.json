@@ -1,0 +1,20 @@
+{
+  "permissions": {
+    "allow": [
+      "Read(//Users/dev/workspace-6edf17bd/Controllers/**)",
+      "Read(//c/Users/dev/workspace-6edf17bd/Controllers/**)",
+      "Bash(netstat -ano)",
+      "Bash(tasklist /FI \"PID eq 51604\")",
+      "Bash(cmd //c \"tasklist /FI \\\\\"PID eq 51604\\\\\"\")",
+      "Bash(taskkill //PID 51604 //F)",
+      "Bash(dotnet ef *)",
+      "Bash(python -c ' *)",
+      "Bash(python)",
+      "Bash(2>&1)",
+      "Bash(node --check \"c:\\\\Users\\\\khang\\\\source\\\\repos\\\\DoAnLtWeb\\\\DoAnLtWeb\\\\wwwroot\\\\js\\\\slide-editor.js\")",
+      "WebFetch(domain:docs.sepay.vn)",
+      "WebSearch",
+      "Bash(node --check \"c:\\\\Users\\\\khang\\\\source\\\\repos\\\\DoAnLtWeb\\\\DoAnLtWeb\\\\wwwroot\\\\js\\\\slidify-vip-components.js\")"
+    ]
+  }
+}

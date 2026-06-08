@@ -1,0 +1,439 @@
+@model List<DoAnLtWeb.Models.User>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Admin — Dashboard Thống kê";
+    var recentTxns = ViewBag.RecentTxns as List<DoAnLtWeb.Models.PaymentTransaction> ?? new List<DoAnLtWeb.Models.PaymentTransaction>();
+    var categories = ViewBag.Categories as IEnumerable<dynamic> ?? Enumerable.Empty<dynamic>();
+}
+
+<style>
+    .dashboard-panel {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 15px;
+    }
+    .page-header {
+        margin-bottom: 30px;
+    }
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #f97316, #eab308);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .page-subtitle {
+        color: var(--text-muted);
+        font-size: 0.95rem;
+    }
+    .nav-links {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+    .nav-link {
+        padding: 10px 18px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted) !important;
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        transition: 0.2s;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff !important;
+    }
+    .nav-link.active {
+        background: linear-gradient(90deg, #7c3aed, #2563eb);
+        color: #fff !important;
+        border-color: transparent;
+    }
+    /* Stats Cards Grid */
+    .stats-grid {
+        display: grid;
+        grid-template-columns: repeat(auto-fill, minmax(260px, 1fr));
+        gap: 20px;
+        margin-bottom: 40px;
+    }
+    .stat-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 24px;
+        display: flex;
+        align-items: center;
+        gap: 20px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.3);
+        backdrop-filter: blur(10px);
+        transition: 0.25s;
+    }
+    .stat-card:hover {
+        transform: translateY(-3px);
+        border-color: var(--primary);
+    }
+    .stat-icon {
+        width: 54px;
+        height: 54px;
+        border-radius: 16px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        font-size: 1.5rem;
+        color: #fff;
+    }
+    .icon-users { background: linear-gradient(135deg, #3b82f6, #1d4ed8); }
+    .icon-vips { background: linear-gradient(135deg, #8b5cf6, #6d28d9); }
+    .icon-templates { background: linear-gradient(135deg, #ec4899, #be185d); }
+    .icon-revenue { background: linear-gradient(135deg, #10b981, #047857); }
+
+    .stat-content h3 {
+        margin: 0;
+        font-size: 1.8rem;
+        font-weight: 800;
+        color: #fff;
+        line-height: 1.2;
+    }
+    .stat-content p {
+        margin: 0;
+        font-size: 0.8rem;
+        color: var(--text-muted);
+        text-transform: uppercase;
+        letter-spacing: 0.05em;
+        font-weight: 700;
+    }
+
+    /* Content Grid Layout */
+    .dashboard-grid {
+        display: grid;
+        grid-template-columns: 2fr 1fr;
+        gap: 24px;
+    }
+    @@media (max-width: 992px) {
+        .dashboard-grid {
+            grid-template-columns: 1fr;
+        }
+    }
+    .dashboard-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+    .card-title {
+        font-size: 1.15rem;
+        font-weight: 700;
+        margin-bottom: 20px;
+        display: flex;
+        align-items: center;
+        gap: 10px;
+        color: #fff;
+    }
+    .card-title i {
+        color: var(--primary);
+    }
+
+    /* Table styles */
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .custom-table th {
+        padding: 12px;
+        text-align: left;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 700;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .custom-table td {
+        padding: 14px 12px;
+        font-size: 0.88rem;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+        vertical-align: middle;
+    }
+    .custom-table tr:last-child td {
+        border-bottom: none;
+    }
+    .custom-table tr:hover td {
+        background: rgba(255,255,255,0.02);
+    }
+
+    /* Badges */
+    .badge-status {
+        padding: 4px 8px;
+        border-radius: 999px;
+        font-size: 0.72rem;
+        font-weight: 700;
+        display: inline-block;
+    }
+    .status-Pending { background: rgba(234, 179, 8, 0.15); color: #eab308; }
+    .status-Submitted { background: rgba(59, 130, 246, 0.15); color: #3b82f6; }
+    .status-Confirmed { background: rgba(16, 185, 129, 0.15); color: #10b981; }
+    .status-Rejected { background: rgba(239, 68, 68, 0.15); color: #ef4444; }
+
+    /* Category list */
+    .category-item {
+        display: flex;
+        justify-content: space-between;
+        align-items: center;
+        padding: 12px 0;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .category-item:last-child {
+        border-bottom: none;
+    }
+    .category-name {
+        font-weight: 600;
+        font-size: 0.9rem;
+    }
+    .category-count {
+        background: rgba(99, 102, 241, 0.15);
+        color: #818cf8;
+        padding: 2px 10px;
+        border-radius: 999px;
+        font-size: 0.8rem;
+        font-weight: 700;
+    }
+
+    /* Button utilities */
+    .btn-action {
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.78rem;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-approve { background: #10b981; color: #fff; }
+    .btn-approve:hover { background: #059669; }
+    .btn-deny { background: #ef4444; color: #fff; }
+    .btn-deny:hover { background: #dc2626; }
+</style>
+
+<div class="dashboard-panel">
+    <div class="nav-links">
+        <a href="/Admin/Dashboard" class="nav-link active">Dashboard</a>
+        <a href="/Admin/Payments" class="nav-link">Giao dịch</a>
+        <a href="/Admin/Templates" class="nav-link">Template</a>
+        <a href="/Admin/ImportPptx" class="nav-link">Import PPTX</a>
+        <a href="/Home/Index" class="nav-link">Giao diện User</a>
+    </div>
+
+    <div class="page-header">
+        <h1 class="page-title">Dashboard Thống Kê Quản Trị</h1>
+        <p class="page-subtitle">Hệ thống giám sát quản lý người dùng, slide mẫu và giao dịch nâng cấp VIP.</p>
+    </div>
+
+    <!-- Quick stats grid -->
+    <div class="stats-grid">
+        <div class="stat-card">
+            <div class="stat-icon icon-users">
+                <i class="fa-solid fa-users"></i>
+            </div>
+            <div class="stat-content">
+                <p>Tổng người dùng</p>
+                <h3>@ViewBag.TotalUsers</h3>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-vips">
+                <i class="fa-solid fa-crown"></i>
+            </div>
+            <div class="stat-content">
+                <p>Thành viên VIP</p>
+                <h3>@ViewBag.TotalVipUsers</h3>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-templates">
+                <i class="fa-solid fa-file-powerpoint"></i>
+            </div>
+            <div class="stat-content">
+                <p>Slide Mẫu có sẵn</p>
+                <h3>@ViewBag.TotalTemplates</h3>
+            </div>
+        </div>
+        <div class="stat-card">
+            <div class="stat-icon icon-revenue">
+                <i class="fa-solid fa-wallet"></i>
+            </div>
+            <div class="stat-content">
+                <p>Doanh thu VIP (VND)</p>
+                <h3>@(((double)ViewBag.TotalRevenue).ToString("N0"))</h3>
+            </div>
+        </div>
+    </div>
+
+    <!-- Main grid layout -->
+    <div class="dashboard-grid">
+        <!-- Left Side: Transactions and Categories -->
+        <div>
+            <!-- Recent Transactions card -->
+            <div class="dashboard-card">
+                <div class="card-title">
+                    <i class="fa-solid fa-receipt"></i>
+                    <span>Yêu cầu giao dịch gần đây (@ViewBag.PendingTransactions chờ duyệt)</span>
+                </div>
+                
+                @if (!recentTxns.Any())
+                {
+                    <div style="text-align:center; padding:30px 0; color:var(--text-muted);">Chưa có yêu cầu giao dịch nào.</div>
+                }
+                else
+                {
+                    <div class="table-responsive">
+                        <table class="custom-table">
+                            <thead>
+                                <tr>
+                                    <th>Mã GD</th>
+                                    <th>Người dùng</th>
+                                    <th>Gói</th>
+                                    <th>Số tiền</th>
+                                    <th>Trạng thái</th>
+                                    <th>Hành động</th>
+                                </tr>
+                            </thead>
+                            <tbody>
+                                @foreach (var txn in recentTxns)
+                                {
+                                    <tr>
+                                        <td><code style="color:#818cf8; font-weight:bold;">@txn.PaymentCode</code></td>
+                                        <td>
+                                            <div style="font-weight:600;">@(txn.User?.UserName ?? "System Admin")</div>
+                                            <div style="font-size:0.75rem; color:var(--text-muted);">@(txn.User?.Email ?? "")</div>
+                                        </td>
+                                        <td>@txn.PlanName</td>
+                                        <td style="font-weight:bold;">@txn.Amount.ToString("N0") đ</td>
+                                        <td><span class="badge-status status-@txn.Status">@txn.Status</span></td>
+                                        <td>
+                                            @if (txn.Status == "Submitted" || txn.Status == "Pending")
+                                            {
+                                                <div style="display:flex; gap:6px;">
+                                                    <form method="post" asp-action="ConfirmPayment" asp-route-id="@txn.Id" style="display:inline;">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn-action btn-approve" onclick="return confirm('Duyệt nâng cấp VIP cho mã giao dịch @txn.PaymentCode?')">Duyệt</button>
+                                                    </form>
+                                                    <form method="post" asp-action="RejectPayment" asp-route-id="@txn.Id" style="display:inline;">
+                                                        @Html.AntiForgeryToken()
+                                                        <button type="submit" class="btn-action btn-deny" onclick="return confirm('Từ chối giao dịch @txn.PaymentCode?')">Từ chối</button>
+                                                    </form>
+                                                </div>
+                                            }
+                                            else if (txn.Status == "Confirmed")
+                                            {
+                                                <span style="color:#10b981; font-weight:bold; font-size:0.8rem;">Đã duyệt ✓</span>
+                                            }
+                                            else if (txn.Status == "Rejected")
+                                            {
+                                                <span style="color:#ef4444; font-weight:bold; font-size:0.8rem;">Đã từ chối ✕</span>
+                                            }
+                                        </td>
+                                    </tr>
+                                }
+                            </tbody>
+                        </table>
+                    </div>
+                    <div style="margin-top:15px; text-align:right;">
+                        <a href="/Admin/Payments" style="color:var(--primary); font-size:0.85rem; font-weight:700; text-decoration:none;">Xem tất cả giao dịch &rarr;</a>
+                    </div>
+                }
+            </div>
+
+            <!-- Recent Users table -->
+            <div class="dashboard-card">
+                <div class="card-title">
+                    <i class="fa-solid fa-user-plus"></i>
+                    <span>Thành viên đăng ký mới</span>
+                </div>
+                <div class="table-responsive">
+                    <table class="custom-table">
+                        <thead>
+                            <tr>
+                                <th>Tên người dùng</th>
+                                <th>Email đăng ký</th>
+                                <th>Loại tài khoản</th>
+                                <th>Hạn VIP</th>
+                            </tr>
+                        </thead>
+                        <tbody>
+                            @foreach (var user in Model)
+                            {
+                                <tr>
+                                    <td style="font-weight:600;">@user.UserName</td>
+                                    <td>@user.Email</td>
+                                    <td>
+                                        @if (user.Email == "admin@gmail.com")
+                                        {
+                                            <span class="role-badge role-admin"><i class="fa-solid fa-user-shield"></i> Admin</span>
+                                        }
+                                        else if (user.IsVip)
+                                        {
+                                            <span class="role-badge role-vip"><i class="fa-solid fa-crown"></i> VIP</span>
+                                        }
+                                        else
+                                        {
+                                            <span class="role-badge role-user"><i class="fa-solid fa-user"></i> User</span>
+                                        }
+                                    </td>
+                                    <td>
+                                        @if (user.IsVip && user.VipExpiresAt.HasValue)
+                                        {
+                                            <span>@user.VipExpiresAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                        }
+                                        else
+                                        {
+                                            <span style="color:var(--text-muted);">Không giới hạn cơ bản</span>
+                                        }
+                                    </td>
+                                </tr>
+                            }
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </div>
+
+        <!-- Right Side: Category Breakdown -->
+        <div>
+            <div class="dashboard-card">
+                <div class="card-title">
+                    <i class="fa-solid fa-chart-pie"></i>
+                    <span>Slide mẫu theo Danh mục</span>
+                </div>
+                <div style="margin-top:10px;">
+                    @foreach (var cat in categories)
+                    {
+                        <div class="category-item">
+                            <span class="category-name">@cat.Category</span>
+                            <span class="category-count">@cat.Count mẫu</span>
+                        </div>
+                    }
+                </div>
+                <div style="margin-top:20px; text-align:center;">
+                    <a href="/Admin/Templates" class="btn btn-outline-light btn-sm w-100" style="border-radius:10px; border-color:rgba(255,255,255,0.1);">Xem & Dọn dẹp Slide mẫu</a>
+                </div>
+            </div>
+
+            <div class="dashboard-card" style="background: linear-gradient(135deg, rgba(99, 102, 241, 0.1), rgba(168, 85, 247, 0.1));">
+                <div class="card-title">
+                    <i class="fa-solid fa-circle-info"></i>
+                    <span>Thông tin hệ thống</span>
+                </div>
+                <p style="font-size:0.85rem; line-height:1.6; color:var(--text-muted); margin:0;">
+                    Tải tài nguyên trực tiếp từ thư mục <code>wwwroot/slide-mau/</code>. Các tệp tin sau khi được đọc sẽ được lưu vào cơ sở dữ liệu để tối ưu hóa tốc độ tải và đảm bảo khả năng tương thích toàn diện với Fabric.js.
+                </p>
+                <div style="margin-top:15px;">
+                    <a href="/Admin/ImportPptx" class="btn btn-primary btn-sm w-100" style="border-radius:10px;">Nhập File PPTX Thêm Mới</a>
+                </div>
+            </div>
+        </div>
+    </div>
+</div>

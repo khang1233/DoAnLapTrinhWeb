@@ -1,0 +1,400 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Slidify - Đại Siêu Converter & Seed 280+ Trang Slide Mẫu</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <!-- Fabric.js -->
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.1/fabric.min.js"></script>
+</head>
+<body class="bg-gray-900 text-white min-h-screen p-8">
+    <div class="max-w-5xl mx-auto bg-gray-800 rounded-xl p-8 shadow-2xl border border-gray-700">
+        <h1 class="text-3xl font-extrabold text-indigo-400 mb-2">Slidify Multi-Template Bulk Importer</h1>
+        <p class="text-gray-400 mb-6">Công cụ tự động phân tích <code class="bg-gray-900 text-indigo-300 px-2 py-1 rounded">examples.json</code> từ kho <code class="bg-gray-900 text-indigo-300 px-2 py-1 rounded">ppt-master</code>, chuyển đổi toàn bộ 21 bộ template với hơn 280 trang slide khác nhau thành FabricJS JSON và ghi vào CSDL.</p>
+        
+        <div class="grid grid-cols-3 gap-6 mb-6">
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700 text-center">
+                <div class="text-gray-400 text-sm">Tổng Số Bộ Template</div>
+                <div class="text-3xl font-bold text-indigo-400" id="stat-templates">21</div>
+            </div>
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700 text-center">
+                <div class="text-gray-400 text-sm">Tổng Số Slide Dự Kiến</div>
+                <div class="text-3xl font-bold text-green-400" id="stat-slides">280+</div>
+            </div>
+            <div class="bg-gray-900 p-4 rounded-lg border border-gray-700 text-center">
+                <div class="text-gray-400 text-sm">Tiến Trình Chuyển Đổi</div>
+                <div class="text-3xl font-bold text-yellow-400" id="stat-progress">0%</div>
+            </div>
+        </div>
+
+        <div class="mb-6 flex gap-4">
+            <button id="btn-start" onclick="startBulkImport()" class="bg-indigo-600 hover:bg-indigo-700 text-white font-bold py-3 px-8 rounded-lg shadow-lg transition-all flex items-center gap-2">
+                <svg class="animate-spin h-5 w-5 mr-3 hidden" id="spinner" viewBox="0 0 24 24">
+                    <circle class="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" stroke-width="4"></circle>
+                    <path class="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                </svg>
+                <span>Bắt đầu Bulk Import (280+ Slides)</span>
+            </button>
+        </div>
+
+        <div class="bg-gray-950 rounded-lg p-6 border border-gray-800 font-mono text-sm max-h-[450px] overflow-y-auto" id="log-box">
+            <div class="text-gray-500">// Bấm nút để bắt đầu import...</div>
+        </div>
+
+        <!-- Hidden canvas for FabricJS background tasks -->
+        <div class="hidden">
+            <canvas id="temp-canvas" width="800" height="450"></canvas>
+        </div>
+    </div>
+
+    <script>
+        const logBox = document.getElementById('log-box');
+        const spinner = document.getElementById('spinner');
+        const btnStart = document.getElementById('btn-start');
+
+        function log(message, type = 'info') {
+            const time = new Date().toLocaleTimeString();
+            let color = 'text-gray-300';
+            if (type === 'success') color = 'text-green-400 font-semibold';
+            if (type === 'error') color = 'text-red-400 font-semibold';
+            if (type === 'warning') color = 'text-yellow-400';
+            if (type === 'info-highlight') color = 'text-indigo-300 font-semibold';
+            
+            logBox.innerHTML += `<div class="mb-1 ${color}">[${time}] ${message}</div>`;
+            logBox.scrollTop = logBox.scrollHeight;
+        }
+
+        function determineCategory(tags = [], style = '') {
+            const lowerTags = tags.map(t => t.toLowerCase());
+            const lowerStyle = (style || '').toLowerCase();
+            
+            if (lowerTags.includes('finance') || 
+                lowerTags.includes('annual report') || 
+                lowerTags.includes('annual review') || 
+                lowerTags.includes('business') || 
+                lowerStyle === 'consulting' || 
+                lowerTags.includes('corporate')) {
+                return "Slidify / Kinh doanh";
+            }
+            if (lowerTags.includes('paper reading') || 
+                lowerTags.includes('study') || 
+                lowerTags.includes('lecture') || 
+                lowerTags.includes('education') || 
+                lowerTags.includes('design history')) {
+                return "Slidify / Giáo dục";
+            }
+            if (lowerTags.includes('saas') || 
+                lowerTags.includes('llm') || 
+                lowerTags.includes('kubernetes') || 
+                lowerTags.includes('technical') || 
+                lowerTags.includes('ai') ||
+                lowerStyle === 'technical') {
+                return "Slidify / Công nghệ";
+            }
+            return "Slidify / Đa dụng"; // Mặc định
+        }
+
+        function shouldUngroup(group) {
+            let hasText = false;
+            let hasImage = false;
+            
+            function check(obj) {
+                if (obj.type === 'text' || obj.type === 'i-text' || obj.type === 'textbox') {
+                    hasText = true;
+                }
+                if (obj.type === 'image') {
+                    hasImage = true;
+                }
+                if (obj.type === 'group' && obj.getObjects) {
+                    obj.getObjects().forEach(check);
+                }
+            }
+            
+            check(group);
+            if (hasText || hasImage) return true;
+            
+            // Layout container group check
+            if (group.width * (group.scaleX || 1) > 250 || group.height * (group.scaleY || 1) > 250) {
+                return true;
+            }
+            return false;
+        }
+
+        function flattenSvgObjects(objects) {
+            let flatList = [];
+            
+            objects.forEach(obj => {
+                if (obj.type === 'group' && shouldUngroup(obj)) {
+                    obj.getObjects().forEach(child => {
+                        // Calculate absolute properties using the transform matrix
+                        let matrix = child.calcTransformMatrix();
+                        let opt = fabric.util.qrDecompose(matrix);
+                        
+                        child.left = opt.translateX;
+                        child.top = opt.translateY;
+                        child.scaleX = opt.scaleX;
+                        child.scaleY = opt.scaleY;
+                        child.angle = opt.angle;
+                        child.opacity = (child.opacity || 1) * (obj.opacity || 1);
+                        child.group = null;
+                        
+                        if (child.type === 'group' && shouldUngroup(child)) {
+                            flatList = flatList.concat(flattenSvgObjects([child]));
+                        } else {
+                            flatList.push(child);
+                        }
+                    });
+                } else {
+                    flatList.push(obj);
+                }
+            });
+            
+            return flatList;
+        }
+
+        async function startBulkImport() {
+            btnStart.disabled = true;
+            spinner.classList.remove('hidden');
+            logBox.innerHTML = '';
+            log("Khởi động hệ thống chuyển đổi slide mẫu số lượng lớn...", "warning");
+
+            try {
+                // 1. Tải file examples.json
+                log("Đang tải danh mục mẫu examples.json...");
+                const res = await fetch('/examples/examples.json');
+                if (!res.ok) throw new Error("Không thể tải file /examples/examples.json");
+                
+                const data = await res.json();
+                const projects = data.projects || [];
+                log(`Tìm thấy ${projects.length} dự án template trong cấu hình.`, "success");
+                
+                document.getElementById('stat-templates').innerText = projects.length;
+                let totalSlidesCount = projects.reduce((sum, p) => sum + (p.slides ? p.slides.length : 0), 0);
+                document.getElementById('stat-slides').innerText = totalSlidesCount;
+                
+                let processedSlides = 0;
+                let successfullySeeded = 0;
+
+                // 2. Chuyển đổi và lưu tuần tự từng bộ slide để tránh payload quá lớn
+                for (let i = 0; i < projects.length; i++) {
+                    const project = projects[i];
+                    const category = determineCategory(project.tags, project.style);
+                    const folderPath = "/examples/" + project.folder;
+                    const thumbnailUrl = folderPath + "/" + project.cover;
+                    
+                    log(`[${i+1}/${projects.length}] Bắt đầu bộ: "${project.title}" (Phân loại: ${category})`, "info-highlight");
+                    
+                    const slidesData = [];
+                    let pageNum = 1;
+                    
+                    for (const slide of project.slides) {
+                        const svgUrl = folderPath + "/" + slide.file;
+                        
+                        try {
+                            const slideJson = await convertSvgToFabricJson(svgUrl, folderPath);
+                            slidesData.push({
+                                pageNumber: pageNum++,
+                                backgroundColor: slideJson.backgroundColor,
+                                elementsJson: slideJson.elementsJson
+                            });
+                        } catch (err) {
+                            log(`   ↳ Lỗi trang ${slide.file}: ${err.message}`, "error");
+                        }
+                        
+                        processedSlides++;
+                        const progress = Math.round((processedSlides / totalSlidesCount) * 100);
+                        document.getElementById('stat-progress').innerText = `${progress}%`;
+                    }
+                    
+                    const tplData = {
+                        title: project.title,
+                        category: category,
+                        thumbnailUrl: thumbnailUrl,
+                        slides: slidesData
+                    };
+
+                    log(`   ↳ Gửi lưu trữ bộ "${project.title}" vào CSDL...`, "warning");
+                    const saveRes = await fetch('/Slide/SaveSeededTemplates', {
+                        method: 'POST',
+                        headers: { 'Content-Type': 'application/json' },
+                        body: JSON.stringify({ templates: [tplData] })
+                    });
+
+                    if (saveRes.ok) {
+                        successfullySeeded++;
+                        log(`   ↳ Hoàn thành lưu trữ bộ "${project.title}" (${slidesData.length} slide)`, "success");
+                    } else {
+                        const errText = await saveRes.text();
+                        log(`   ↳ Lỗi khi lưu bộ "${project.title}": ${errText}`, "error");
+                    }
+                }
+
+                log(`HOÀN THÀNH SEEDING TOÀN BỘ HỆ THỐNG!`, "success");
+                log(`Đã nạp thành công ${successfullySeeded} bộ Slide mẫu vào SQL Server!`, "success");
+
+            } catch (error) {
+                log(`Lỗi nghiêm trọng: ${error.message}`, "error");
+            } finally {
+                btnStart.disabled = false;
+                spinner.classList.add('hidden');
+            }
+        }
+
+        function convertSvgToFabricJson(svgUrl, folderPath) {
+            return new Promise((resolve, reject) => {
+                const tempCanvas = new fabric.Canvas('temp-canvas', {
+                    width: 800,
+                    height: 450
+                });
+
+                fabric.loadSVGFromURL(svgUrl, function(objects, options) {
+                    if (!objects) {
+                        tempCanvas.dispose();
+                        reject(new Error("Lỗi tải SVG file"));
+                        return;
+                    }
+
+                    let svgWidth = 1280;
+                    let svgHeight = 720;
+                    if (options && options.width) {
+                        svgWidth = options.width;
+                    } else if (objects && objects.length > 0) {
+                        const bgRect = objects.find(o => o.type === 'rect' && o.width >= 500);
+                        if (bgRect) {
+                            svgWidth = bgRect.width;
+                        } else {
+                            const maxW = Math.max(...objects.map(o => (o.left || 0) + (o.width || 0)));
+                            if (maxW > 0) svgWidth = maxW;
+                        }
+                    }
+                    if (options && options.height) {
+                        svgHeight = options.height;
+                    } else if (objects && objects.length > 0) {
+                        const bgRect = objects.find(o => o.type === 'rect' && o.width >= 500);
+                        if (bgRect) {
+                            svgHeight = bgRect.height;
+                        } else {
+                            const maxH = Math.max(...objects.map(o => (o.top || 0) + (o.height || 0)));
+                            if (maxH > 0) svgHeight = maxH;
+                        }
+                    }
+                    if (svgWidth <= 0) svgWidth = 1280;
+                    if (svgHeight <= 720) svgHeight = 720;
+
+                    const scale = 800 / svgWidth;
+
+                    let bgColor = '#ffffff';
+                    const bgObj = objects.find(o => 
+                        o.type === 'rect' && 
+                        o.width >= (svgWidth * 0.9) && 
+                        o.height >= (svgHeight * 0.9) && 
+                        Math.abs(o.left || 0) < 10 && 
+                        Math.abs(o.top || 0) < 10
+                    );
+                    if (bgObj) {
+                        bgColor = bgObj.fill || '#ffffff';
+                    }
+
+                    const filteredObjects = objects.filter(o => o !== bgObj);
+                    const flatObjects = flattenSvgObjects(filteredObjects);
+                    const loadPromises = [];
+
+                    flatObjects.forEach(obj => {
+                        obj.scaleX = (obj.scaleX || 1) * scale;
+                        obj.scaleY = (obj.scaleY || 1) * scale;
+                        obj.left = (obj.left || 0) * scale;
+                        obj.top = (obj.top || 0) * scale;
+
+                        // Set standard selection/interactive options on all elements
+                        obj.selectable = true;
+                        obj.hasControls = true;
+
+                        // Xử lý các ảnh cục bộ chèn trong slide
+                        if (obj.type === 'image') {
+                            let src = obj.getSrc();
+                            if (src && !src.startsWith('http') && !src.startsWith('/') && !src.startsWith('data:')) {
+                                if (src.startsWith('../')) {
+                                    src = folderPath + '/' + src.substring(3);
+                                } else {
+                                    src = folderPath + '/' + src;
+                                }
+                                src = decodeURIComponent(src);
+                                loadPromises.push(new Promise((resolveImg) => {
+                                    obj.setSrc(src, () => { resolveImg(); });
+                                }));
+                            }
+                        }
+
+                        // Chuyển text tĩnh thành IText chỉnh sửa động như Canva
+                        if (obj.type === 'text') {
+                            let textContent = (obj.text || "").trim();
+                            
+                            // Việt hóa một số từ khóa phổ biến để thân thiện hơn
+                            textContent = textContent
+                                .replace(/\{\{TITLE\}\}/g, 'TIÊU ĐỀ SLIDE')
+                                .replace(/\{\{SUBTITLE\}\}/g, 'Phần phụ đề mô tả ngắn gọn')
+                                .replace(/\{\{AUTHOR\}\}/g, 'Người thuyết trình')
+                                .replace(/\{\{DATE\}\}/g, '2026')
+                                .replace(/\{\{ADVISOR\}\}/g, 'Giáo viên hướng dẫn');
+
+                            const itext = new fabric.IText(textContent, {
+                                left: obj.left,
+                                top: obj.top,
+                                fontSize: Math.round(obj.fontSize * obj.scaleY),
+                                fontFamily: obj.fontFamily || 'Inter',
+                                fill: obj.fill || '#1e293b',
+                                fontWeight: obj.fontWeight || 'normal',
+                                fontStyle: obj.fontStyle || 'normal',
+                                textAlign: obj.textAlign || 'left',
+                                originX: obj.originX || 'left',
+                                originY: obj.originY || 'top',
+                                angle: obj.angle || 0,
+                                opacity: obj.opacity || 1,
+                                scaleX: 1,
+                                scaleY: 1,
+                                selectable: true,
+                                hasControls: true,
+                                editable: true
+                            });
+                            tempCanvas.add(itext);
+                        } else {
+                            tempCanvas.add(obj);
+                        }
+                    });
+
+                    Promise.all(loadPromises).then(() => {
+                        if (bgColor) {
+                            tempCanvas.backgroundColor = bgColor;
+                        }
+                        tempCanvas.renderAll();
+                        const json = tempCanvas.toJSON(['id', 'name', 'selectable', 'hasControls', 'editable']);
+                        json.canvasWidth = tempCanvas.width;
+                        json.canvasHeight = tempCanvas.height;
+                        const elementsJson = JSON.stringify(json);
+                        tempCanvas.dispose();
+
+                        let dbBgColor = '#ffffff';
+                        if (typeof bgColor === 'string') {
+                            dbBgColor = bgColor;
+                        } else if (bgColor && typeof bgColor === 'object') {
+                            if (bgColor.colorStops && bgColor.colorStops.length > 0) {
+                                dbBgColor = bgColor.colorStops[0].color || '#ffffff';
+                            }
+                        }
+
+                        resolve({
+                            backgroundColor: dbBgColor,
+                            elementsJson: elementsJson
+                        });
+                    }).catch(err => {
+                        tempCanvas.dispose();
+                        reject(err);
+                    });
+                }, null, { crossOrigin: 'anonymous' });
+            });
+        }
+    </script>
+</body>
+</html>
