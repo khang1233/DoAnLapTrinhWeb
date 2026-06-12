@@ -1,10 +1,129 @@
-﻿// SLIDIFY MVC - CANVAS ENGINE
+// SLIDIFY MVC - CANVAS ENGINE
 const API_URL = '/Slide';
+
+// Globally override IText and Text JSON loading to return Textbox objects (Canva-style)
+if (typeof fabric !== 'undefined') {
+    if (fabric.IText) {
+        fabric.IText.fromObject = function(object, callback) {
+            object.type = 'textbox';
+            return fabric.Textbox.fromObject(object, callback);
+        };
+    }
+    if (fabric.Text) {
+        const origTextFromObject = fabric.Text.fromObject;
+        fabric.Text.fromObject = function(object, callback) {
+            if (object.fontFamily === 'Font Awesome 6 Free') {
+                return origTextFromObject(object, callback);
+            }
+            object.type = 'textbox';
+            return fabric.Textbox.fromObject(object, callback);
+        };
+    }
+
+    // Canva styling for controls
+    fabric.Object.prototype.borderColor = '#8b5cf6'; // Canva purple
+    fabric.Object.prototype.cornerColor = '#ffffff'; // White corners
+    fabric.Object.prototype.cornerStrokeColor = '#8b5cf6'; // Purple stroke
+    fabric.Object.prototype.cornerStyle = 'circle'; // Circle style
+    fabric.Object.prototype.cornerSize = 8;
+    fabric.Object.prototype.transparentCorners = false;
+    fabric.Object.prototype.borderScaleFactor = 1.5;
+    fabric.Object.prototype.hasRotatingPoint = true;
+    fabric.Object.prototype.rotatingPointOffset = 20;
+
+    // Custom render for middle controls to draw them as pills (rounded rectangles)
+    const renderVerticalPill = function(ctx, left, top, styleOverride, fabricObject) {
+        ctx.save();
+        ctx.translate(left, top);
+        ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle));
+        ctx.beginPath();
+        const w = 5;
+        const h = 14;
+        if (ctx.roundRect) ctx.roundRect(-w/2, -h/2, w, h, 2.5);
+        else ctx.rect(-w/2, -h/2, w, h);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.strokeStyle = '#8b5cf6';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+    };
+
+    const renderHorizontalPill = function(ctx, left, top, styleOverride, fabricObject) {
+        ctx.save();
+        ctx.translate(left, top);
+        ctx.rotate(fabric.util.degreesToRadians(fabricObject.angle));
+        ctx.beginPath();
+        const w = 14;
+        const h = 5;
+        if (ctx.roundRect) ctx.roundRect(-w/2, -h/2, w, h, 2.5);
+        else ctx.rect(-w/2, -h/2, w, h);
+        ctx.fillStyle = '#ffffff';
+        ctx.fill();
+        ctx.strokeStyle = '#8b5cf6';
+        ctx.lineWidth = 1.5;
+        ctx.stroke();
+        ctx.restore();
+    };
+
+    if (fabric.Object.prototype.controls.ml) fabric.Object.prototype.controls.ml.render = renderVerticalPill;
+    if (fabric.Object.prototype.controls.mr) fabric.Object.prototype.controls.mr.render = renderVerticalPill;
+    if (fabric.Object.prototype.controls.mt) fabric.Object.prototype.controls.mt.render = renderHorizontalPill;
+    if (fabric.Object.prototype.controls.mb) fabric.Object.prototype.controls.mb.render = renderHorizontalPill;
+
+    if (fabric.Textbox) {
+        // Override static fromObject method to discard fixed height constraints on deserialization
+        const origTextboxFromObject = fabric.Textbox.fromObject;
+        fabric.Textbox.fromObject = function(object, callback) {
+            if (object) {
+                delete object.height;
+                delete object._fixedHeight;
+            }
+            return origTextboxFromObject.call(fabric.Textbox, object, callback);
+        };
+
+        // Clone the default controls object for Textbox with separate Control instances to avoid affecting other shapes
+        fabric.Textbox.prototype.controls = {};
+        for (let key in fabric.Object.prototype.controls) {
+            if (fabric.Object.prototype.controls.hasOwnProperty(key)) {
+                fabric.Textbox.prototype.controls[key] = new fabric.Control(fabric.Object.prototype.controls[key]);
+            }
+        }
+
+        // Hide vertical resizing handles (mt, mb) like Canva - textbox height is always auto
+        if (fabric.Textbox.prototype.controls.mt) {
+            fabric.Textbox.prototype.controls.mt.visible = false;
+        }
+        if (fabric.Textbox.prototype.controls.mb) {
+            fabric.Textbox.prototype.controls.mb.visible = false;
+        }
+
+        // Restore Textbox-specific width-only handler for left/right handles (ml, mr).
+        // When we cloned from Object.prototype we lost this - Object uses scalingX which
+        // stretches text. changeWidth directly modifies the width property instead.
+        if (fabric.controlsUtils.changeWidth) {
+            if (fabric.Textbox.prototype.controls.ml) {
+                fabric.Textbox.prototype.controls.ml.actionHandler = fabric.controlsUtils.changeWidth;
+                fabric.Textbox.prototype.controls.ml.actionName = 'resizing';
+            }
+            if (fabric.Textbox.prototype.controls.mr) {
+                fabric.Textbox.prototype.controls.mr.actionHandler = fabric.controlsUtils.changeWidth;
+                fabric.Textbox.prototype.controls.mr.actionName = 'resizing';
+            }
+        }
+
+        // Corner handles (tl, tr, bl, br) keep the DEFAULT scalingEqually handler.
+        // Fabric.js natively handles position management perfectly during uniform scaling.
+        // We convert the accumulated scale to width + fontSize on mouse-up (object:modified).
+    }
+}
+
 let canvas;
 let presentationId = null;
 let slideDataArray = [];
 let currentSlideIndex = 0;
 let clipboard = null;
+let slideClipboard = null;
 let activeDrawer = null;
 let autoSaveTimeout = null;
 let undoStack = [];
@@ -681,6 +800,12 @@ window.onload = () => {
     initContextMenu();
     initKeyboardShortcuts();
     
+    // Bind topbar undo/redo buttons
+    const undoBtn = document.getElementById('btn-undo');
+    if (undoBtn) undoBtn.onclick = () => undo();
+    const redoBtn = document.getElementById('btn-redo');
+    if (redoBtn) redoBtn.onclick = () => redo();
+    
     renderSlideThumbnails();
     
     // Nạp dữ liệu mẫu thành công ngay khi load
@@ -700,15 +825,45 @@ function initCanvas() {
         preserveObjectStacking: true
     });
     
-    canvas.on('selection:created', () => { showPropertiesPanel(); });
-    canvas.on('selection:updated', () => { showPropertiesPanel(); });
-    canvas.on('selection:cleared', () => { hidePropertiesPanel(); });
+    canvas.on('selection:created', () => { showPropertiesPanel(); checkAiTextToolsVisibility(); });
+    canvas.on('selection:updated', () => { showPropertiesPanel(); checkAiTextToolsVisibility(); });
+    canvas.on('selection:cleared', () => { hidePropertiesPanel(); checkAiTextToolsVisibility(); });
     
-    canvas.on('object:added', () => { triggerAutoSave(); });
-    canvas.on('object:removed', () => { triggerAutoSave(); });
-    canvas.on('object:modified', () => { showPropertiesPanel(); triggerAutoSave(); });
-    canvas.on('text:changed', () => { triggerAutoSave(); });
+    canvas.on('object:added', () => { 
+        if (isUndoRedoAction || isLoadingSlide) return;
+        triggerAutoSave(); 
+    });
+    
+    canvas.on('object:removed', () => { 
+        if (isUndoRedoAction || isLoadingSlide) return;
+        triggerAutoSave(); 
+    });
+    canvas.on('object:modified', (e) => { 
+        const obj = e.target;
+        // Canva-style: convert uniform scale into actual width + fontSize on mouse-up
+        if (obj && obj.type === 'textbox' && (obj.scaleX !== 1 || obj.scaleY !== 1)) {
+            const scale = obj.scaleX; // uniform scaling: scaleX === scaleY
+            const newWidth = Math.max(20, obj.width * scale);
+            const newFontSize = Math.max(1, obj.fontSize * scale);
+            
+            obj.set({
+                width: newWidth,
+                fontSize: Math.round(newFontSize * 10) / 10, // round to 1 decimal
+                scaleX: 1,
+                scaleY: 1
+            });
+            obj.setCoords();
+        }
+        if (isUndoRedoAction || isLoadingSlide) return;
+        showPropertiesPanel(); 
+        triggerAutoSave(); 
+    });
+    canvas.on('text:changed', () => { 
+        if (isUndoRedoAction || isLoadingSlide) return;
+        triggerAutoSave(); 
+    });
     canvas.on('path:created', (e) => { 
+        if (isUndoRedoAction || isLoadingSlide) return;
         e.path.set({ id: _generateId(), name: 'Nét vẽ', selectable: true });
         canvas.requestRenderAll();
         triggerAutoSave(); 
@@ -727,8 +882,10 @@ function initCanvas() {
     }
 }
 
-/* --- AUTO SAVE SYSTEM (DEBOUNCED - Pure Manual Save) --- */
+/* --- AUTO SAVE SYSTEM (DEBOUNCED - True Backend Auto-Save) --- */
 let saveStateDebounceTimeout = null;
+let backendAutoSaveTimeout = null;
+
 function triggerAutoSave() {
     // Show 'Chưa lưu' immediately to give visual feedback
     const statusEl = document.getElementById('save-status');
@@ -739,16 +896,25 @@ function triggerAutoSave() {
         saveCurrentSlideStateToMemory();
         saveState();
     }, 300); // 300ms debounce prevents CPU-blocking serialization lags during typing or dragging!
+
+    // Real background Auto-Save to Server (3.5s after user stops interacting)
+    clearTimeout(backendAutoSaveTimeout);
+    backendAutoSaveTimeout = setTimeout(() => {
+        if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-indigo-400 fa-spin"></i> Đang tự động lưu...';
+        savePresentationToBackend(false); // false = do not generate costly thumbnail to save server load
+    }, 3500);
 }
 
 function saveCurrentSlideStateToMemory() {
     try {
         if(!slideDataArray || !slideDataArray[currentSlideIndex]) return;
         
+        const slide = slideDataArray[currentSlideIndex];
         const json = canvas.toJSON(['id', 'name', 'selectable', 'hasControls']);
+        json.slideName = slide.Name || '';
         json.canvasWidth = canvas.width;
         json.canvasHeight = canvas.height;
-        slideDataArray[currentSlideIndex].ElementsJson = JSON.stringify(json);
+        slide.ElementsJson = JSON.stringify(json);
         
         // Support gradient backgrounds safe serialization
         if (canvas.backgroundColor && typeof canvas.backgroundColor === 'object') {
@@ -818,7 +984,7 @@ async function savePresentationToBackend(isManual = false) {
         if (response.ok) {
             if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud-check text-success"></i> Đã lưu';
         } else {
-            if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger"></i> LỀ—i lưu';
+            if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger"></i> Lỗi lưu';
         }
     } catch(err) {
         console.error("Save error:", err);
@@ -826,7 +992,7 @@ async function savePresentationToBackend(isManual = false) {
 }
 
 function savePresentationManually() {
-    clearTimeout(autoSaveTimeout);
+    clearTimeout(backendAutoSaveTimeout);
     savePresentationToBackend(true); // Pass true to generate and save the thumbnail
     showToast('Đã lưu bản thuyết trình', 'success');
 }
@@ -927,6 +1093,28 @@ function updateZoomDisplay() {
 function startPresentation() {
     saveCurrentSlideStateToMemory();
     presentationIndex = currentSlideIndex;
+    
+    // Find nearest visible slide if current is hidden
+    if (slideDataArray.length > 0 && isSlideHidden(slideDataArray[presentationIndex])) {
+        let found = false;
+        for (let i = presentationIndex; i < slideDataArray.length; i++) {
+            if (!isSlideHidden(slideDataArray[i])) {
+                presentationIndex = i;
+                found = true;
+                break;
+            }
+        }
+        if (!found) {
+            for (let i = presentationIndex; i >= 0; i--) {
+                if (!isSlideHidden(slideDataArray[i])) {
+                    presentationIndex = i;
+                    found = true;
+                    break;
+                }
+            }
+        }
+    }
+
     const overlay = document.getElementById('presentation-overlay');
     if (!overlay) return;
     overlay.style.display = 'flex';
@@ -975,15 +1163,23 @@ function presentationContextHandler(e) {
 }
 
 function nextPresentationSlide() {
-    if (presentationIndex < slideDataArray.length - 1) {
-        presentationIndex++;
+    let nextIndex = presentationIndex + 1;
+    while (nextIndex < slideDataArray.length && isSlideHidden(slideDataArray[nextIndex])) {
+        nextIndex++;
+    }
+    if (nextIndex < slideDataArray.length) {
+        presentationIndex = nextIndex;
         renderPresentationSlide();
     }
 }
 
 function prevPresentationSlide() {
-    if (presentationIndex > 0) {
-        presentationIndex--;
+    let prevIndex = presentationIndex - 1;
+    while (prevIndex >= 0 && isSlideHidden(slideDataArray[prevIndex])) {
+        prevIndex--;
+    }
+    if (prevIndex >= 0) {
+        presentationIndex = prevIndex;
         renderPresentationSlide();
     }
 }
@@ -1043,7 +1239,11 @@ async function renderPresentationSlide() {
         imgEl.style.transform = 'none';
     }, 50);
 
-    if (pageInfo) pageInfo.textContent = `${presentationIndex + 1} / ${slideDataArray.length}`;
+    if (pageInfo) {
+        const visibleSlides = slideDataArray.filter(s => !isSlideHidden(s));
+        const currentVisibleIndex = visibleSlides.indexOf(slide) + 1;
+        pageInfo.textContent = `${currentVisibleIndex} / ${visibleSlides.length}`;
+    }
 }
 
 document.addEventListener('fullscreenchange', () => {
@@ -1115,10 +1315,18 @@ async function exportToImage() {
 
 async function exportToPDF() {
     saveCurrentSlideStateToMemory();
+    
+    // Filter out hidden slides
+    const visibleSlides = slideDataArray.filter(s => !isSlideHidden(s));
+    if (visibleSlides.length === 0) {
+        showToast('Không có slide nào hiển thị để xuất PDF!', 'warning');
+        return;
+    }
+
     showToast('Đang khởi tạo xuất file PDF...', 'info');
     const { jsPDF } = window.jspdf;
     
-    // Tạo doc khỀ• chuẩn 16:9 ngang (297x167 mm)
+    // Tạo doc khổ chuẩn 16:9 ngang (297x167 mm)
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [297, 167] });
     
     try {
@@ -1127,8 +1335,8 @@ async function exportToPDF() {
         tempCanvasEl.height = 450;
         const tempCanvas = new fabric.StaticCanvas(tempCanvasEl);
         
-        for (let i = 0; i < slideDataArray.length; i++) {
-            const slide = slideDataArray[i];
+        for (let i = 0; i < visibleSlides.length; i++) {
+            const slide = visibleSlides[i];
             
             tempCanvas.clear();
             tempCanvas.backgroundColor = slide.BackgroundColor || '#ffffff';
@@ -1170,7 +1378,7 @@ async function exportToPDF() {
                         });
                     });
                 } catch (e) {
-                    console.error("LỀ—i parse JSON slide:", e);
+                    console.error("Lỗi parse JSON slide:", e);
                     await loadAndRender();
                 }
             } else {
@@ -1193,7 +1401,7 @@ async function exportToPDF() {
                 pdf.setTextColor(150, 150, 150);
                 pdf.setFont("helvetica", "normal");
                 pdf.setFontSize(14);
-                pdf.text("Slide " + (i + 1) + " (LỀ—i xuất ảnh do bảo mật CORS)", 50, 80);
+                pdf.text("Slide " + (slide.PageNumber || (i + 1)) + " (Lỗi xuất ảnh do bảo mật CORS)", 50, 80);
             }
         }
         
@@ -1202,7 +1410,7 @@ async function exportToPDF() {
         showToast('Tải PDF thành công!', 'success');
     } catch (e) {
         console.error("Export PDF error:", e);
-        showToast("LỀ—i khi xuất PDF", "error");
+        showToast("Lỗi khi xuất PDF", "error");
     }
 }
 
@@ -1387,9 +1595,24 @@ function renderSlideThumbnails() {
 
         // Placeholder hiện ngay với màu nền, canvas render sau
         let thumbBg = slide.BackgroundColor || '#ffffff';
-        div.innerHTML = `<span class="thumb-num">${index + 1}</span>
-            <button class="thumb-del" onclick="deleteSlide(event, ${index})" title="Xóa"><i class="fa-solid fa-xmark"></i></button>
-            <button class="thumb-dup" onclick="duplicateSlide(event, ${index})" title="Nhân bản"><i class="fa-solid fa-copy"></i></button>
+        const slideName = getSlideName(slide);
+        const displayName = slideName ? `${index + 1} - ${slideName}` : `${index + 1}`;
+        const hidden = isSlideHidden(slide);
+        
+        if (hidden) {
+            div.style.opacity = '0.55';
+            div.style.filter = 'grayscale(30%)';
+        } else {
+            div.style.opacity = '1';
+            div.style.filter = 'none';
+        }
+
+        const hiddenIcon = hidden ? `<span style="position:absolute; top:4px; left:4px; background:rgba(239,68,68,0.9); color:white; border-radius:50%; width:18px; height:18px; display:flex; align-items:center; justify-content:center; font-size:0.65rem; z-index:11;" title="Slide bị ẩn"><i class="fa-solid fa-eye-slash"></i></span>` : '';
+        
+        div.innerHTML = `
+            ${hiddenIcon}
+            <span class="thumb-num" style="${hidden ? 'left:26px;' : ''}">${displayName}</span>
+            <button class="thumb-more-btn" onclick="showSlideMenu(event, ${index})" title="Tùy chọn slide"><i class="fa-solid fa-ellipsis"></i></button>
             <canvas class="thumb-canvas" width="160" height="90" style="width:100%; height:100%; display:block; border-radius:4px; background:${thumbBg};"></canvas>`;
         list.appendChild(div);
 
@@ -1402,6 +1625,356 @@ function renderSlideThumbnails() {
 
     const pageInfo = document.getElementById('page-info');
     if (pageInfo) pageInfo.textContent = `${currentSlideIndex + 1} / ${slideDataArray.length}`;
+}
+
+function getSlideName(slide) {
+    if (slide.Name) return slide.Name;
+    if (slide.ElementsJson && slide.ElementsJson !== '[]') {
+        try {
+            const data = JSON.parse(slide.ElementsJson);
+            if (data.slideName) {
+                slide.Name = data.slideName;
+                return data.slideName;
+            }
+        } catch (e) {}
+    }
+    return '';
+}
+
+function isSlideHidden(slide) {
+    if (slide.IsHidden !== undefined) return slide.IsHidden;
+    if (slide.ElementsJson && slide.ElementsJson !== '[]') {
+        try {
+            const data = JSON.parse(slide.ElementsJson);
+            if (data.isHidden !== undefined) {
+                slide.IsHidden = data.isHidden;
+                return data.isHidden;
+            }
+        } catch (e) {}
+    }
+    return false;
+}
+
+let activeSlideMenuIndex = null;
+function showSlideMenu(e, index) {
+    e.stopPropagation();
+    closeSlideMenu();
+    activeSlideMenuIndex = index;
+    const slide = slideDataArray[index];
+    const slideName = getSlideName(slide) || `Trang ${index + 1}`;
+    const dimensions = `${canvas.width}x${canvas.height} px`;
+    const hidden = isSlideHidden(slide);
+    const pasteDisabledStyle = !slideClipboard ? 'opacity: 0.5; cursor: not-allowed;' : '';
+    const pasteOnclick = slideClipboard ? `onclick="pasteSlideMenu(${index})"` : '';
+
+    const menu = document.createElement('div');
+    menu.id = 'slide-action-menu';
+    menu.style.cssText = `
+        position: fixed;
+        background: #1e293b;
+        border: 1px solid rgba(255, 255, 255, 0.1);
+        border-radius: 12px;
+        width: 240px;
+        box-shadow: 0 20px 48px rgba(0, 0, 0, 0.6);
+        z-index: 10000;
+        font-family: 'Inter', sans-serif;
+        color: #f1f5f9;
+        overflow: hidden;
+        padding: 6px;
+    `;
+
+    menu.innerHTML = `
+        <div style="padding: 6px 10px 8px; display: flex; align-items: center; justify-content: space-between; border-bottom: 1px solid rgba(255,255,255,0.08);">
+            <div style="min-width: 0; flex: 1;">
+                <div style="font-size: 0.82rem; font-weight: 700; color: #fff; display: flex; align-items: center; gap: 6px; justify-content: space-between;">
+                    <span id="slide-menu-title-text" style="white-space: nowrap; overflow: hidden; text-overflow: ellipsis; max-width: 170px;">${slideName}</span>
+                    <button onclick="renameSlidePrompt(${index})" style="background: none; border: none; color: #818cf8; cursor: pointer; padding: 2px; display: inline-flex;"><i class="fa-solid fa-pen" style="font-size: 0.72rem;"></i></button>
+                </div>
+                <div style="font-size: 0.68rem; color: #94a3b8; margin-top: 2px;">Slide · ${dimensions}</div>
+            </div>
+        </div>
+        <div style="display: flex; flex-direction: column; gap: 2px; margin-top: 4px;">
+            <button class="slide-menu-item" onclick="copySlideMenu(${index})"><i class="fa-regular fa-copy"></i> Sao chép trang</button>
+            <button class="slide-menu-item" ${pasteOnclick} style="${pasteDisabledStyle}"><i class="fa-regular fa-clipboard"></i> Dán trang</button>
+            <button class="slide-menu-item" onclick="duplicateSlideMenu(${index})"><i class="fa-regular fa-clone"></i> Tạo bản sao</button>
+            <button class="slide-menu-item" onclick="deleteSlideMenu(${index})" style="color: #ef4444;"><i class="fa-regular fa-trash-can" style="color: #ef4444;"></i> Xóa trang</button>
+            <div style="height: 1px; background: rgba(255,255,255,0.08); margin: 4px 0;"></div>
+            <button class="slide-menu-item" onclick="toggleHideSlideMenu(${index})"><i class="fa-solid ${hidden ? 'fa-eye' : 'fa-eye-slash'}"></i> ${hidden ? 'Hiện trang' : 'Ẩn trang'}</button>
+            <button class="slide-menu-item" onclick="toggleLockSlideMenu(${index})"><i class="fa-solid fa-lock"></i> Khóa / Mở khóa trang</button>
+            <button class="slide-menu-item" onclick="downloadSingleSlide(${index})"><i class="fa-solid fa-download"></i> Tải xuống trang này (PNG)</button>
+            <button class="slide-menu-item" onclick="addSlideMenu(${index})"><i class="fa-solid fa-plus"></i> Thêm trang mới</button>
+        </div>
+    `;
+
+    document.body.appendChild(menu);
+
+    const rect = e.currentTarget.getBoundingClientRect();
+    let left = rect.left;
+    let top = rect.bottom + 6;
+
+    if (left + 240 > window.innerWidth) left = window.innerWidth - 250;
+    
+    const menuHeight = 280;
+    if (top + menuHeight > window.innerHeight) top = rect.top - menuHeight - 6;
+
+    menu.style.left = `${Math.max(8, left)}px`;
+    menu.style.top = `${Math.max(8, top)}px`;
+
+    setTimeout(() => {
+        document.addEventListener('click', closeSlideMenuOnOutsideClick);
+    }, 0);
+}
+
+function closeSlideMenu() {
+    const old = document.getElementById('slide-action-menu');
+    if (old) old.remove();
+    document.removeEventListener('click', closeSlideMenuOnOutsideClick);
+    activeSlideMenuIndex = null;
+}
+
+function closeSlideMenuOnOutsideClick(e) {
+    const menu = document.getElementById('slide-action-menu');
+    if (menu && !menu.contains(e.target)) {
+        closeSlideMenu();
+    }
+}
+
+function renameSlidePrompt(index) {
+    const slide = slideDataArray[index];
+    const currentName = getSlideName(slide);
+    const newName = prompt("Nhập tên mới cho slide:", currentName);
+    if (newName !== null) {
+        slide.Name = newName.trim();
+        
+        try {
+            let json = {};
+            if (slide.ElementsJson && slide.ElementsJson !== '[]') {
+                json = JSON.parse(slide.ElementsJson);
+            }
+            json.slideName = slide.Name;
+            slide.ElementsJson = JSON.stringify(json);
+        } catch(e) {}
+
+        if (index === currentSlideIndex) {
+            triggerAutoSave();
+        } else {
+            savePresentationToBackend(false);
+        }
+
+        renderSlideThumbnails();
+        closeSlideMenu();
+        showToast("Đã đổi tên slide", "success");
+    }
+}
+
+function copySlideMenu(index) {
+    saveCurrentSlideStateToMemory();
+    slideClipboard = JSON.parse(JSON.stringify(slideDataArray[index]));
+    showToast("Đã sao chép slide", "success");
+    closeSlideMenu();
+}
+
+function pasteSlideMenu(index) {
+    if (!slideClipboard) return;
+    const clonedSlide = JSON.parse(JSON.stringify(slideClipboard));
+    clonedSlide.PageNumber = index + 2;
+    slideDataArray.splice(index + 1, 0, clonedSlide);
+    slideDataArray.forEach((s, i) => s.PageNumber = i + 1);
+    currentSlideIndex = index + 1;
+    loadSlide(currentSlideIndex);
+    renderSlideThumbnails();
+    triggerAutoSave();
+    closeSlideMenu();
+    showToast("Đã dán slide mới", "success");
+}
+
+function toggleHideSlideMenu(index) {
+    const slide = slideDataArray[index];
+    const hidden = !isSlideHidden(slide);
+    slide.IsHidden = hidden;
+    
+    try {
+        let json = {};
+        if (slide.ElementsJson && slide.ElementsJson !== '[]') {
+            json = JSON.parse(slide.ElementsJson);
+        }
+        json.isHidden = hidden;
+        slide.ElementsJson = JSON.stringify(json);
+    } catch(e) {}
+
+    if (index === currentSlideIndex) {
+        triggerAutoSave();
+    } else {
+        savePresentationToBackend(false);
+    }
+    
+    renderSlideThumbnails();
+    closeSlideMenu();
+    showToast(hidden ? "Đã ẩn slide" : "Đã hiện slide", "success");
+}
+
+function toggleLockSlideMenu(index) {
+    const slide = slideDataArray[index];
+    closeSlideMenu();
+    
+    if (index === currentSlideIndex) {
+        const objects = canvas.getObjects();
+        if (objects.length === 0) {
+            showToast("Không có đối tượng nào để khóa!", "info");
+            return;
+        }
+        const anyUnlocked = objects.some(o => !o.lockMovementX);
+        const lockState = anyUnlocked;
+        
+        objects.forEach(obj => {
+            obj.set({
+                lockMovementX: lockState,
+                lockMovementY: lockState,
+                lockScalingX: lockState,
+                lockScalingY: lockState,
+                lockRotation: lockState,
+                hasControls: !lockState,
+                evented: true
+            });
+        });
+        canvas.requestRenderAll();
+        triggerAutoSave();
+        showToast(lockState ? "Đã khóa toàn bộ đối tượng trang này" : "Đã mở khóa toàn bộ đối tượng trang này", "success");
+    } else {
+        if (!slide.ElementsJson || slide.ElementsJson === '[]') {
+            showToast("Slide trống, không có đối tượng để khóa!", "info");
+            return;
+        }
+        try {
+            const data = JSON.parse(slide.ElementsJson);
+            const objects = data.objects || [];
+            if (objects.length === 0) {
+                showToast("Slide trống, không có đối tượng để khóa!", "info");
+                return;
+            }
+            const anyUnlocked = objects.some(o => !o.lockMovementX);
+            const lockState = anyUnlocked;
+            
+            objects.forEach(obj => {
+                obj.lockMovementX = lockState;
+                obj.lockMovementY = lockState;
+                obj.lockScalingX = lockState;
+                obj.lockScalingY = lockState;
+                obj.lockRotation = lockState;
+                obj.hasControls = !lockState;
+                obj.evented = true;
+            });
+            
+            slide.ElementsJson = JSON.stringify(data);
+            savePresentationToBackend(false);
+            showToast(lockState ? "Đã khóa toàn bộ đối tượng trang này" : "Đã mở khóa toàn bộ đối tượng trang này", "success");
+        } catch (e) {
+            console.error(e);
+        }
+    }
+}
+
+async function downloadSingleSlide(index) {
+    showToast('Đang chuẩn bị tải ảnh slide...', 'info');
+    closeSlideMenu();
+    try {
+        const slide = slideDataArray[index];
+        const tempCanvasEl = document.createElement('canvas');
+        
+        let slideWidth = 1280;
+        let slideHeight = 720;
+        if (slide.ElementsJson && slide.ElementsJson !== '[]') {
+            try {
+                const parsed = JSON.parse(slide.ElementsJson);
+                if (parsed.canvasWidth) slideWidth = parsed.canvasWidth;
+                else if (parsed.width) slideWidth = parsed.width;
+                if (parsed.canvasHeight) slideHeight = parsed.canvasHeight;
+                else if (parsed.height) slideHeight = parsed.height;
+            } catch (e) {}
+        }
+        
+        tempCanvasEl.width = slideWidth;
+        tempCanvasEl.height = slideHeight;
+        const tempCanvas = new fabric.StaticCanvas(tempCanvasEl);
+        tempCanvas.backgroundColor = slide.BackgroundColor || '#ffffff';
+        
+        const loadAndRender = () => {
+            return new Promise((resolve) => {
+                if (slide.BackgroundImage) {
+                    fabric.Image.fromURL(slide.BackgroundImage, function(img) {
+                        if (img) {
+                            const scale = Math.max(tempCanvas.width / img.width, tempCanvas.height / img.height);
+                            img.set({
+                                scaleX: scale,
+                                scaleY: scale,
+                                originX: 'left',
+                                originY: 'top'
+                            });
+                            tempCanvas.setBackgroundImage(img, () => {
+                                tempCanvas.renderAll();
+                                resolve();
+                            });
+                        } else {
+                            resolve();
+                        }
+                    }, { crossOrigin: 'anonymous' });
+                } else {
+                    resolve();
+                }
+            });
+        };
+        
+        if (slide.ElementsJson && slide.ElementsJson !== '[]') {
+            const data = JSON.parse(slide.ElementsJson);
+            await new Promise((resolve) => {
+                tempCanvas.loadFromJSON(data, async () => {
+                    await loadAndRender();
+                    resolve();
+                });
+            });
+        } else {
+            await loadAndRender();
+        }
+        
+        const dataURL = tempCanvas.toDataURL({ format: 'png', multiplier: 1 });
+        tempCanvas.dispose();
+        
+        const a = document.createElement('a'); 
+        const name = getSlideName(slide) || `slide-${index + 1}`;
+        a.download = `${name}.png`;
+        a.href = dataURL;
+        a.click();
+        showToast('Tải ảnh slide thành công!', 'success');
+    } catch (e) {
+        console.error(e);
+        showToast("Không thể tải ảnh do lỗi bảo mật", "error");
+    }
+}
+
+function duplicateSlideMenu(index) {
+    duplicateSlide({ stopPropagation: () => {} }, index);
+    closeSlideMenu();
+}
+
+function deleteSlideMenu(index) {
+    deleteSlide({ stopPropagation: () => {} }, index);
+    closeSlideMenu();
+}
+
+function addSlideMenu(index) {
+    saveCurrentSlideStateToMemory();
+    slideDataArray.splice(index + 1, 0, {
+        PageNumber: index + 2,
+        BackgroundColor: '#ffffff',
+        ElementsJson: '[]'
+    });
+    slideDataArray.forEach((s, i) => s.PageNumber = i + 1);
+    currentSlideIndex = index + 1;
+    loadSlide(currentSlideIndex);
+    renderSlideThumbnails();
+    triggerAutoSave();
+    closeSlideMenu();
+    showToast("Đã thêm slide mới", "success");
 }
 
 async function _renderThumbCanvas(canvasEl, slide) {
@@ -1487,8 +2060,10 @@ function dragStart(e, type) { e.dataTransfer.setData('type', type); e.dataTransf
 function _generateId() { return Math.random().toString(36).substr(2, 9); }
 
 function addText(textStr = 'Văn bản...', size = 40, isBold = false, x = null, y = null) {
-    const text = new fabric.IText(textStr, { 
-        left: x ?? canvas.width/2 - 50, top: y ?? canvas.height/2 - 20, 
+    const defaultWidth = size >= 60 ? 600 : (size >= 40 ? 500 : 400);
+    const text = new fabric.Textbox(textStr, { 
+        left: x ?? canvas.width/2 - defaultWidth/2, top: y ?? canvas.height/2 - 20, 
+        width: defaultWidth,
         fontFamily: DEFAULT_FONT, fontSize: size, fontWeight: isBold ? 'bold' : 'normal', fill: '#333333',
         id: _generateId(), name: textStr.substring(0, 10) + '...'
     });
@@ -2386,6 +2961,7 @@ function showPropertiesPanel() {
     
     const isText = activeObj.type === 'i-text' || activeObj.type === 'text';
     const isShape = activeObj.type === 'rect' || activeObj.type === 'circle' || activeObj.type === 'triangle';
+    const isImage = activeObj.type === 'image';
 
     // Show or hide Group/Ungroup buttons based on selection
     const btnGroup = document.getElementById('btn-group-objects');
@@ -2393,8 +2969,12 @@ function showPropertiesPanel() {
     if (btnGroup) btnGroup.style.display = (activeObj && activeObj.type === 'activeSelection') ? 'inline-flex' : 'none';
     if (btnUngroup) btnUngroup.style.display = (activeObj && activeObj.type === 'group') ? 'inline-flex' : 'none';
 
+    const btnLock = document.getElementById('btn-lock');
+    if (btnLock) btnLock.classList.toggle('active', !!activeObj.lockMovementX);
+
     const fontGroup = document.getElementById('prop-font-group');
     const shapeGroup = document.getElementById('prop-shape-group');
+    const imageGroup = document.getElementById('prop-image-group');
 
     if(fontGroup) {
         if (isText) {
@@ -2411,6 +2991,12 @@ function showPropertiesPanel() {
             const btnI = document.getElementById('btn-italic'); if(btnI) btnI.classList.toggle('active', activeObj.fontStyle === 'italic');
             const btnU = document.getElementById('btn-underline'); if(btnU) btnU.classList.toggle('active', activeObj.underline);
             const btnS = document.getElementById('btn-strikethrough'); if(btnS) btnS.classList.toggle('active', activeObj.linethrough);
+
+            const align = activeObj.textAlign || 'left';
+            const btnAL = document.getElementById('btn-align-left'); if(btnAL) btnAL.classList.toggle('active', align === 'left');
+            const btnAC = document.getElementById('btn-align-center'); if(btnAC) btnAC.classList.toggle('active', align === 'center');
+            const btnAR = document.getElementById('btn-align-right'); if(btnAR) btnAR.classList.toggle('active', align === 'right');
+            const btnAJ = document.getElementById('btn-align-justify'); if(btnAJ) btnAJ.classList.toggle('active', align === 'justify');
 
             // Determine active text effect dropdown value
             const effectProp = document.getElementById('prop-text-effect');
@@ -2443,6 +3029,110 @@ function showPropertiesPanel() {
             shapeGroup.style.display = 'none';
         }
     }
+
+    if(imageGroup) {
+        if (isImage) {
+            imageGroup.style.display = 'flex';
+            
+            // Prefill sliders from image filters
+            let brightnessVal = 0;
+            let contrastVal = 0;
+            let saturationVal = 0;
+            let blurVal = 0;
+            let presetVal = 'none';
+            
+            if (activeObj.filters && activeObj.filters.length > 0) {
+                activeObj.filters.forEach(f => {
+                    if (!f) return;
+                    // Note: Check instances safely, handle Fabric filter classes
+                    if (f.type === 'Brightness') brightnessVal = f.brightness || 0;
+                    else if (f.type === 'Contrast') contrastVal = f.contrast || 0;
+                    else if (f.type === 'Saturation') saturationVal = f.saturation || 0;
+                    else if (f.type === 'Blur') blurVal = f.blur || 0;
+                    else if (f.type === 'Grayscale') presetVal = 'grayscale';
+                    else if (f.type === 'Sepia') presetVal = 'sepia';
+                    else if (f.type === 'Invert') presetVal = 'invert';
+                    else if (f.type === 'Pixelate') presetVal = 'pixelate';
+                });
+            }
+            
+            document.getElementById('prop-img-brightness').value = brightnessVal;
+            document.getElementById('prop-img-contrast').value = contrastVal;
+            document.getElementById('prop-img-saturation').value = saturationVal;
+            document.getElementById('prop-img-blur').value = blurVal;
+            document.getElementById('prop-img-filter').value = presetVal;
+        } else {
+            imageGroup.style.display = 'none';
+        }
+    }
+}
+
+function updateImageFilter(type, value) {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj || activeObj.type !== 'image') return;
+    
+    if (!activeObj.filters) activeObj.filters = [];
+    
+    if (type === 'brightness') {
+        const val = parseFloat(value);
+        let f = activeObj.filters.find(filter => filter && filter.type === 'Brightness');
+        if (f) {
+            f.brightness = val;
+        } else {
+            activeObj.filters.push(new fabric.Image.filters.Brightness({ brightness: val }));
+        }
+    } else if (type === 'contrast') {
+        const val = parseFloat(value);
+        let f = activeObj.filters.find(filter => filter && filter.type === 'Contrast');
+        if (f) {
+            f.contrast = val;
+        } else {
+            activeObj.filters.push(new fabric.Image.filters.Contrast({ contrast: val }));
+        }
+    } else if (type === 'saturation') {
+        const val = parseFloat(value);
+        let f = activeObj.filters.find(filter => filter && filter.type === 'Saturation');
+        if (f) {
+            f.saturation = val;
+        } else {
+            activeObj.filters.push(new fabric.Image.filters.Saturation({ saturation: val }));
+        }
+    } else if (type === 'blur') {
+        const val = parseFloat(value);
+        let f = activeObj.filters.find(filter => filter && filter.type === 'Blur');
+        if (f) {
+            if (val === 0) {
+                activeObj.filters = activeObj.filters.filter(filter => filter && filter.type !== 'Blur');
+            } else {
+                f.blur = val;
+            }
+        } else if (val > 0) {
+            activeObj.filters.push(new fabric.Image.filters.Blur({ blur: val }));
+        }
+    } else if (type === 'preset') {
+        // Remove existing presets
+        activeObj.filters = activeObj.filters.filter(filter => 
+            filter && 
+            filter.type !== 'Grayscale' &&
+            filter.type !== 'Sepia' &&
+            filter.type !== 'Invert' &&
+            filter.type !== 'Pixelate'
+        );
+        
+        if (value === 'grayscale') {
+            activeObj.filters.push(new fabric.Image.filters.Grayscale());
+        } else if (value === 'sepia') {
+            activeObj.filters.push(new fabric.Image.filters.Sepia());
+        } else if (value === 'invert') {
+            activeObj.filters.push(new fabric.Image.filters.Invert());
+        } else if (value === 'pixelate') {
+            activeObj.filters.push(new fabric.Image.filters.Pixelate({ blocksize: 4 }));
+        }
+    }
+    
+    activeObj.applyFilters();
+    canvas.requestRenderAll();
+    triggerAutoSave();
 }
 function hidePropertiesPanel() {
     const tb = document.getElementById('sub-toolbar');
@@ -2564,25 +3254,7 @@ function renderFloatingToolbar() {
     tb.classList.add('is-visible');
 }
 function positionFloatingToolbar() {
-    const tb = document.getElementById('floating-toolbar');
-    const obj = canvas.getActiveObject();
-    if (!tb || !obj) return;
-    // Position above the bounding box of the object, in canvas-container coords.
-    const container = document.getElementById('canvas-container');
-    if (!container) return;
-    const canvasEl = document.getElementById('canvas');
-    if (!canvasEl) return;
-    const canvasRect = canvasEl.getBoundingClientRect();
-    const containerRect = container.getBoundingClientRect();
-    const br = obj.getBoundingRect(true, true); // absolute coords on the lower canvas
-    const zoom = canvas.getZoom() || 1;
-    // br is in canvas internal coords. Convert to screen coords by adding canvas rect offset.
-    const screenLeft = canvasRect.left + br.left * zoom + (br.width * zoom) / 2;
-    const screenTop = canvasRect.top + br.top * zoom - 12; // a bit of padding above
-    // Now place relative to viewport via fixed positioning; container has overflow:auto so fixed is simpler.
-    tb.style.position = 'fixed';
-    tb.style.left = `${Math.max(12, screenLeft - tb.offsetWidth / 2)}px`;
-    tb.style.top = `${Math.max(70, screenTop - tb.offsetHeight)}px`;
+    // No-op: toolbar is styled statically at the top of the editor canvas area, Canva-style.
 }
 function hideFloatingToolbar() {
     const tb = document.getElementById('floating-toolbar');
@@ -2677,17 +3349,52 @@ function openColorPicker(anchorEl, initialHex, onChange) {
             <div><div style="font-size:0.7rem; color:#94a3b8; text-align:center; margin-bottom:2px;">G</div><input id="cp-g" type="number" min="0" max="255" style="width:100%; padding:5px 4px; border-radius:5px; border:1px solid rgba(255,255,255,0.08); background:#0f172a; color:#f1f5f9; text-align:center; font-size:0.8rem;" /></div>
             <div><div style="font-size:0.7rem; color:#94a3b8; text-align:center; margin-bottom:2px;">B</div><input id="cp-b" type="number" min="0" max="255" style="width:100%; padding:5px 4px; border-radius:5px; border:1px solid rgba(255,255,255,0.08); background:#0f172a; color:#f1f5f9; text-align:center; font-size:0.8rem;" /></div>
         </div>
+        <div style="margin-top:14px; border-top:1px solid rgba(255,255,255,0.1); padding-top:12px;">
+            <div style="font-size:0.72rem; color:#94a3b8; margin-bottom:8px; font-weight:600; text-align:left;">Màu sắc phổ biến</div>
+            <div id="cp-preset-colors" style="display:grid; grid-template-columns:repeat(8, 1fr); gap:6px;"></div>
+        </div>
     `;
     document.body.appendChild(pop);
     _cpState.popover = pop;
+
+    const presetColors = [
+        '#000000', '#374151', '#6b7280', '#9ca3af', '#d1d5db', '#f3f4f6', '#f8fafc', '#ffffff',
+        '#f87171', '#fb923c', '#fde047', '#4ade80', '#22d3ee', '#60a5fa', '#818cf8', '#f472b6',
+        '#dc2626', '#ea580c', '#ca8a04', '#16a34a', '#0891b2', '#2563eb', '#4f46e5', '#db2777'
+    ];
+
+    const cpPresetContainer = pop.querySelector('#cp-preset-colors');
+    if (cpPresetContainer) {
+        presetColors.forEach(c => {
+            const swatch = document.createElement('div');
+            swatch.className = 'cp-preset-swatch';
+            swatch.style.cssText = `
+                width:22px; height:22px; border-radius:4px; cursor:pointer;
+                background:${c}; border:1px solid rgba(255,255,255,0.15);
+                transition:transform 0.1s;
+            `;
+            swatch.addEventListener('mouseover', () => swatch.style.transform = 'scale(1.15)');
+            swatch.addEventListener('mouseout', () => swatch.style.transform = 'scale(1)');
+            swatch.addEventListener('click', () => {
+                const rgb = _hexToRgb(c);
+                const hsv = _rgbToHsv(rgb.r, rgb.g, rgb.b);
+                _cpState.h = hsv.h;
+                _cpState.s = hsv.s;
+                _cpState.v = hsv.v;
+                _cpRender();
+                if (_cpState.onChange) _cpState.onChange(c);
+            });
+            cpPresetContainer.appendChild(swatch);
+        });
+    }
 
     // Position near anchor.
     const r = anchorEl.getBoundingClientRect();
     let left = r.left;
     let top = r.bottom + 6;
-    // Keep inside viewport.
+    // Keep inside viewport (height increased to account for presets).
     if (left + 260 > window.innerWidth) left = window.innerWidth - 270;
-    if (top + 330 > window.innerHeight) top = r.top - 330 - 6;
+    if (top + 430 > window.innerHeight) top = r.top - 430 - 6;
     pop.style.left = `${Math.max(8, left)}px`;
     pop.style.top = `${Math.max(8, top)}px`;
 
@@ -2889,10 +3596,73 @@ function toggleUppercase() {
     canvas.renderAll(); triggerAutoSave();
 }
 
-function bringForward() { const obj = canvas.getActiveObject(); if(obj) { canvas.bringForward(obj); canvas.renderAll(); triggerAutoSave(); } }
-function sendBackward() { const obj = canvas.getActiveObject(); if(obj) { canvas.sendBackwards(obj); canvas.renderAll(); triggerAutoSave(); } }
-function bringToFront() { const obj = canvas.getActiveObject(); if(obj) { canvas.bringToFront(obj); canvas.renderAll(); triggerAutoSave(); } }
-function sendToBack() { const obj = canvas.getActiveObject(); if(obj) { canvas.sendToBack(obj); canvas.renderAll(); triggerAutoSave(); } }
+function bringForward() {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj) return;
+    if (activeObj.type === 'activeSelection') {
+        const sortedObjects = activeObj.getObjects().slice().sort((a, b) => {
+            return canvas.getObjects().indexOf(b) - canvas.getObjects().indexOf(a);
+        });
+        sortedObjects.forEach(obj => {
+            canvas.bringForward(obj);
+        });
+    } else {
+        canvas.bringForward(activeObj);
+    }
+    canvas.renderAll();
+    triggerAutoSave();
+}
+
+function sendBackward() {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj) return;
+    if (activeObj.type === 'activeSelection') {
+        const sortedObjects = activeObj.getObjects().slice().sort((a, b) => {
+            return canvas.getObjects().indexOf(a) - canvas.getObjects().indexOf(b);
+        });
+        sortedObjects.forEach(obj => {
+            canvas.sendBackwards(obj);
+        });
+    } else {
+        canvas.sendBackwards(activeObj);
+    }
+    canvas.renderAll();
+    triggerAutoSave();
+}
+
+function bringToFront() {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj) return;
+    if (activeObj.type === 'activeSelection') {
+        const sortedObjects = activeObj.getObjects().slice().sort((a, b) => {
+            return canvas.getObjects().indexOf(a) - canvas.getObjects().indexOf(b);
+        });
+        sortedObjects.forEach(obj => {
+            canvas.bringToFront(obj);
+        });
+    } else {
+        canvas.bringToFront(activeObj);
+    }
+    canvas.renderAll();
+    triggerAutoSave();
+}
+
+function sendToBack() {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj) return;
+    if (activeObj.type === 'activeSelection') {
+        const sortedObjects = activeObj.getObjects().slice().sort((a, b) => {
+            return canvas.getObjects().indexOf(b) - canvas.getObjects().indexOf(a);
+        });
+        sortedObjects.forEach(obj => {
+            canvas.sendToBack(obj);
+        });
+    } else {
+        canvas.sendToBack(activeObj);
+    }
+    canvas.renderAll();
+    triggerAutoSave();
+}
 
 function deleteSelected() {
     const activeObjects = canvas.getActiveObjects();
@@ -2902,6 +3672,99 @@ function deleteSelected() {
         hidePropertiesPanel();
         triggerAutoSave();
     }
+}
+
+// Global Operations for Context Menu & Keyboard Shortcuts
+function copySelectedObject() {
+    const activeObj = canvas.getActiveObject();
+    if (activeObj) {
+        activeObj.clone((cloned) => {
+            clipboard = cloned;
+            showToast('Đã sao chép', 'success');
+        });
+    }
+}
+
+function cutSelectedObject() {
+    const activeObj = canvas.getActiveObject();
+    if (activeObj) {
+        activeObj.clone((cloned) => {
+            clipboard = cloned;
+            const activeObjects = canvas.getActiveObjects();
+            canvas.discardActiveObject();
+            activeObjects.forEach(obj => canvas.remove(obj));
+            canvas.requestRenderAll();
+            triggerAutoSave();
+            showToast('Đã cắt', 'success');
+        });
+    }
+}
+
+function pasteObject() {
+    if (clipboard) {
+        clipboard.clone((clonedObj) => {
+            canvas.discardActiveObject();
+            clonedObj.set({
+                left: clonedObj.left + 20,
+                top: clonedObj.top + 20,
+                id: _generateId(),
+                evented: true
+            });
+            if (clonedObj.type === 'activeSelection') {
+                clonedObj.canvas = canvas;
+                clonedObj.forEachObject((obj) => {
+                    obj.set({ id: _generateId() });
+                    canvas.add(obj);
+                });
+                clonedObj.setCoords();
+            } else {
+                canvas.add(clonedObj);
+            }
+            clipboard.top += 20;
+            clipboard.left += 20;
+            canvas.setActiveObject(clonedObj);
+            canvas.requestRenderAll();
+            triggerAutoSave();
+            showToast('Đã dán', 'success');
+        });
+    }
+}
+
+function duplicateSelectedObject() {
+    const activeObj = canvas.getActiveObject();
+    if (activeObj) {
+        activeObj.clone((clonedObj) => {
+            canvas.discardActiveObject();
+            clonedObj.set({
+                left: clonedObj.left + 20,
+                top: clonedObj.top + 20,
+                id: _generateId(),
+                evented: true
+            });
+            if (clonedObj.type === 'activeSelection') {
+                clonedObj.canvas = canvas;
+                clonedObj.forEachObject((obj) => {
+                    obj.set({ id: _generateId() });
+                    canvas.add(obj);
+                });
+                clonedObj.setCoords();
+            } else {
+                canvas.add(clonedObj);
+            }
+            canvas.setActiveObject(clonedObj);
+            canvas.requestRenderAll();
+            triggerAutoSave();
+            showToast('Đã nhân đôi', 'success');
+        });
+    }
+}
+
+function deleteSelectedObjects() {
+    deleteSelected();
+}
+
+function addSlide() {
+    addNewSlide();
 }
 
 /* --- CONTEXT MENU LOGIC --- */
@@ -2940,58 +3803,21 @@ function contextAction(action) {
     if(menu) menu.classList.remove('active');
     
     if (action === 'copy') {
-        const obj = canvas.getActiveObject();
-        if (obj) {
-            obj.clone((cloned) => { clipboard = cloned; });
-            showToast('Đã sao chép');
-        }
+        copySelectedObject();
+    } else if (action === 'cut') {
+        cutSelectedObject();
     } else if (action === 'paste') {
-        if (clipboard) {
-            clipboard.clone((clonedObj) => {
-                canvas.discardActiveObject();
-                clonedObj.set({
-                    left: clonedObj.left + 20,
-                    top: clonedObj.top + 20,
-                    id: _generateId(),
-                    evented: true
-                });
-                if (clonedObj.type === 'activeSelection') {
-                    clonedObj.canvas = canvas;
-                    clonedObj.forEachObject((obj) => { canvas.add(obj); });
-                    clonedObj.setCoords();
-                } else {
-                    canvas.add(clonedObj);
-                }
-                clipboard.top += 20;
-                clipboard.left += 20;
-                canvas.setActiveObject(clonedObj);
-                canvas.requestRenderAll();
-                triggerAutoSave();
-            });
-        }
+        pasteObject();
     } else if (action === 'duplicate') {
-        const obj = canvas.getActiveObject();
-        if (obj) {
-            obj.clone((clonedObj) => {
-                canvas.discardActiveObject();
-                clonedObj.set({ left: clonedObj.left + 20, top: clonedObj.top + 20, id: _generateId(), evented: true });
-                canvas.add(clonedObj); canvas.setActiveObject(clonedObj); canvas.requestRenderAll();
-                triggerAutoSave(); showToast('Đã nhân bản');
-            });
-        }
+        duplicateSelectedObject();
     } else if (action === 'bringForward') { bringForward(); } 
     else if (action === 'sendBackward') { sendBackward(); } 
     else if (action === 'bringToFront') { bringToFront(); }
     else if (action === 'sendToBack') { sendToBack(); }
-    else if (action === 'delete') { deleteSelected(); } 
+    else if (action === 'delete') { deleteSelectedObjects(); } 
     else if (action === 'addPage') { addNewSlide(); }
     else if (action === 'lock') {
-        const obj = canvas.getActiveObject();
-        if (obj) {
-            const isLocked = !obj.lockMovementX;
-            obj.set({ lockMovementX: isLocked, lockMovementY: isLocked, lockRotation: isLocked, lockScalingX: isLocked, lockScalingY: isLocked, hasControls: !isLocked });
-            canvas.discardActiveObject(); canvas.requestRenderAll(); triggerAutoSave();
-        }
+        toggleLockSelected();
     }
 }
 
@@ -3002,25 +3828,54 @@ function initKeyboardShortcuts() {
         const activeObj = canvas?.getActiveObject();
         if (activeObj && activeObj.isEditing) return;
 
-        if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); return; }
-        if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); return; }
-        if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelected(); }
-        if (e.ctrlKey && e.key === 'c' && activeObj) { activeObj.clone(function(cloned) { clipboard = cloned; showToast('Đã copy', 'success'); }); }
-        if (e.ctrlKey && e.key === 'v' && clipboard) {
-            clipboard.clone(function(clonedObj) {
-                canvas.discardActiveObject();
-                clonedObj.set({ left: clonedObj.left + 20, top: clonedObj.top + 20, evented: true, id: _generateId() });
-                if (clonedObj.type === 'activeSelection') {
-                    clonedObj.canvas = canvas; clonedObj.forEachObject(function(obj) { canvas.add(obj); }); clonedObj.setCoords();
-                } else canvas.add(clonedObj);
-                clipboard.top += 20; clipboard.left += 20;
-                canvas.setActiveObject(clonedObj); canvas.requestRenderAll(); triggerAutoSave();
-            });
+        const key = e.key ? e.key.toLowerCase() : '';
+        const code = e.code;
+
+        // Undo & Redo (layout-independent & IME safe)
+        if (e.ctrlKey && (key === 'z' || code === 'KeyZ')) {
+            e.preventDefault();
+            if (e.shiftKey) {
+                redo();
+            } else {
+                undo();
+            }
+            return;
         }
-        if (e.ctrlKey && e.key === 'd' && activeObj) { e.preventDefault(); contextAction('duplicate'); }
-        if (e.ctrlKey && e.key === 'b') { e.preventDefault(); toggleFormat('fontWeight', 'bold', 'normal'); }
-        if (e.ctrlKey && e.key === 'i') { e.preventDefault(); toggleFormat('fontStyle', 'italic', 'normal'); }
-        if (e.ctrlKey && e.key === 'u') { e.preventDefault(); toggleFormat('underline', true, false); }
+        if (e.ctrlKey && (key === 'y' || code === 'KeyY')) {
+            e.preventDefault();
+            redo();
+            return;
+        }
+
+        // Copy, Cut, Paste, Duplicate, Delete
+        if (e.ctrlKey && (key === 'c' || code === 'KeyC') && activeObj) {
+            e.preventDefault();
+            copySelectedObject();
+            return;
+        }
+        if (e.ctrlKey && (key === 'x' || code === 'KeyX') && activeObj) {
+            e.preventDefault();
+            cutSelectedObject();
+            return;
+        }
+        if (e.ctrlKey && (key === 'v' || code === 'KeyV')) {
+            e.preventDefault();
+            pasteObject();
+            return;
+        }
+        if (e.ctrlKey && (key === 'd' || code === 'KeyD') && activeObj) {
+            e.preventDefault();
+            duplicateSelectedObject();
+            return;
+        }
+        if (e.key === 'Delete' || e.key === 'Backspace') {
+            deleteSelected();
+        }
+
+        // Formatting
+        if (e.ctrlKey && (key === 'b' || code === 'KeyB')) { e.preventDefault(); toggleFormat('fontWeight', 'bold', 'normal'); }
+        if (e.ctrlKey && (key === 'i' || code === 'KeyI')) { e.preventDefault(); toggleFormat('fontStyle', 'italic', 'normal'); }
+        if (e.ctrlKey && (key === 'u' || code === 'KeyU')) { e.preventDefault(); toggleFormat('underline', true, false); }
     });
 
     window.addEventListener('paste', (e) => {
@@ -3070,7 +3925,7 @@ function showToast(msg, type = 'info') {
 
 function toggleDrawer(type, forceOpen = false) {
     const panel = document.getElementById('drawer-panel');
-    const tabs = ['design', 'elements', 'text', 'draw', 'upload', 'photos', 'bg'];
+    const tabs = ['design', 'elements', 'text', 'ai', 'draw', 'upload', 'photos', 'bg'];
     
     tabs.forEach(t => {
         const el = document.getElementById(`tab-${t}`);
@@ -3123,6 +3978,45 @@ function toggleDrawer(type, forceOpen = false) {
                 renderTemplateCards(document.getElementById('templates-grid'), filteredBuiltins);
                 showToast('Đang dùng mẫu có sẵn trong máy', 'info');
             });
+    } else if (type === 'ai') {
+        panel.innerHTML = `
+            <div class="drawer-title">Trợ lý AI Thiết kế</div>
+            <p style="color:#94A3B8; font-size:0.82rem; margin:0 0 14px;">Công cụ thiết kế tự động và tinh chỉnh chữ thông minh.</p>
+            
+            <div style="margin-bottom:20px; padding:12px; background:rgba(124,92,255,0.06); border:1px solid rgba(124,92,255,0.15); border-radius:10px;">
+                <div style="font-size:0.88rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                    <i class="fa-solid fa-layer-group" style="color:#a78bfa;"></i> Tạo bố cục slide
+                </div>
+                <textarea id="ai-prompt" placeholder="Ví dụ: Giới thiệu 3 thành viên sáng lập..." style="width:100%; height:70px; box-sizing:border-box; padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:#1e293b; color:#fff; font-size:0.82rem; outline:none; resize:none; margin-bottom:8px; font-family:'Inter', sans-serif;"></textarea>
+                
+                <label style="font-size:0.75rem; color:#94a3b8; display:block; margin-bottom:4px;">Chủ đề màu sắc</label>
+                <select id="ai-theme" style="width:100%; padding:6px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:#1e293b; color:#fff; font-size:0.82rem; margin-bottom:10px; outline:none; cursor:pointer;">
+                    <option value="corporate">Xanh công sở (Corporate)</option>
+                    <option value="dark">Tối hiện đại (Sleek Dark)</option>
+                    <option value="minimal">Trắng tối giản (Minimal Light)</option>
+                    <option value="sunset">Hoàng hôn (Sunset Glow)</option>
+                    <option value="neon">Cyberpunk Neon</option>
+                </select>
+
+                <button onclick="aiGenerateLayout()" style="width:100%; padding:9px; border:none; border-radius:6px; background:linear-gradient(90deg,#7c3aed,#2563eb); color:#fff; font-weight:700; font-size:0.82rem; cursor:pointer; display:flex; align-items:center; justify-content:center; gap:6px; font-family:'Inter', sans-serif;">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i> Tạo slide tự động
+                </button>
+            </div>
+
+            <div id="ai-text-tool" style="margin-bottom:20px; padding:12px; background:rgba(34,211,238,0.04); border:1px solid rgba(34,211,238,0.15); border-radius:10px; display:none;">
+                <div style="font-size:0.88rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                    <i class="fa-solid fa-pen-nib" style="color:#22d3ee;"></i> Tối ưu hóa văn bản
+                </div>
+                <p style="font-size:0.75rem; color:#94a3b8; margin:0 0 8px;">(Chọn một ô văn bản trên canvas để sử dụng)</p>
+                <div style="display:grid; grid-template-columns:1fr 1fr; gap:6px;">
+                    <button onclick="aiEditText('shorten')" style="padding:6px; border-radius:6px; background:#1e293b; border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:0.78rem; cursor:pointer; font-weight:500; transition:0.15s; font-family:'Inter', sans-serif;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='#1e293b'">Làm ngắn lại</button>
+                    <button onclick="aiEditText('lengthen')" style="padding:6px; border-radius:6px; background:#1e293b; border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:0.78rem; cursor:pointer; font-weight:500; transition:0.15s; font-family:'Inter', sans-serif;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='#1e293b'">Viết dài ra</button>
+                    <button onclick="aiEditText('formal')" style="padding:6px; border-radius:6px; background:#1e293b; border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:0.78rem; cursor:pointer; font-weight:500; transition:0.15s; font-family:'Inter', sans-serif;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='#1e293b'">Trang trọng hơn</button>
+                    <button onclick="aiEditText('translate')" style="padding:6px; border-radius:6px; background:#1e293b; border:1px solid rgba(255,255,255,0.1); color:#fff; font-size:0.78rem; cursor:pointer; font-weight:500; transition:0.15s; font-family:'Inter', sans-serif;" onmouseover="this.style.background='rgba(255,255,255,0.05)'" onmouseout="this.style.background='#1e293b'">Dịch sang Anh</button>
+                </div>
+            </div>
+        `;
+        checkAiTextToolsVisibility();
     } else if (type === 'text') {
         panel.innerHTML = `
             <div class="drawer-title">Văn bản</div>
@@ -3229,7 +4123,20 @@ function toggleDrawer(type, forceOpen = false) {
             <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
                 <h5 style="color:var(--text-main); margin:0; font-size: 0.9rem;">Chọn màu tùy biến</h5>
             </div>
-            <input type="color" onchange="changeBackgroundColor(this.value)" style="width:100%; height:40px; border:none; border-radius:4px; cursor:pointer;">
+            <input type="color" onchange="changeBackgroundColor(this.value)" style="width:100%; height:40px; border:none; border-radius:4px; cursor:pointer; margin-bottom: 20px;">
+            <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px;">
+                <h5 style="color:var(--text-main); margin:0; font-size: 0.9rem;">Tạo Gradient tùy chỉnh</h5>
+            </div>
+            <div style="display:flex; gap:10px; align-items:center; margin-bottom: 12px;">
+                <div style="flex:1;">
+                    <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Màu đầu</label>
+                    <input type="color" id="bg-grad-1" value="#6366f1" onchange="applyCustomGradientBackground()" style="width:100%; height:34px; border:none; border-radius:4px; cursor:pointer; padding:0; background:transparent;">
+                </div>
+                <div style="flex:1;">
+                    <label style="font-size:0.75rem; color:var(--text-muted); display:block; margin-bottom:4px;">Màu cuối</label>
+                    <input type="color" id="bg-grad-2" value="#a855f7" onchange="applyCustomGradientBackground()" style="width:100%; height:34px; border:none; border-radius:4px; cursor:pointer; padding:0; background:transparent;">
+                </div>
+            </div>
         `;
     } else if (type === 'upload') {
         let uploadHtml = `
@@ -3677,4 +4584,820 @@ function changeBackgroundColor(color) {
     });
 }
 
+function toggleLockSelected() {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj) return;
+
+    let isLocked;
+    if (activeObj.type === 'activeSelection') {
+        const objects = activeObj.getObjects();
+        isLocked = !objects.some(o => !o.lockMovementX);
+    } else {
+        isLocked = !activeObj.lockMovementX;
+    }
+
+    const newLockState = !isLocked;
+
+    const setLockProps = (obj) => {
+        obj.set({
+            lockMovementX: newLockState,
+            lockMovementY: newLockState,
+            lockScalingX: newLockState,
+            lockScalingY: newLockState,
+            lockRotation: newLockState,
+            hasControls: !newLockState,
+            evented: true // Keep it selectable so user can click to unlock
+        });
+    };
+
+    if (activeObj.type === 'activeSelection') {
+        activeObj.getObjects().forEach(setLockProps);
+    }
+    setLockProps(activeObj);
+
+    canvas.discardActiveObject(); // deselect and reselect to update visual selection UI
+    canvas.setActiveObject(activeObj);
+    canvas.requestRenderAll();
+    triggerAutoSave();
+    showPropertiesPanel(); // refresh toolbar states
+    showToast(newLockState ? 'Đã khóa đối tượng' : 'Đã mở khóa đối tượng', 'success');
+}
+
+function alignObject(direction) {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj) return;
+
+    const canvasWidth = canvas.width;
+    const canvasHeight = canvas.height;
+    const objWidth = activeObj.getScaledWidth();
+    const objHeight = activeObj.getScaledHeight();
+    
+    let targetLeft = activeObj.left;
+    let targetTop = activeObj.top;
+
+    if (direction === 'left') {
+        if (activeObj.originX === 'center') {
+            targetLeft = objWidth / 2;
+        } else {
+            targetLeft = 0;
+        }
+    } else if (direction === 'center') {
+        if (activeObj.originX === 'center') {
+            targetLeft = canvasWidth / 2;
+        } else {
+            targetLeft = (canvasWidth - objWidth) / 2;
+        }
+    } else if (direction === 'right') {
+        if (activeObj.originX === 'center') {
+            targetLeft = canvasWidth - objWidth / 2;
+        } else {
+            targetLeft = canvasWidth - objWidth;
+        }
+    } else if (direction === 'top') {
+        if (activeObj.originY === 'center') {
+            targetTop = objHeight / 2;
+        } else {
+            targetTop = 0;
+        }
+    } else if (direction === 'middle') {
+        if (activeObj.originY === 'center') {
+            targetTop = canvasHeight / 2;
+        } else {
+            targetTop = (canvasHeight - objHeight) / 2;
+        }
+    } else if (direction === 'bottom') {
+        if (activeObj.originY === 'center') {
+            targetTop = canvasHeight - objHeight / 2;
+        } else {
+            targetTop = canvasHeight - objHeight;
+        }
+    }
+
+    const deltaX = targetLeft - activeObj.left;
+    const deltaY = targetTop - activeObj.top;
+
+    if (activeObj.type === 'activeSelection') {
+        activeObj.forEachObject(obj => {
+            obj.set({
+                left: obj.left + deltaX,
+                top: obj.top + deltaY
+            });
+            obj.setCoords();
+        });
+    }
+    activeObj.set({ left: targetLeft, top: targetTop });
+    activeObj.setCoords();
+    canvas.renderAll();
+    triggerAutoSave();
+    showToast('Đã căn chỉnh đối tượng', 'success');
+}
+
+function toggleResizeMenu(e) {
+    e.stopPropagation();
+    const menu = document.getElementById('resize-menu');
+    if (!menu) return;
+    const isVisible = menu.style.display === 'block';
+    menu.style.display = isVisible ? 'none' : 'block';
+    
+    if (!isVisible) {
+        document.getElementById('resize-w').value = canvas.width;
+        document.getElementById('resize-h').value = canvas.height;
+    }
+}
+
+function changeCanvasSize(w, h) {
+    if (!canvas) return;
+    const newW = parseInt(w);
+    const newH = parseInt(h);
+    
+    const scaleX = newW / canvas.width;
+    const scaleY = newH / canvas.height;
+
+    canvas.setWidth(newW);
+    canvas.setHeight(newH);
+
+    canvas.getObjects().forEach(obj => {
+        obj.scaleX = obj.scaleX * scaleX;
+        obj.scaleY = obj.scaleY * scaleY;
+        obj.left = obj.left * scaleX;
+        obj.top = obj.top * scaleY;
+        obj.setCoords();
+    });
+    canvas.renderAll();
+    
+    if (slideDataArray[currentSlideIndex]) {
+        try {
+            const json = JSON.parse(slideDataArray[currentSlideIndex].ElementsJson || '{}');
+            json.canvasWidth = newW;
+            json.canvasHeight = newH;
+            slideDataArray[currentSlideIndex].ElementsJson = JSON.stringify(json);
+        } catch (e) {
+            console.error(e);
+        }
+    }
+    
+    triggerAutoSave();
+    zoomToFit();
+    showToast(`Đã đổi kích thước thành ${newW}x${newH}`, 'success');
+    
+    const menu = document.getElementById('resize-menu');
+    if (menu) menu.style.display = 'none';
+}
+
+function applyCustomResize() {
+    const w = parseInt(document.getElementById('resize-w').value);
+    const h = parseInt(document.getElementById('resize-h').value);
+    if (!w || !h || isNaN(w) || isNaN(h)) {
+        showToast('Kích thước không hợp lệ!', 'error');
+        return;
+    }
+    changeCanvasSize(w, h);
+}
+
+// Global click listener to close popups
+document.addEventListener('click', (e) => {
+    const menu = document.getElementById('resize-menu');
+    if (menu && !menu.contains(e.target) && !e.target.closest('[onclick="toggleResizeMenu(event)"]')) {
+        menu.style.display = 'none';
+    }
+});
+
+// Custom gradient builder — reads the two color pickers in the Background drawer
+function applyCustomGradientBackground() {
+    const c1 = document.getElementById('bg-grad-1')?.value || '#6366f1';
+    const c2 = document.getElementById('bg-grad-2')?.value || '#a855f7';
+    setBgGradient(c1, c2);
+}
+
+/* --- AI ASSISTANT --- */
+function checkAiTextToolsVisibility() {
+    const textTool = document.getElementById('ai-text-tool');
+    if (!textTool) return;
+    const activeObj = canvas.getActiveObject();
+    if (activeObj && (activeObj.type === 'i-text' || activeObj.type === 'text' || activeObj.type === 'textbox')) {
+        textTool.style.display = 'block';
+    } else {
+        textTool.style.display = 'none';
+    }
+}
+
+function aiGenerateLayout() {
+    const promptEl = document.getElementById('ai-prompt');
+    const themeEl = document.getElementById('ai-theme');
+    if (!promptEl || !themeEl) return;
+    
+    const prompt = promptEl.value.trim().toLowerCase();
+    const cleanPrompt = promptEl.value.trim(); // Dùng chuỗi gốc để trích xuất hoa/thường chính xác
+    const theme = themeEl.value;
+    
+    if (!prompt) {
+        showToast("Vui lòng nhập mô tả ý tưởng slide!", "warning");
+        return;
+    }
+    
+    showToast("AI đang thiết kế slide...", "info");
+    
+    // 1. Phân tích màu sắc chủ đề
+    let bgColor = '#ffffff';
+    let titleColor = '#111827';
+    let bodyColor = '#4b5563';
+    let accentColor = '#6366f1'; 
+    let secondaryAccent = '#22d3ee'; 
+    let cardBg = '#f3f4f6';
+    let cardStroke = '#e5e7eb';
+    
+    if (theme === 'dark') {
+        bgColor = '#0b0f19';
+        titleColor = '#f9fafb';
+        bodyColor = '#9ca3af';
+        accentColor = '#7c3aed';
+        secondaryAccent = '#ec4899';
+        cardBg = '#111827';
+        cardStroke = '#1f2937';
+    } else if (theme === 'minimal') {
+        bgColor = '#ffffff';
+        titleColor = '#111827';
+        bodyColor = '#374151';
+        accentColor = '#111827';
+        secondaryAccent = '#6b7280';
+        cardBg = '#f9fafb';
+        cardStroke = '#e5e7eb';
+    } else if (theme === 'sunset') {
+        bgColor = '#fffafb';
+        titleColor = '#431407';
+        bodyColor = '#7c2d12';
+        accentColor = '#f97316';
+        secondaryAccent = '#facc15';
+        cardBg = '#fff7ed';
+        cardStroke = '#ffedd5';
+    } else if (theme === 'neon') {
+        bgColor = '#030712';
+        titleColor = '#f0f9ff';
+        bodyColor = '#94a3b8';
+        accentColor = '#06b6d4';
+        secondaryAccent = '#c026d3';
+        cardBg = '#0c1e2e';
+        cardStroke = '#0f354c';
+    }
+    
+    // Dọn canvas và set màu nền
+    canvas.clear();
+    canvas.backgroundColor = bgColor;
+    
+    const objects = [];
+    
+    // 2. Heuristic trích xuất tiêu đề tùy biến từ prompt (trong dấu ngoặc kép hoặc sau từ khóa)
+    let slideTitle = "";
+    const quoteMatch = cleanPrompt.match(/"([^"]+)"/) || cleanPrompt.match(/'([^']+)'/);
+    if (quoteMatch) {
+        slideTitle = quoteMatch[1];
+    } else {
+        const titleKeywords = ["tiêu đề là", "tiêu đề:", "chủ đề là", "chủ đề:", "về chủ đề", "về"];
+        for (const kw of titleKeywords) {
+            const idx = prompt.indexOf(kw);
+            if (idx !== -1) {
+                const rest = cleanPrompt.substring(idx + kw.length).trim();
+                if (rest) {
+                    const parts = rest.split(/[.,;!?\n]+/);
+                    if (parts[0].trim()) {
+                        slideTitle = parts[0].trim();
+                        break;
+                    }
+                }
+            }
+        }
+    }
+    if (slideTitle) {
+        slideTitle = slideTitle.charAt(0).toUpperCase() + slideTitle.slice(1);
+    }
+
+    // Phân tích phân loại bố cục
+    const hasTimeline = prompt.includes('timeline') || prompt.includes('dòng thời gian') || prompt.includes('lịch sử') || prompt.includes('quá trình') || prompt.includes('phát triển') || prompt.includes('mốc');
+    const hasTeam = prompt.includes('team') || prompt.includes('nhân sự') || prompt.includes('founders') || prompt.includes('thành viên') || prompt.includes('đội ngũ') || prompt.includes('con người');
+    const hasTable = prompt.includes('bảng') || prompt.includes('so sánh') || prompt.includes('giá') || prompt.includes('pricing') || prompt.includes('table');
+    const hasChart = prompt.includes('biểu đồ') || prompt.includes('charts') || prompt.includes('thống kê') || prompt.includes('kpi') || prompt.includes('số liệu') || prompt.includes('data');
+
+    if (hasTimeline) {
+        // --- LAYOUT DÒNG THỜI GIAN (TIMELINE) DỘNG ---
+        // Heuristic: Trích xuất các năm và mô tả từ prompt
+        const yearMatches = [];
+        const yearRegex = /\b(19\d\d|20\d\d)\b/g;
+        let match;
+        while ((match = yearRegex.exec(cleanPrompt)) !== null) {
+            yearMatches.push({
+                year: match[0],
+                index: match.index,
+                nextIndex: match.index + match[0].length
+            });
+        }
+
+        let extractedSteps = [];
+        for (let i = 0; i < yearMatches.length; i++) {
+            const current = yearMatches[i];
+            const end = (i + 1 < yearMatches.length) ? yearMatches[i+1].index : cleanPrompt.length;
+            let desc = cleanPrompt.substring(current.nextIndex, end).trim();
+            desc = desc.replace(/^[:\-\s,;+]+/, '').replace(/[,;.\s\-+]+$/, '').trim();
+            if (desc) {
+                desc = desc.charAt(0).toUpperCase() + desc.slice(1);
+            } else {
+                desc = "Cột mốc lịch sử quan trọng phát triển dự án.";
+            }
+            extractedSteps.push({
+                year: current.year,
+                title: desc.length > 20 ? desc.substring(0, 17) + "..." : desc,
+                desc: desc
+            });
+        }
+
+        const steps = extractedSteps.length >= 2 ? extractedSteps.slice(0, 4) : [
+            { year: '2024', title: 'Ý Tưởng & Khởi Đầu', desc: 'Thành lập đội ngũ và phát triển sản phẩm thử nghiệm.' },
+            { year: '2025', title: 'Tăng Trưởng Nhanh', desc: 'Ra mắt phiên bản Beta và thu hút 10,000 người dùng đầu tiên.' },
+            { year: '2026', title: 'Mở Rộng Thị Trường', desc: 'Đạt mốc 100k người dùng và bắt đầu gọi vốn Series A.' }
+        ];
+
+        // Dựng Slide Title
+        const finalTitle = slideTitle || "Dòng Thời Gian Phát Triển";
+        objects.push(new fabric.Textbox('LỘ TRÌNH PHÁT TRIỂN DỰ ÁN', {
+            left: 60, top: 40, width: 680, fontSize: 13, fill: accentColor, fontWeight: '800', charSpacing: 100, fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox(finalTitle, {
+            left: 60, top: 62, width: 680, fontSize: 34, fill: titleColor, fontWeight: '800', fontFamily: 'Inter'
+        }));
+        
+        // Vẽ trục ngang động
+        const totalWidth = 640;
+        const startX = 80;
+        const stepSpacing = steps.length > 1 ? totalWidth / (steps.length - 1) : totalWidth;
+
+        objects.push(new fabric.Rect({
+            left: startX, top: 220, width: totalWidth, height: 4, fill: accentColor, opacity: 0.3
+        }));
+        
+        // Vẽ các bước timeline
+        steps.forEach((step, idx) => {
+            const x = startX + idx * stepSpacing;
+            // Circle
+            objects.push(new fabric.Circle({
+                left: x - 6, top: 206, radius: 16, fill: accentColor
+            }));
+            objects.push(new fabric.Circle({
+                left: x, top: 212, radius: 10, fill: bgColor
+            }));
+            // Year
+            objects.push(new fabric.Textbox(step.year, {
+                left: x - 50, top: 160, width: 100, fontSize: 22, fill: accentColor, fontWeight: '800', textAlign: 'center', fontFamily: 'Inter'
+            }));
+            // Title
+            objects.push(new fabric.Textbox(step.title, {
+                left: x - 70, top: 246, width: 140, fontSize: 15, fill: titleColor, fontWeight: '700', textAlign: 'center', fontFamily: 'Inter'
+            }));
+            // Desc
+            objects.push(new fabric.Textbox(step.desc, {
+                left: x - 85, top: 276, width: 170, fontSize: 12, fill: bodyColor, textAlign: 'center', lineHeight: 1.4, fontFamily: 'Inter'
+            }));
+        });
+        
+    } else if (hasTeam) {
+        // --- LAYOUT ĐỘI NGŨ NHÂN SỰ DỘNG ---
+        // Heuristic: Tách chức vụ và tên riêng từ prompt
+        const segments = cleanPrompt.split(/[,;.\n]|\bvà\b/i);
+        const roleKeywords = [
+            { kw: 'ceo', label: 'CEO & Founder' },
+            { kw: 'cto', label: 'CTO & Co-Founder' },
+            { kw: 'founder', label: 'Founder' },
+            { kw: 'giám đốc', label: 'Giám đốc' },
+            { kw: 'trưởng phòng', label: 'Trưởng phòng' },
+            { kw: 'designer', label: 'Designer' },
+            { kw: 'thiết kế', label: 'Designer' },
+            { kw: 'developer', label: 'Developer' },
+            { kw: 'lập trình viên', label: 'Developer' },
+            { kw: 'nhà phát triển', label: 'Developer' }
+        ];
+
+        let extractedMembers = [];
+        segments.forEach(seg => {
+            const segLower = seg.toLowerCase();
+            let foundRole = null;
+            for (const r of roleKeywords) {
+                if (segLower.includes(r.kw)) {
+                    foundRole = r.label;
+                    break;
+                }
+            }
+            
+            if (foundRole) {
+                // Regex bắt tên riêng tiếng Việt viết hoa: Nguyễn Văn A
+                const nameRegex = /\b[A-ZÀ-Ỹ][a-zà-ỹ]*(\s+[A-ZÀ-Ỹ][a-zà-ỹ]*){1,3}\b/g;
+                const names = seg.match(nameRegex);
+                if (names && names.length > 0) {
+                    const cleanName = names[0].replace(/\b(CEO|CTO|CFO|AI)\b/g, '').trim();
+                    if (cleanName.length > 3) {
+                        extractedMembers.push({
+                            name: cleanName,
+                            role: foundRole,
+                            exp: `Chuyên gia ${foundRole.toLowerCase()}.\nĐồng hành cùng dự án.`
+                        });
+                    }
+                }
+            }
+        });
+
+        const members = extractedMembers.length >= 2 ? extractedMembers.slice(0, 3) : [
+            { name: 'Nguyễn Văn A', role: 'CEO & Founder', exp: 'Cựu Kỹ sư Google\n10 năm kinh nghiệm.' },
+            { name: 'Trần Thị B', role: 'CTO & Co-Founder', exp: 'Cựu Kỹ sư Meta\nChuyên gia AI.' },
+            { name: 'Lê Văn C', role: 'Chief of Growth', exp: 'Cựu Trưởng phòng Stripe\nChuyên gia tăng trưởng.' }
+        ];
+
+        const finalTitle = slideTitle || "Thành Viên Sáng Lập";
+        objects.push(new fabric.Textbox('ĐỘI NGŨ NHÂN SỰ CHỦ CHỐT', {
+            left: 60, top: 40, width: 680, fontSize: 13, fill: accentColor, fontWeight: '800', charSpacing: 100, fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox(finalTitle, {
+            left: 60, top: 62, width: 680, fontSize: 34, fill: titleColor, fontWeight: '800', fontFamily: 'Inter'
+        }));
+        
+        const cardWidth = 190;
+        const totalGap = 680 - (members.length * cardWidth);
+        const cardSpacing = members.length > 1 ? totalGap / (members.length - 1) : 0;
+
+        members.forEach((m, idx) => {
+            const x = 60 + idx * (cardWidth + cardSpacing);
+            // Background Card
+            objects.push(new fabric.Rect({
+                left: x, top: 140, width: cardWidth, height: 260, rx: 16, ry: 16, fill: cardBg, stroke: cardStroke, strokeWidth: 1
+            }));
+            // Circle placeholder for photo
+            objects.push(new fabric.Circle({
+                left: x + (cardWidth/2) - 45, top: 162, radius: 45, fill: theme === 'dark' ? '#1f2937' : '#e5e7eb', stroke: accentColor, strokeWidth: 2
+            }));
+            objects.push(new fabric.Textbox('👤', {
+                left: x + (cardWidth/2) - 20, top: 180, width: 40, fontSize: 36, textAlign: 'center'
+            }));
+            // Name
+            objects.push(new fabric.Textbox(m.name, {
+                left: x + 10, top: 274, width: cardWidth - 20, fontSize: 16, fill: titleColor, fontWeight: '700', textAlign: 'center', fontFamily: 'Inter'
+            }));
+            // Role
+            objects.push(new fabric.Textbox(m.role, {
+                left: x + 10, top: 298, width: cardWidth - 20, fontSize: 13, fill: accentColor, fontWeight: '600', textAlign: 'center', fontFamily: 'Inter'
+            }));
+            // Exp
+            objects.push(new fabric.Textbox(m.exp, {
+                left: x + 10, top: 322, width: cardWidth - 20, fontSize: 11, fill: bodyColor, textAlign: 'center', lineHeight: 1.4, fontFamily: 'Inter'
+            }));
+        });
+        
+    } else if (hasTable) {
+        // --- LAYOUT BẢNG SO SÁNH / BẢNG GIÁ DỘNG ---
+        // Heuristic: Trích xuất các giá tiền
+        const prices = [];
+        const priceRegex = /\b(\d+)\s*(k|đ|usd|\$|đồng)\b/gi;
+        let priceMatch;
+        while ((priceMatch = priceRegex.exec(cleanPrompt)) !== null) {
+            prices.push(priceMatch[1] + " " + priceMatch[2].toUpperCase());
+        }
+
+        const tierPrices = {
+            free: "0 đ",
+            pro: prices[0] || "99.000 đ",
+            vip: prices[1] || "299.000 đ"
+        };
+
+        const finalTitle = slideTitle || "Bảng So Sánh Dịch Vụ";
+        objects.push(new fabric.Textbox('THÔNG TIN GÓI DỊCH VỤ', {
+            left: 60, top: 40, width: 680, fontSize: 13, fill: accentColor, fontWeight: '800', charSpacing: 100, fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox(finalTitle, {
+            left: 60, top: 62, width: 680, fontSize: 34, fill: titleColor, fontWeight: '800', fontFamily: 'Inter'
+        }));
+        
+        // Background card table
+        objects.push(new fabric.Rect({
+            left: 60, top: 140, width: 680, height: 260, rx: 16, ry: 16, fill: cardBg, stroke: cardStroke, strokeWidth: 1
+        }));
+        // Header Row background
+        objects.push(new fabric.Rect({
+            left: 60, top: 140, width: 680, height: 50, rx: 16, ry: 16, fill: theme === 'dark' ? '#1f2937' : '#eff6ff'
+        }));
+        // Header Texts
+        objects.push(new fabric.Textbox('TÍNH NĂNG', {
+            left: 90, top: 154, width: 200, fontSize: 15, fill: theme === 'dark' ? '#fff' : '#1e3a8a', fontWeight: '800', fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox(`CƠ BẢN (${tierPrices.free})`, {
+            left: 350, top: 154, width: 140, fontSize: 14, fill: theme === 'dark' ? '#fff' : '#1e3a8a', fontWeight: '800', textAlign: 'center', fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox(`VIP PRO (${tierPrices.pro})`, {
+            left: 510, top: 154, width: 190, fontSize: 14, fill: accentColor, fontWeight: '800', textAlign: 'center', fontFamily: 'Inter'
+        }));
+        
+        // Row 1
+        objects.push(new fabric.Textbox('Dùng mẫu slide có sẵn', {
+            left: 90, top: 210, width: 220, fontSize: 14, fill: titleColor, fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox('Giới hạn', {
+            left: 350, top: 210, width: 140, fontSize: 14, fill: bodyColor, textAlign: 'center', fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox('Không giới hạn', {
+            left: 510, top: 210, width: 190, fontSize: 14, fill: accentColor, fontWeight: '700', textAlign: 'center', fontFamily: 'Inter'
+        }));
+        
+        // Row Divider 1
+        objects.push(new fabric.Rect({
+            left: 80, top: 245, width: 640, height: 1, fill: cardStroke
+        }));
+        
+        // Row 2
+        objects.push(new fabric.Textbox('Xuất bản PDF chất lượng cao', {
+            left: 90, top: 265, width: 240, fontSize: 14, fill: titleColor, fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox('Có watermark', {
+            left: 350, top: 265, width: 140, fontSize: 14, fill: bodyColor, textAlign: 'center', fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox('Sắc nét, không logo', {
+            left: 510, top: 265, width: 190, fontSize: 14, fill: accentColor, fontWeight: '700', textAlign: 'center', fontFamily: 'Inter'
+        }));
+        
+        // Row Divider 2
+        objects.push(new fabric.Rect({
+            left: 80, top: 300, width: 640, height: 1, fill: cardStroke
+        }));
+        
+        // Row 3
+        objects.push(new fabric.Textbox('Công cụ AI hỗ trợ', {
+            left: 90, top: 320, width: 220, fontSize: 14, fill: titleColor, fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox('Không hỗ trợ', {
+            left: 350, top: 320, width: 140, fontSize: 14, fill: bodyColor, textAlign: 'center', fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox('Hỗ trợ toàn bộ', {
+            left: 510, top: 320, width: 190, fontSize: 14, fill: accentColor, fontWeight: '700', textAlign: 'center', fontFamily: 'Inter'
+        }));
+        
+    } else if (hasChart) {
+        // --- LAYOUT CHỈ SỐ / THỐNG KÊ DỘNG ---
+        // Heuristic: Trích xuất chỉ số phần trăm hoặc số lượng
+        const statsMatches = [];
+        const percentRegex = /\b(\d+(?:\.\d+)?%)\b/g;
+        let pctMatch;
+        while ((pctMatch = percentRegex.exec(cleanPrompt)) !== null) {
+            statsMatches.push(pctMatch[1]);
+        }
+        
+        const plusRegex = /\b(\d+\+)\b/g;
+        let plsMatch;
+        while ((plsMatch = plusRegex.exec(cleanPrompt)) !== null) {
+            statsMatches.push(plsMatch[1]);
+        }
+
+        const stats = [
+            { value: statsMatches[0] || '85%', label: 'Tốc độ tối ưu hóa', desc: 'Gia tăng hiệu năng tải trang', color: '#10b981' },
+            { value: statsMatches[1] || '1,000+', label: 'Người dùng active', desc: 'Lượng đăng ký trong tháng', color: accentColor },
+            { value: statsMatches[2] || '98.5%', label: 'Tỷ lệ hài lòng', desc: 'Đánh giá tích cực từ khách hàng', color: secondaryAccent }
+        ];
+
+        const finalTitle = slideTitle || "Thống Kê Số Liệu Dự Án";
+        objects.push(new fabric.Textbox('HIỆU SUẤT VẬN HÀNH', {
+            left: 60, top: 40, width: 680, fontSize: 13, fill: accentColor, fontWeight: '800', charSpacing: 100, fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox(finalTitle, {
+            left: 60, top: 62, width: 680, fontSize: 34, fill: titleColor, fontWeight: '800', fontFamily: 'Inter'
+        }));
+        
+        stats.forEach((s, idx) => {
+            const x = 60 + idx * 230;
+            // Background box
+            objects.push(new fabric.Rect({
+                left: x, top: 140, width: 200, height: 210, rx: 18, ry: 18, fill: cardBg, stroke: cardStroke, strokeWidth: 1
+            }));
+            
+            // Value
+            objects.push(new fabric.Textbox(s.value, {
+                left: x + 16, top: 166, width: 168, fontSize: 36, fill: s.color, fontWeight: '800', fontFamily: 'Inter'
+            }));
+            // Label
+            objects.push(new fabric.Textbox(s.label, {
+                left: x + 16, top: 226, width: 168, fontSize: 15, fill: titleColor, fontWeight: '700', fontFamily: 'Inter'
+            }));
+            // Desc
+            objects.push(new fabric.Textbox(s.desc, {
+                left: x + 16, top: 256, width: 168, fontSize: 12, fill: bodyColor, fontFamily: 'Inter'
+            }));
+        });
+        
+    } else {
+        // --- LAYOUT THÔNG TIN CHUNG (Title + Sub + Paragraph + Image Frame) ---
+        const finalTitle = slideTitle || "Báo Cáo Giải Pháp Toàn Diện";
+        objects.push(new fabric.Textbox('THÔNG TIN CHUNG', {
+            left: 60, top: 40, width: 680, fontSize: 13, fill: accentColor, fontWeight: '800', charSpacing: 100, fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox(finalTitle, {
+            left: 60, top: 62, width: 680, fontSize: 34, fill: titleColor, fontWeight: '800', fontFamily: 'Inter'
+        }));
+        
+        // Nội dung mô tả tùy biến từ prompt (nếu có)
+        let mainDescText = "Nền tảng của chúng tôi giúp các doanh nghiệp tối ưu hóa quy trình thiết kế slide, tự động hóa các thao tác thủ công phức tạp và tạo ra các bản trình chiếu tuyệt đẹp chỉ trong vài giây.\n\nTích hợp trí tuệ nhân tạo cục bộ thông minh hỗ trợ tinh chỉnh giọng văn, chuyển đổi tiếng Anh và đề xuất bố cục màu sắc tinh tế.";
+        if (cleanPrompt.length > 50) {
+            mainDescText = cleanPrompt;
+        }
+
+        // Left Column (Paragraphs)
+        objects.push(new fabric.Textbox('Đột phá quy trình thiết kế', {
+            left: 60, top: 154, width: 340, fontSize: 22, fill: accentColor, fontWeight: '700', fontFamily: 'Inter'
+        }));
+        objects.push(new fabric.Textbox(mainDescText, {
+            left: 60, top: 196, width: 340, fontSize: 13, fill: bodyColor, lineHeight: 1.5, fontFamily: 'Inter'
+        }));
+        
+        // Right Column (Visual Accent/Placeholder Box)
+        objects.push(new fabric.Rect({
+            left: 450, top: 140, width: 290, height: 260, rx: 24, ry: 24, fill: cardBg, stroke: cardStroke, strokeWidth: 1
+        }));
+        objects.push(new fabric.Rect({
+            left: 474, top: 164, width: 242, height: 212, rx: 16, ry: 16, fill: accentColor, opacity: 0.1
+        }));
+        objects.push(new fabric.Textbox('✨', {
+            left: 474, top: 220, width: 242, fontSize: 64, textAlign: 'center'
+        }));
+    }
+    
+    // Add all objects to canvas
+    objects.forEach(obj => {
+        obj.set({
+            id: _generateId(),
+            selectable: true,
+            hasControls: true
+        });
+        canvas.add(obj);
+    });
+    
+    canvas.requestRenderAll();
+    triggerAutoSave();
+    showToast("Đã tạo slide thành công!", "success");
+}
+
+function aiEditText(action) {
+    const activeObj = canvas.getActiveObject();
+    if (!activeObj || !(activeObj.type === 'i-text' || activeObj.type === 'text' || activeObj.type === 'textbox')) {
+        showToast("Vui lòng chọn một ô văn bản để sử dụng công cụ!", "warning");
+        return;
+    }
+    
+    const originalText = activeObj.text;
+    if (!originalText || !originalText.trim()) return;
+    
+    showToast("AI đang tinh chỉnh chữ...", "info");
+    
+    // Helper function for Unicode-safe whole-word replacement in Vietnamese
+    function replaceVietnameseWord(text, word, replacement) {
+        const pattern = new RegExp('(^|[^a-zA-ZÀ-Ỹà-ỹĐđ])(' + word + ')(?=$|[^a-zA-ZÀ-Ỹà-ỹĐđ])', 'gi');
+        return text.replace(pattern, (match, p1, p2) => {
+            let rep = replacement;
+            if (p2 && p2[0] === p2[0].toUpperCase()) {
+                rep = rep.charAt(0).toUpperCase() + rep.slice(1);
+            }
+            return p1 + rep;
+        });
+    }
+
+    let resultText = originalText;
+    
+    if (action === 'shorten') {
+        const sentences = originalText.split(/(?<=[.!?])\s+/);
+        if (sentences.length > 1) {
+            let firstSec = sentences[0];
+            if (firstSec.length < 30 && sentences[1]) {
+                resultText = firstSec + " " + sentences[1];
+            } else {
+                resultText = firstSec;
+            }
+        } else {
+            const clauses = originalText.split(/,\s+|\s+và\s+|\s+nhưng\s+|\s+vì\s+/i);
+            if (clauses.length > 1 && clauses[0].length > 15) {
+                resultText = clauses[0].trim() + "...";
+            } else {
+                if (originalText.length > 50) {
+                    resultText = originalText.substring(0, 47).trim() + "...";
+                } else {
+                    resultText = originalText;
+                }
+            }
+        }
+    } else if (action === 'lengthen') {
+        const lower = originalText.toLowerCase();
+        let suffix = " Đồng thời tối ưu hóa quy trình triển khai nhằm mang lại giá trị bền vững và lâu dài.";
+        
+        if (lower.includes("sản phẩm") || lower.includes("dịch vụ")) {
+            suffix = " Nền tảng của chúng tôi luôn nỗ lực không ngừng để nâng cao trải nghiệm người dùng, tối ưu hóa các quy trình cốt lõi và mang lại giá trị gia tăng tối đa cho quý khách hàng.";
+        } else if (lower.includes("công nghệ") || lower.includes("phần mềm") || lower.includes("hệ thống")) {
+            suffix = " Tích hợp các giải pháp công nghệ tiên tiến nhất hiện nay nhằm đảm bảo tính bảo mật tối đa, tốc độ vận hành nhanh chóng và khả năng mở rộng không giới hạn.";
+        } else if (lower.includes("đội ngũ") || lower.includes("nhân sự") || lower.includes("thành viên")) {
+            suffix = " Chúng tôi sở hữu đội ngũ chuyên gia tận tâm, năng động và giàu kinh nghiệm thực chiến, luôn sẵn sàng lắng nghe, thích ứng và đồng hành cùng sự thành công của bạn.";
+        } else if (lower.includes("giá") || lower.includes("chi phí") || lower.includes("pricing")) {
+            suffix = " Với các gói giải pháp linh hoạt và chi phí tối ưu, chúng tôi cam kết mang lại hiệu quả đầu tư vượt trội nhất cho mọi quy mô doanh nghiệp.";
+        }
+        
+        const cleanSuffix = suffix.trim().toLowerCase().replace(/[.!?]/g, "");
+        if (!lower.includes(cleanSuffix)) {
+            resultText = originalText.replace(/[.!?\s]+$/, '') + "." + suffix;
+        } else {
+            const altSuffix = " Chúng tôi tin rằng giải pháp này sẽ tạo ra bước đột phá vượt bậc cho hoạt động kinh doanh của bạn.";
+            const cleanAlt = altSuffix.trim().toLowerCase().replace(/[.!?]/g, "");
+            if (!lower.includes(cleanAlt)) {
+                resultText = originalText.replace(/[.!?\s]+$/, '') + "." + altSuffix;
+            }
+        }
+    } else if (action === 'formal') {
+        const synonyms = [
+            { word: "mình", to: "chúng tôi" },
+            { word: "tớ", to: "chúng tôi" },
+            { word: "bán", to: "cung cấp thương mại" },
+            { word: "làm", to: "triển khai thực hiện" },
+            { word: "thấy", to: "nhận thấy" },
+            { word: "giúp", to: "hỗ trợ tối ưu" },
+            { word: "nhanh", to: "nhanh chóng và hiệu quả" },
+            { word: "rẻ", to: "tối ưu chi phí" },
+            { word: "đẹp", to: "mang tính thẩm mỹ cao" },
+            { word: "mua", to: "đăng ký sở hữu" }
+        ];
+        
+        synonyms.forEach(syn => {
+            resultText = replaceVietnameseWord(resultText, syn.word, syn.to);
+        });
+        
+        const lowerResult = resultText.toLowerCase();
+        if (!lowerResult.startsWith("kính gửi") && 
+            !lowerResult.startsWith("trân trọng") && 
+            !lowerResult.includes("trân trọng thông báo")) {
+            resultText = "Trân trọng thông báo: " + resultText.charAt(0).toLowerCase() + resultText.slice(1);
+        }
+    } else if (action === 'translate') {
+        const dict = [
+            { vi: "trang chủ", en: "Home" },
+            { vi: "dự án", en: "Projects" },
+            { vi: "slide", en: "Slide" },
+            { vi: "tiêu đề phụ", en: "Subtitle" },
+            { vi: "tiêu đề", en: "Title" },
+            { vi: "dòng thời gian", en: "Timeline" },
+            { vi: "lịch sử", en: "History" },
+            { vi: "mốc", en: "Milestone" },
+            { vi: "đội ngũ", en: "Our Team" },
+            { vi: "thành viên", en: "Team Members" },
+            { vi: "giám đốc", en: "Director" },
+            { vi: "lập trình viên", en: "Developer" },
+            { vi: "nhà phát triển", en: "Developer" },
+            { vi: "thiết kế", en: "Designer" },
+            { vi: "bảng giá", en: "Pricing Plans" },
+            { vi: "thông thường", en: "Standard Edition" },
+            { vi: "bản thường", en: "Standard Plan" },
+            { vi: "thống kê", en: "Operational Stats" },
+            { vi: "hiệu suất", en: "Key Metrics" },
+            { vi: "tăng trưởng", en: "Growth Rate" },
+            { vi: "khách hàng", en: "Client Base" },
+            { vi: "hài lòng", en: "Satisfaction Rate" },
+            { vi: "giới thiệu", en: "Corporate Introduction" },
+            { vi: "giải pháp", en: "Enterprise Solutions" }
+        ];
+
+        let translated = false;
+        dict.forEach(item => {
+            const temp = replaceVietnameseWord(resultText, item.vi, item.en);
+            if (temp !== resultText) {
+                resultText = temp;
+                translated = true;
+            }
+        });
+
+        if (!translated) {
+            const lower = originalText.toLowerCase();
+            if (lower.includes("chào mừng") || lower.includes("hello")) {
+                resultText = "Welcome to our presentation. We are glad to share our vision with you.";
+            } else if (lower.includes("liên hệ") || lower.includes("điện thoại") || lower.includes("email")) {
+                resultText = "Contact us via email or visit our website for more details.";
+            } else if (lower.includes("phát triển") || lower.includes("mở rộng")) {
+                resultText = "Our roadmap focuses on product development and market expansion.";
+            } else {
+                resultText = "The presentation details have been successfully translated to English.";
+            }
+        }
+    }
+    
+    // Save editing state and exit to ensure correct Fabric.js text re-render
+    const wasEditing = activeObj.isEditing;
+    if (wasEditing) {
+        activeObj.exitEditing();
+    }
+    
+    activeObj.set('text', resultText);
+    activeObj.setCoords();
+    
+    // Re-enter editing if we were previously editing
+    if (wasEditing) {
+        activeObj.enterEditing();
+    }
+    
+    canvas.requestRenderAll();
+    canvas.fire('object:modified', { target: activeObj });
+    triggerAutoSave();
+    showToast("Đã tinh chỉnh chữ!", "success");
+}
 

@@ -29,7 +29,6 @@ namespace DoAnLtWeb.Controllers
             var user = await _context.Users.FirstOrDefaultAsync(u => u.Id == userId);
 
             var myProjectsQuery = _context.Presentations
-                .Include(p => p.Slides)
                 .Where(p => p.UserId == userId && !p.IsTemplate && !p.IsTrashed);
 
             if (!string.IsNullOrEmpty(search))
@@ -37,13 +36,39 @@ namespace DoAnLtWeb.Controllers
                 myProjectsQuery = myProjectsQuery.Where(p => p.Title.Contains(search));
             }
 
-            var myProjects = await myProjectsQuery
+            var myProjectsData = await myProjectsQuery
                 .OrderByDescending(p => p.UpdatedAt)
                 .Take(15)
+                .Select(p => new {
+                    p.Id,
+                    p.Title,
+                    p.ThumbnailUrl,
+                    p.UpdatedAt,
+                    Slides = p.Slides.OrderBy(s => s.PageNumber).Select(s => new {
+                        s.PageNumber,
+                        s.BackgroundColor,
+                        s.BackgroundImage,
+                        s.ElementsJson
+                    }).ToList()
+                })
                 .ToListAsync();
 
+            var myProjects = myProjectsData.Select(p => new Presentation
+            {
+                Id = p.Id,
+                Title = p.Title,
+                ThumbnailUrl = p.ThumbnailUrl,
+                UpdatedAt = p.UpdatedAt,
+                Slides = p.Slides.Select(s => new Slide
+                {
+                    PageNumber = s.PageNumber,
+                    BackgroundColor = s.BackgroundColor,
+                    BackgroundImage = s.BackgroundImage,
+                    ElementsJson = s.PageNumber == 1 && string.IsNullOrEmpty(p.ThumbnailUrl) ? s.ElementsJson : ""
+                }).ToList()
+            }).ToList();
+
             var templatesQuery = _context.Presentations
-                .Include(p => p.Slides)
                 .Where(p => p.IsTemplate && (p.Category.StartsWith("Slidify /") || p.Category.StartsWith("Slidify Mẫu /")));
 
             if (!string.IsNullOrEmpty(category))
@@ -56,7 +81,40 @@ namespace DoAnLtWeb.Controllers
                 templatesQuery = templatesQuery.Where(p => p.Title.Contains(search));
             }
 
-            var templates = (await templatesQuery.ToListAsync())
+            var templatesData = await templatesQuery
+                .Select(p => new {
+                    p.Id,
+                    p.Title,
+                    p.ThumbnailUrl,
+                    p.Category,
+                    p.CreatedAt,
+                    p.IsPremiumTemplate,
+                    Slides = p.Slides.OrderBy(s => s.PageNumber).Select(s => new {
+                        s.PageNumber,
+                        s.BackgroundColor,
+                        s.BackgroundImage,
+                        s.ElementsJson
+                    }).ToList()
+                })
+                .ToListAsync();
+
+            var templates = templatesData
+                .Select(p => new Presentation
+                {
+                    Id = p.Id,
+                    Title = p.Title,
+                    ThumbnailUrl = p.ThumbnailUrl,
+                    Category = p.Category,
+                    CreatedAt = p.CreatedAt,
+                    IsPremiumTemplate = p.IsPremiumTemplate,
+                    Slides = p.Slides.Select(s => new Slide
+                    {
+                        PageNumber = s.PageNumber,
+                        BackgroundColor = s.BackgroundColor,
+                        BackgroundImage = s.BackgroundImage,
+                        ElementsJson = s.PageNumber == 1 && string.IsNullOrEmpty(p.ThumbnailUrl) ? s.ElementsJson : ""
+                    }).ToList()
+                })
                 .Where(p =>
                     p.Slides.Any() &&
                     !System.Text.RegularExpressions.Regex.IsMatch(p.Title, @"\[\d+") &&
@@ -131,6 +189,12 @@ namespace DoAnLtWeb.Controllers
                 .OrderByDescending(p => p.TrashedAt)
                 .ToListAsync();
             return View(trashed);
+        }
+
+        [HttpGet]
+        public IActionResult MarkItDown()
+        {
+            return View();
         }
 
         [AllowAnonymous]

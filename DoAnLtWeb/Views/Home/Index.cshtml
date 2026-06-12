@@ -195,6 +195,7 @@
 
                 <div class="sd-nav-group">Công cụ</div>
                 <a href="/Billing/Upgrade"><i class="fa-solid fa-crown"></i> @(isVip ? "VIP đang hoạt động" : "Nâng cấp VIP")</a>
+                <a href="/Home/MarkItDown"><i class="fa-solid fa-file-invoice"></i> Chuyển đổi Markdown</a>
                 @if (isAdmin)
                 {
                     <div class="sd-nav-group">Quản trị</div>
@@ -293,11 +294,18 @@
                                        data-elemjson='@Html.Raw(firstJson)'
                                        data-bg="@firstBg" data-bgimg="@firstBgImg">
                                         <div class="sd-card-thumb" style="background:@firstBg;">
-                                            @if (!string.IsNullOrWhiteSpace(firstBgImg))
+                                            @if (!string.IsNullOrWhiteSpace(project.ThumbnailUrl))
+                                            {
+                                                <img src="@project.ThumbnailUrl" alt="" />
+                                            }
+                                            else if (!string.IsNullOrWhiteSpace(firstBgImg))
                                             {
                                                 <img src="@firstBgImg" alt="" />
                                             }
-                                            <canvas class="proj-thumb-canvas" width="240" height="135"></canvas>
+                                            else
+                                            {
+                                                <canvas class="proj-thumb-canvas" width="240" height="135"></canvas>
+                                            }
                                         </div>
                                         <div class="sd-card-body">
                                             <div class="sd-card-title">@project.Title</div>
@@ -370,7 +378,10 @@
                                     {
                                         <img src="@firstBgImg" alt="@tpl.Title" />
                                     }
-                                    <canvas class="thumb-canvas" width="240" height="135"></canvas>
+                                    else
+                                    {
+                                        <canvas class="thumb-canvas" width="240" height="135"></canvas>
+                                    }
                                     @if (premium)
                                     {
                                         <span class="sd-vip-badge"><i class="fa-solid fa-crown"></i> VIP</span>

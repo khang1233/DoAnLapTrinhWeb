@@ -127,11 +127,14 @@
         .photo-card:hover { transform:translateY(-2px); box-shadow:0 6px 16px -8px rgba(99,102,241,0.5); }
         .photo-card img { width:100%; height:100%; object-fit:cover; display:block; }
 
-        /* ===== Floating element toolbar (Canva-style) ===== */
+        /* ===== Properties Options Toolbar (Canva-style) ===== */
         .floating-toolbar {
-            position:absolute; display:none; flex-wrap:wrap; align-items:center; gap:4px;
-            padding:6px; background:#ffffff; border-radius:10px; box-shadow:0 6px 24px rgba(0,0,0,0.18);
+            display:none; flex-wrap:wrap; align-items:center; justify-content:center; gap:8px;
+            padding:6px 16px; background:#ffffff; border:1px solid rgba(0,0,0,0.1);
             z-index:300; font-family:'Inter', sans-serif;
+            box-shadow:0 6px 20px rgba(0,0,0,0.12); border-radius:30px;
+            margin:12px auto 0; width:fit-content; max-width:95%;
+            flex-shrink:0;
         }
         .floating-toolbar.is-visible { display:flex; }
         .ft-btn {
@@ -152,9 +155,8 @@
         /* ===== CANVAS AREA ===== */
         .editor-canvas-area { flex:1;display:flex;flex-direction:column;overflow:hidden;background:#0f172a;position:relative;min-width:0; }
 
-        /* ===== SUB TOOLBAR ===== */
-        #sub-toolbar { display:none;align-items:center;gap:6px;padding:5px 14px;background:#1a2744;border-bottom:1px solid rgba(255,255,255,0.07);flex-wrap:wrap;min-height:46px;flex-shrink:0; }
-        #sub-toolbar.visible { display:flex; }
+        /* ===== SUB TOOLBAR (Hidden) ===== */
+        #sub-toolbar { display:none !important; }
         .prop-group { display:flex;align-items:center;gap:5px; }
         .prop-sep { width:1px;height:20px;background:rgba(255,255,255,0.09);margin:0 3px; }
         .prop-label { font-size:0.7rem;color:#475569;white-space:nowrap; }
@@ -187,6 +189,13 @@
         .thumb-del { position:absolute;top:2px;right:2px;background:rgba(239,68,68,0.85);color:white;border:none;border-radius:50%;width:17px;height:17px;font-size:0.52rem;cursor:pointer;opacity:0;transition:0.14s;display:flex;align-items:center;justify-content:center; }
         .slide-thumb-h:hover .thumb-del { opacity:1; }
         .thumb-del:hover { background:#dc2626; }
+        .thumb-more-btn { position:absolute;top:4px;right:4px;background:rgba(99,102,241,0.9);color:white;border:none;border-radius:50%;width:22px;height:22px;font-size:0.75rem;cursor:pointer;opacity:0;transition:0.14s;display:flex;align-items:center;justify-content:center;z-index:10; }
+        .slide-thumb-h:hover .thumb-more-btn { opacity:1; }
+        .thumb-more-btn:hover { background:#4f46e5; }
+        .slide-menu-item { background:transparent; border:none; border-radius:6px; padding:6px 10px; font-size:0.8rem; color:#e2e8f0; cursor:pointer; display:flex; align-items:center; gap:8px; text-align:left; transition:0.12s; font-family:inherit; width:100%; }
+        .slide-menu-item:hover { background:#818cf8; color:#fff; }
+        .slide-menu-item i { width:14px; text-align:center; color:#94a3b8; }
+        .slide-menu-item:hover i { color:#fff; }
         .btn-add-slide-horizontal { width:132px;height:75px;border:2px dashed rgba(255,255,255,0.12);border-radius:5px;background:transparent;color:rgba(255,255,255,0.25);font-size:1.3rem;cursor:pointer;transition:0.18s;display:flex;align-items:center;justify-content:center;flex-shrink:0;margin-left:12px; }
         .btn-add-slide-horizontal:hover { border-color:#818cf8;color:#818cf8;background:rgba(99,102,241,0.05); }
         #page-info { font-size:0.76rem;color:#475569;white-space:nowrap;margin-left:auto;padding-left:12px;flex-shrink:0; }
@@ -259,6 +268,24 @@
             <input type="range" id="zoom-slider" min="0.3" max="2" step="0.05" value="1" oninput="setZoom(parseFloat(this.value))">
             <span id="zoom-level">100%</span>
             <button class="topbar-btn" style="width:26px;height:26px;font-size:0.78rem;" onclick="setZoom(currentZoom + 0.1)" title="Phóng to"><i class="fa-solid fa-plus"></i></button>
+        </div>
+        <div class="topbar-divider"></div>
+        <div style="position:relative; display:inline-block; flex-shrink:0;">
+            <button class="btn-present" onclick="toggleResizeMenu(event)" title="Đổi kích cỡ slide"><i class="fa-solid fa-maximize"></i> Kích thước</button>
+            <div id="resize-menu" style="display:none; position:absolute; right:0; top:40px; background:#1e293b; border:1px solid rgba(255,255,255,0.08); border-radius:10px; padding:12px; width:220px; box-shadow:0 12px 32px rgba(0,0,0,0.5); z-index:200;">
+                <h5 style="color:#f8fafc; margin:0 0 8px; font-size:0.8rem; font-weight:700;">Preset kích thước</h5>
+                <button class="context-menu-item" style="width:100%; border:none; text-align:left; background:transparent;" onclick="changeCanvasSize(1280, 720)">16:9 Chuẩn (1280x720)</button>
+                <button class="context-menu-item" style="width:100%; border:none; text-align:left; background:transparent;" onclick="changeCanvasSize(1920, 1080)">16:9 Full HD (1920x1080)</button>
+                <button class="context-menu-item" style="width:100%; border:none; text-align:left; background:transparent;" onclick="changeCanvasSize(1024, 768)">4:3 Cổ điển (1024x768)</button>
+                <button class="context-menu-item" style="width:100%; border:none; text-align:left; background:transparent;" onclick="changeCanvasSize(1080, 1080)">1:1 Vuông (1080x1080)</button>
+                <div class="context-divider"></div>
+                <h5 style="color:#f8fafc; margin:8px 0 8px; font-size:0.8rem; font-weight:700;">Kích thước tùy chỉnh</h5>
+                <div style="display:flex; gap:6px; margin-bottom:8px;">
+                    <input type="number" id="resize-w" placeholder="W" style="width:50%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:4px; border-radius:4px; text-align:center; font-size:0.8rem;" />
+                    <input type="number" id="resize-h" placeholder="H" style="width:50%; background:rgba(0,0,0,0.2); border:1px solid rgba(255,255,255,0.1); color:#fff; padding:4px; border-radius:4px; text-align:center; font-size:0.8rem;" />
+                </div>
+                <button class="btn-save" style="width:100%; justify-content:center; padding:5px;" onclick="applyCustomResize()"><i class="fa-solid fa-check"></i> Áp dụng</button>
+            </div>
         </div>
         <div class="topbar-divider"></div>
         <button class="btn-present" onclick="openSubmitTemplateDialog()" title="Đề xuất làm mẫu"><i class="fa-solid fa-paper-plane"></i> Đề xuất làm mẫu</button>
@@ -466,6 +493,18 @@
                 if (!_lastSyncTs) { _lastSyncTs = d.updatedAt; return; }
                 if (d.updatedAt !== _lastSyncTs) {
                     _lastSyncTs = d.updatedAt;
+
+                    // Check if there are unsaved edits on our side
+                    const statusEl = document.getElementById('save-status');
+                    const isDirty = statusEl && (statusEl.innerHTML.includes('Chưa lưu') || statusEl.innerHTML.includes('Đang tự động lưu'));
+
+                    if (isDirty) {
+                        if (typeof showToast === 'function') {
+                            showToast('Thành viên khác vừa lưu thay đổi mới. Hãy lưu bài hoặc tải lại để đồng bộ.', 'warning');
+                        }
+                        return;
+                    }
+
                     // Only reload if the user isn't currently dragging/typing.
                     if (!canvas || canvas.getActiveObject()) return;
                     if (typeof showToast === 'function') showToast('Một thành viên đã chỉnh sửa — đang tải lại…', 'info');
@@ -498,6 +537,10 @@
                 <i class="fa-solid fa-font"></i>
                 <span>Văn bản</span>
             </button>
+            <button class="sidebar-tool" id="tab-ai" onclick="toggleDrawer('ai')" title="Trợ lý AI">
+                <i class="fa-solid fa-wand-magic-sparkles" style="color:#a78bfa;"></i>
+                <span style="color:#a78bfa; font-weight:700;">Trợ lý AI</span>
+            </button>
             <div class="sidebar-sep"></div>
             <button class="sidebar-tool" id="tab-draw" onclick="toggleDrawer('draw')" title="Vẽ tự do">
                 <i class="fa-solid fa-pen-nib"></i>
@@ -529,8 +572,10 @@
 
         <!-- Canvas + sub-toolbar area -->
         <div class="editor-canvas-area">
+            <!-- Properties options toolbar (Canva-style, fixed at top) -->
+            <div id="floating-toolbar" class="floating-toolbar"></div>
 
-            <!-- Properties sub-toolbar -->
+            <!-- Properties sub-toolbar (hidden, kept for compatibility) -->
             <div id="sub-toolbar">
                 <div class="prop-group">
                     <label class="prop-label">Màu</label>
@@ -559,6 +604,11 @@
                     <button class="btn-format" id="btn-underline" title="Gạch dưới"><i class="fa-solid fa-underline"></i></button>
                     <button class="btn-format" id="btn-strikethrough" title="Gạch ngang"><i class="fa-solid fa-strikethrough"></i></button>
                     <div class="prop-sep"></div>
+                    <button class="btn-format" id="btn-align-left" onclick="updateObjectProperty('textAlign', 'left')" title="Căn lề trái chữ"><i class="fa-solid fa-align-left"></i></button>
+                    <button class="btn-format" id="btn-align-center" onclick="updateObjectProperty('textAlign', 'center')" title="Căn lề giữa chữ"><i class="fa-solid fa-align-center"></i></button>
+                    <button class="btn-format" id="btn-align-right" onclick="updateObjectProperty('textAlign', 'right')" title="Căn lề phải chữ"><i class="fa-solid fa-align-right"></i></button>
+                    <button class="btn-format" id="btn-align-justify" onclick="updateObjectProperty('textAlign', 'justify')" title="Căn đều hai bên chữ"><i class="fa-solid fa-align-justify"></i></button>
+                    <div class="prop-sep"></div>
                     <label class="prop-label">Nền chữ</label>
                     <input type="color" id="prop-bg-color" value="#ffffff" title="Màu nền chữ">
                     <div class="prop-sep"></div>
@@ -583,6 +633,26 @@
                     <input type="number" id="prop-stroke-width" value="0" min="0" max="20" style="width:50px;" title="Độ dày viền">
                 </div>
 
+                <div class="prop-group" id="prop-image-group" style="display:none; align-items:center; gap:6px;">
+                    <label class="prop-label">Bộ lọc</label>
+                    <select id="prop-img-filter" onchange="updateImageFilter('preset', this.value)" title="Bộ lọc ảnh">
+                        <option value="none">Không bộ lọc</option>
+                        <option value="grayscale">Đen trắng</option>
+                        <option value="sepia">Hoài cổ (Sepia)</option>
+                        <option value="invert">Đảo ngược màu</option>
+                        <option value="pixelate">Điểm ảnh hóa</option>
+                    </select>
+                    <div class="prop-sep"></div>
+                    <label class="prop-label">Sáng</label>
+                    <input type="range" id="prop-img-brightness" min="-0.8" max="0.8" step="0.05" value="0" oninput="updateImageFilter('brightness', this.value)" title="Độ sáng" style="width:50px;">
+                    <label class="prop-label">Tương phản</label>
+                    <input type="range" id="prop-img-contrast" min="-0.8" max="0.8" step="0.05" value="0" oninput="updateImageFilter('contrast', this.value)" title="Tương phản" style="width:50px;">
+                    <label class="prop-label">Bão hòa</label>
+                    <input type="range" id="prop-img-saturation" min="-1" max="1" step="0.1" value="0" oninput="updateImageFilter('saturation', this.value)" title="Bão hòa" style="width:50px;">
+                    <label class="prop-label">Mờ</label>
+                    <input type="range" id="prop-img-blur" min="0" max="1" step="0.05" value="0" oninput="updateImageFilter('blur', this.value)" title="Độ mờ ảnh" style="width:50px;">
+                </div>
+
                 <div class="prop-sep"></div>
                 <div class="prop-group">
                     <label class="prop-label">Mờ</label>
@@ -597,6 +667,19 @@
                 <div class="prop-group">
                     <button id="btn-group-objects" onclick="groupSelectedObjects()">Nhóm</button>
                     <button id="btn-ungroup-objects" onclick="ungroupSelectedObjects()">Tách</button>
+                </div>
+                <div class="prop-sep"></div>
+                <div class="prop-group">
+                    <button class="btn-format" id="btn-lock" onclick="toggleLockSelected()" title="Khóa/Mở khóa đối tượng"><i class="fa-solid fa-lock"></i></button>
+                </div>
+                <div class="prop-sep"></div>
+                <div class="prop-group">
+                    <button class="btn-format" onclick="alignObject('left')" title="Căn trái slide"><i class="fa-solid fa-align-left"></i></button>
+                    <button class="btn-format" onclick="alignObject('center')" title="Căn giữa slide"><i class="fa-solid fa-align-center"></i></button>
+                    <button class="btn-format" onclick="alignObject('right')" title="Căn phải slide"><i class="fa-solid fa-align-right"></i></button>
+                    <button class="btn-format" onclick="alignObject('top')" title="Căn trên slide"><i class="fa-solid fa-arrow-up"></i></button>
+                    <button class="btn-format" onclick="alignObject('middle')" title="Căn giữa dọc slide"><i class="fa-solid fa-arrows-up-down"></i></button>
+                    <button class="btn-format" onclick="alignObject('bottom')" title="Căn dưới slide"><i class="fa-solid fa-arrow-down"></i></button>
                 </div>
             </div>
 
@@ -675,9 +758,6 @@
 
     <!-- Global hidden file input — used by the Upload tab dropzone and by paste-from-disk shortcuts. -->
     <input type="file" id="upload-img-input" accept="image/*" style="display:none;" onchange="uploadImageReal(event)" />
-
-    <!-- Floating element toolbar (rendered into here on selection) -->
-    <div id="floating-toolbar" class="floating-toolbar"></div>
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>

@@ -754,6 +754,104 @@ namespace DoAnLtWeb.Controllers
 
             return Ok(new { count = count });
         }
+
+        [HttpPost]
+        public async Task<IActionResult> ConvertToMarkdown(IFormFile file)
+        {
+            if (file == null || file.Length == 0)
+                return BadRequest("Vui lòng chọn tệp hợp lệ.");
+
+            // Create temporary uploads folder inside the workspace
+            string tempFolder = Path.Combine(_env.WebRootPath, "uploads", "temp");
+            if (!Directory.Exists(tempFolder)) Directory.CreateDirectory(tempFolder);
+
+            string tempFileName = Guid.NewGuid() + Path.GetExtension(file.FileName);
+            string tempFilePath = Path.Combine(tempFolder, tempFileName);
+
+            try
+            {
+                using (var fileStream = new FileStream(tempFilePath, FileMode.Create))
+                {
+                    await file.CopyToAsync(fileStream);
+                }
+
+                string scriptPath = Path.Combine(_env.ContentRootPath, "MarkItDownTool", "convert_to_md.py");
+                if (!System.IO.File.Exists(scriptPath))
+                {
+                    return BadRequest($"Không tìm thấy script chuyển đổi tại {scriptPath}");
+                }
+
+                // Try executing python
+                var (success, output, error) = ExecutePythonScript(scriptPath, tempFilePath);
+                if (!success)
+                {
+                    return BadRequest($"Lỗi chuyển đổi: {error}");
+                }
+
+                return Ok(new { markdown = output });
+            }
+            catch (Exception ex)
+            {
+                return StatusCode(500, $"Lỗi hệ thống: {ex.Message}");
+            }
+            finally
+            {
+                // Clean up the temp file
+                try
+                {
+                    if (System.IO.File.Exists(tempFilePath))
+                        System.IO.File.Delete(tempFilePath);
+                }
+                catch { /* ignore cleanup error */ }
+            }
+        }
+
+        private (bool success, string output, string error) ExecutePythonScript(string scriptPath, string arg)
+        {
+            // We try "python", then "python3", then "py"
+            var executables = new[] { "python", "python3", "py" };
+            string lastError = "";
+
+            foreach (var exe in executables)
+            {
+                try
+                {
+                    var psi = new System.Diagnostics.ProcessStartInfo
+                    {
+                        FileName = exe,
+                        Arguments = $"\"{scriptPath}\" \"{arg}\"",
+                        RedirectStandardOutput = true,
+                        RedirectStandardError = true,
+                        UseShellExecute = false,
+                        CreateNoWindow = true,
+                        StandardOutputEncoding = System.Text.Encoding.UTF8
+                    };
+
+                    using var process = System.Diagnostics.Process.Start(psi);
+                    if (process != null)
+                    {
+                        string output = process.StandardOutput.ReadToEnd();
+                        string error = process.StandardError.ReadToEnd();
+                        process.WaitForExit(30000); // 30s timeout
+
+                        if (process.ExitCode == 0)
+                        {
+                            return (true, output, "");
+                        }
+                        else
+                        {
+                            lastError = !string.IsNullOrEmpty(error) ? error : $"Exit code {process.ExitCode}";
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    lastError = ex.Message;
+                }
+            }
+
+            return (false, "", $"Không thể thực thi Python. Đảm bảo Python đã được cài đặt và thêm vào PATH. Chi tiết lỗi: {lastError}");
+        }
     }
 
     public class TemplateImportDto
