@@ -458,7 +458,9 @@
         // memory while we're not currently editing, refresh the slide list so we see the other
         // user's changes.
         let _lastSyncTs = null;
+        let _pollSyncInterval = null;
         async function pollSync() {
+            if (document.hidden) return;
             try {
                 const r = await fetch(`/Slide/SyncCheck?id=${PRESENTATION_ID}`);
                 if (!r.ok) return;
@@ -473,7 +475,8 @@
                 }
             } catch (e) { /* ignore */ }
         }
-        setInterval(pollSync, 4000);
+        _pollSyncInterval = setInterval(pollSync, 4000);
+        window.addEventListener('beforeunload', () => clearInterval(_pollSyncInterval));
     </script>
 
     <!-- ===== SHARE MODAL ===== -->

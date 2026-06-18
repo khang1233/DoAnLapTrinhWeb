@@ -447,10 +447,23 @@ namespace DoAnLtWeb.Controllers
         {
             if (file == null || file.Length == 0) return BadRequest("Vui long chon anh hop le.");
 
+            var allowedExtensions = new[] { ".jpg", ".jpeg", ".png", ".gif", ".webp" };
+            var extension = Path.GetExtension(file.FileName).ToLowerInvariant();
+            if (string.IsNullOrEmpty(extension) || !allowedExtensions.Contains(extension))
+            {
+                return BadRequest("Dinh dang file khong duoc ho tro.");
+            }
+
+            var allowedMimeTypes = new[] { "image/jpeg", "image/png", "image/gif", "image/webp" };
+            if (!allowedMimeTypes.Contains(file.ContentType.ToLowerInvariant()))
+            {
+                return BadRequest("Dinh dang file khong duoc ho tro.");
+            }
+
             string uploadsFolder = Path.Combine(_env.WebRootPath, "uploads");
             if (!Directory.Exists(uploadsFolder)) Directory.CreateDirectory(uploadsFolder);
 
-            string uniqueFileName = Guid.NewGuid() + "_" + Path.GetFileName(file.FileName);
+            string uniqueFileName = Guid.NewGuid() + extension;
             string filePath = Path.Combine(uploadsFolder, uniqueFileName);
 
             using (var fileStream = new FileStream(filePath, FileMode.Create))

@@ -1,4 +1,4 @@
-﻿// SLIDIFY MVC - CANVAS ENGINE
+// SLIDIFY MVC - CANVAS ENGINE
 const API_URL = '/Slide';
 let canvas;
 let presentationId = null;
@@ -725,12 +725,31 @@ function initCanvas() {
             }
         }, { passive: false });
     }
+    
+    ['object:moving', 'object:scaling', 'object:rotating'].forEach(ev =>
+        canvas.on(ev, () => positionFloatingToolbar()));
 }
 
-/* --- AUTO SAVE SYSTEM (DEBOUNCED - Pure Manual Save) --- */
+/* --- AUTO SAVE SYSTEM (DEBOUNCED) --- */
 let saveStateDebounceTimeout = null;
+let isDirty = false;
+let isSaving = false;
+
+window.addEventListener('beforeunload', function (e) {
+    if (isDirty) {
+        e.preventDefault();
+        e.returnValue = '';
+    }
+});
+
+setInterval(() => {
+    if (isDirty && !isSaving) {
+        savePresentationToBackend(false);
+    }
+}, 30000);
+
 function triggerAutoSave() {
-    // Show 'Chưa lưu' immediately to give visual feedback
+    isDirty = true;
     const statusEl = document.getElementById('save-status');
     if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-circle-dot text-warning"></i> Chưa lưu';
 
@@ -738,14 +757,14 @@ function triggerAutoSave() {
     saveStateDebounceTimeout = setTimeout(() => {
         saveCurrentSlideStateToMemory();
         saveState();
-    }, 300); // 300ms debounce prevents CPU-blocking serialization lags during typing or dragging!
+    }, 300);
 }
 
 function saveCurrentSlideStateToMemory() {
     try {
         if(!slideDataArray || !slideDataArray[currentSlideIndex]) return;
         
-        const json = canvas.toJSON(['id', 'name', 'selectable', 'hasControls']);
+        const json = canvas.toJSON(['id', 'name', 'selectable', 'hasControls', '_isImageFrame', '_frameType', '_prevFill', '_attachedToFrame', 'editable']);
         json.canvasWidth = canvas.width;
         json.canvasHeight = canvas.height;
         slideDataArray[currentSlideIndex].ElementsJson = JSON.stringify(json);
@@ -769,6 +788,8 @@ function saveCurrentSlideStateToMemory() {
 }
 
 async function savePresentationToBackend(isManual = false) {
+    if (isSaving) return;
+    isSaving = true;
     saveCurrentSlideStateToMemory();
     
     let thumbnailDataUrl = "";
@@ -780,7 +801,7 @@ async function savePresentationToBackend(isManual = false) {
             tempCanvasEl.height = 450;
             const tempCanvas = new fabric.StaticCanvas(tempCanvasEl);
             
-            const jsonData = canvas.toJSON(['id', 'name', 'selectable', 'hasControls']);
+            const jsonData = canvas.toJSON(['id', 'name', 'selectable', 'hasControls', '_isImageFrame', '_frameType', '_prevFill', '_attachedToFrame', 'editable']);
             await new Promise((resolve) => {
                 tempCanvas.loadFromJSON(jsonData, () => {
                     tempCanvas.renderAll();
@@ -816,12 +837,15 @@ async function savePresentationToBackend(isManual = false) {
         
         const statusEl = document.getElementById('save-status');
         if (response.ok) {
+            isDirty = false;
             if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud-check text-success"></i> Đã lưu';
         } else {
             if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-triangle-exclamation text-danger"></i> LỀ—i lưu';
         }
     } catch(err) {
         console.error("Save error:", err);
+    } finally {
+        isSaving = false;
     }
 }
 
@@ -834,7 +858,7 @@ function savePresentationManually() {
 /* --- UNDO / REDO SYSTEM --- */
 function saveState() {
     if (isUndoRedoAction || isLoadingSlide) return;
-    const json = JSON.stringify(canvas.toJSON(['id', 'name', 'selectable', 'hasControls']));
+    const json = JSON.stringify(canvas.toJSON(['id', 'name', 'selectable', 'hasControls', '_isImageFrame', '_frameType', '_prevFill', '_attachedToFrame', 'editable']));
     undoStack.push(json);
     if (undoStack.length > 50) undoStack.shift();
     redoStack = [];
@@ -1091,7 +1115,7 @@ async function exportToImage() {
         tempCanvasEl.height = 450;
         const tempCanvas = new fabric.StaticCanvas(tempCanvasEl);
         
-        const jsonData = canvas.toJSON(['id', 'name', 'selectable', 'hasControls']);
+        const jsonData = canvas.toJSON(['id', 'name', 'selectable', 'hasControls', '_isImageFrame', '_frameType', '_prevFill', '_attachedToFrame', 'editable']);
         await new Promise((resolve) => {
             tempCanvas.loadFromJSON(jsonData, () => {
                 tempCanvas.renderAll();
@@ -1122,9 +1146,10 @@ async function exportToPDF() {
     const pdf = new jsPDF({ orientation: 'landscape', unit: 'mm', format: [297, 167] });
     
     try {
+        await document.fonts.ready;
         const tempCanvasEl = document.createElement('canvas');
-        tempCanvasEl.width = 800;
-        tempCanvasEl.height = 450;
+        tempCanvasEl.width = 1920;
+        tempCanvasEl.height = 1080;
         const tempCanvas = new fabric.StaticCanvas(tempCanvasEl);
         
         for (let i = 0; i < slideDataArray.length; i++) {
@@ -2706,6 +2731,8 @@ function closeColorPicker() {
         _cpState.popover = null;
     }
     document.removeEventListener('mousedown', _cpDocClose);
+    if (_cpState.onMove) { window.removeEventListener('mousemove', _cpState.onMove); _cpState.onMove = null; }
+    if (_cpState.stop) { window.removeEventListener('mouseup', _cpState.stop); _cpState.stop = null; }
 }
 function _cpDocClose(e) {
     if (_cpState.popover && !_cpState.popover.contains(e.target)) closeColorPicker();
@@ -2768,6 +2795,9 @@ function _cpWireDrag() {
     hue.addEventListener('mousedown', e => { dragging = 'hue'; hueMove(e); e.preventDefault(); });
     window.addEventListener('mousemove', onMove);
     window.addEventListener('mouseup', stop);
+    
+    _cpState.onMove = onMove;
+    _cpState.stop = stop;
 }
 function _cpWireInputs() {
     const hexInput = _cpState.popover.querySelector('#cp-hex');
@@ -2848,11 +2878,7 @@ function _hsvToHex(h, s, v) {
 })();
 
 // Reposition while moving/scaling/rotating.
-document.addEventListener('DOMContentLoaded', () => {
-    if (!canvas) return;
-    ['object:moving', 'object:scaling', 'object:rotating'].forEach(ev =>
-        canvas.on(ev, () => positionFloatingToolbar()));
-});
+// (Moved to initCanvas to ensure canvas is initialized)
 
 function updateObjectProperty(property, value) {
     const activeObj = canvas.getActiveObject();
@@ -3005,6 +3031,21 @@ function initKeyboardShortcuts() {
         if (e.ctrlKey && e.key === 'z') { e.preventDefault(); undo(); return; }
         if (e.ctrlKey && e.key === 'y') { e.preventDefault(); redo(); return; }
         if (e.key === 'Delete' || e.key === 'Backspace') { deleteSelected(); }
+        
+        if (['ArrowUp', 'ArrowDown', 'ArrowLeft', 'ArrowRight'].includes(e.key) && activeObj) {
+            e.preventDefault();
+            const step = e.shiftKey ? 10 : 1;
+            switch(e.key) {
+                case 'ArrowUp': activeObj.top -= step; break;
+                case 'ArrowDown': activeObj.top += step; break;
+                case 'ArrowLeft': activeObj.left -= step; break;
+                case 'ArrowRight': activeObj.left += step; break;
+            }
+            activeObj.setCoords();
+            canvas.requestRenderAll();
+            triggerAutoSave();
+            return;
+        }
         if (e.ctrlKey && e.key === 'c' && activeObj) { activeObj.clone(function(cloned) { clipboard = cloned; showToast('Đã copy', 'success'); }); }
         if (e.ctrlKey && e.key === 'v' && clipboard) {
             clipboard.clone(function(clonedObj) {
@@ -3530,7 +3571,7 @@ function initAlignmentGuides() {
 
         // Canvas Center horizontal snap
         if (Math.abs(objCenter.x - canvasWidth / 2) < alignSnapThreshold) {
-            obj.set({ left: canvasWidth / 2 - objWidth / 2 * obj.scaleX + (obj.left - (objCenter.x - objWidth / 2)) });
+            obj.set({ left: obj.left + (canvasWidth / 2 - objCenter.x) });
             obj.setCoords();
             vGuides.push(canvasWidth / 2);
             snappedX = true;
@@ -3538,7 +3579,7 @@ function initAlignmentGuides() {
 
         // Canvas Center vertical snap
         if (Math.abs(objCenter.y - canvasHeight / 2) < alignSnapThreshold) {
-            obj.set({ top: canvasHeight / 2 - objHeight / 2 * obj.scaleY + (obj.top - (objCenter.y - objHeight / 2)) });
+            obj.set({ top: obj.top + (canvasHeight / 2 - objCenter.y) });
             obj.setCoords();
             hGuides.push(canvasHeight / 2);
             snappedY = true;
@@ -3559,17 +3600,17 @@ function initAlignmentGuides() {
 
             if (!snappedX) {
                 if (Math.abs(objLeft - otherLeft) < alignSnapThreshold) {
-                    obj.set({ left: otherLeft });
+                    obj.set({ left: obj.left + (otherLeft - objLeft) });
                     obj.setCoords();
                     vGuides.push(otherLeft);
                     snappedX = true;
                 } else if (Math.abs(objCenter.x - otherCenter.x) < alignSnapThreshold) {
-                    obj.set({ left: otherCenter.x - objWidth / 2 });
+                    obj.set({ left: obj.left + (otherCenter.x - objCenter.x) });
                     obj.setCoords();
                     vGuides.push(otherCenter.x);
                     snappedX = true;
                 } else if (Math.abs(objRight - otherRight) < alignSnapThreshold) {
-                    obj.set({ left: otherRight - objWidth });
+                    obj.set({ left: obj.left + (otherRight - objRight) });
                     obj.setCoords();
                     vGuides.push(otherRight);
                     snappedX = true;
@@ -3578,17 +3619,17 @@ function initAlignmentGuides() {
 
             if (!snappedY) {
                 if (Math.abs(objTop - otherTop) < alignSnapThreshold) {
-                    obj.set({ top: otherTop });
+                    obj.set({ top: obj.top + (otherTop - objTop) });
                     obj.setCoords();
                     hGuides.push(otherTop);
                     snappedY = true;
                 } else if (Math.abs(objCenter.y - otherCenter.y) < alignSnapThreshold) {
-                    obj.set({ top: otherCenter.y - objHeight / 2 });
+                    obj.set({ top: obj.top + (otherCenter.y - objCenter.y) });
                     obj.setCoords();
                     hGuides.push(otherCenter.y);
                     snappedY = true;
                 } else if (Math.abs(objBottom - otherBottom) < alignSnapThreshold) {
-                    obj.set({ top: otherBottom - objHeight });
+                    obj.set({ top: obj.top + (otherBottom - objBottom) });
                     obj.setCoords();
                     hGuides.push(otherBottom);
                     snappedY = true;
@@ -3597,6 +3638,9 @@ function initAlignmentGuides() {
         });
 
         canvas.requestRenderAll();
+        if (snappedX || snappedY) {
+            positionFloatingToolbar();
+        }
     });
 
     canvas.on('before:render', function() {
