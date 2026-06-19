@@ -3005,11 +3005,17 @@ function enableDrawMode(type) {
     
     showToast(`Đã bật cọ vẽ (${type === "pencil" ? "Bút chì" : (type === "marker" ? "Bút dạ" : "Cục tẩy")})`, "success");
 }
-function disableDrawMode() {
+function disableDrawMode(showToastMsg = true) {
     if(!canvas) return;
+    
+    const wasActive = canvas.isDrawingMode || (activeDrawerMode === 'eraser' && !canvas.selection);
+    
     canvas.isDrawingMode = false;
     canvas.selection = true;
     canvas.defaultCursor = 'default';
+    if (canvas.upperCanvasEl) {
+        canvas.upperCanvasEl.style.cursor = 'default';
+    }
     canvas.forEachObject(obj => {
         obj.selectable = true;
         obj.evented = true;
@@ -3021,7 +3027,9 @@ function disableDrawMode() {
     document.getElementById("draw-btn-eraser")?.classList.remove("active");
     document.getElementById("draw-btn-pointer")?.classList.add("active");
     
-    showToast("Đã tắt chế độ vẽ", "success");
+    if (wasActive && showToastMsg) {
+        showToast("Đã tắt chế độ vẽ", "success");
+    }
 }
 function updateDrawStyle() {
     if (!canvas) return;
@@ -4288,6 +4296,10 @@ function showToast(msg, type = 'info') {
 }
 
 function toggleDrawer(type, forceOpen = false) {
+    if (type !== 'draw') {
+        disableDrawMode(true);
+    }
+
     const panel = document.getElementById('drawer-panel');
     const tabs = ['design', 'elements', 'text', 'ai', 'draw', 'upload', 'photos', 'bg'];
     
@@ -4299,6 +4311,7 @@ function toggleDrawer(type, forceOpen = false) {
     if (activeDrawer === type && !forceOpen) {
         panel.classList.remove('active');
         activeDrawer = null;
+        disableDrawMode(true);
         return;
     }
     
