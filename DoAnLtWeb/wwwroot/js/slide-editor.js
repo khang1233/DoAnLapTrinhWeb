@@ -3010,6 +3010,9 @@ function disableDrawMode(showToastMsg = true) {
     
     const wasActive = canvas.isDrawingMode || (activeDrawerMode === 'eraser' && !canvas.selection);
     
+    // Set to neutral mode so that eraser mouse events are bypassed
+    activeDrawerMode = 'pointer';
+    
     canvas.isDrawingMode = false;
     canvas.selection = true;
     canvas.defaultCursor = 'default';
