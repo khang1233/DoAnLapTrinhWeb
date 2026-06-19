@@ -810,6 +810,7 @@ window.onload = () => {
     
     // Nạp dữ liệu mẫu thành công ngay khi load
     loadSlide(0, true);
+    initAutoSaveToggle();
 };
 
 /* --- THEME --- */
@@ -864,9 +865,43 @@ function initCanvas() {
     });
     canvas.on('path:created', (e) => { 
         if (isUndoRedoAction || isLoadingSlide) return;
+        
+        if (activeDrawerMode === 'eraser') {
+            canvas.remove(e.path);
+            canvas.requestRenderAll();
+            triggerAutoSave();
+            return;
+        }
+
         e.path.set({ id: _generateId(), name: 'Nét vẽ', selectable: true });
         canvas.requestRenderAll();
         triggerAutoSave(); 
+    });
+
+    let isErasing = false;
+    canvas.on('mouse:down', (options) => {
+        if (activeDrawerMode === 'eraser') {
+            isErasing = true;
+            const pointer = options.pointer || canvas.getPointer(options.e);
+            erasePathsAtPoint(pointer);
+        }
+    });
+    canvas.on('mouse:move', (options) => {
+        if (activeDrawerMode === 'eraser') {
+            if (canvas.upperCanvasEl) {
+                canvas.upperCanvasEl.style.cursor = canvas.defaultCursor;
+            }
+            if (isErasing) {
+                const pointer = options.pointer || canvas.getPointer(options.e);
+                erasePathsAtPoint(pointer);
+            }
+        }
+    });
+    canvas.on('mouse:up', () => {
+        if (activeDrawerMode === 'eraser' && isErasing) {
+            isErasing = false;
+            triggerAutoSave();
+        }
     });
 
     // Zoom with Ctrl+Mouse Wheel
@@ -885,6 +920,47 @@ function initCanvas() {
 /* --- AUTO SAVE SYSTEM (DEBOUNCED - True Backend Auto-Save) --- */
 let saveStateDebounceTimeout = null;
 let backendAutoSaveTimeout = null;
+let autoSaveEnabled = true;
+
+function initAutoSaveToggle() {
+    const saved = localStorage.getItem('autoSaveEnabled');
+    autoSaveEnabled = saved === null ? true : saved === 'true';
+    updateAutoSaveUI();
+}
+
+function toggleAutoSave() {
+    autoSaveEnabled = !autoSaveEnabled;
+    localStorage.setItem('autoSaveEnabled', autoSaveEnabled);
+    updateAutoSaveUI();
+    if (autoSaveEnabled) {
+        showToast('Đã bật tự động lưu', 'success');
+    } else {
+        showToast('Đã tắt tự động lưu', 'warning');
+        clearTimeout(backendAutoSaveTimeout);
+    }
+}
+
+function updateAutoSaveUI() {
+    const btn = document.getElementById('btn-toggle-autosave');
+    const icon = document.getElementById('autosave-icon');
+    const label = document.getElementById('autosave-label');
+    if (!btn) return;
+    if (autoSaveEnabled) {
+        btn.style.background = 'rgba(16, 185, 129, 0.15)';
+        btn.style.color = '#10b981';
+        btn.style.border = '1px solid rgba(16, 185, 129, 0.3)';
+        if (icon) icon.className = 'fa-solid fa-cloud-arrow-up';
+        if (label) label.textContent = 'Tự động lưu';
+        btn.title = 'Tự động lưu đang BẬT – Nhấn để tắt';
+    } else {
+        btn.style.background = 'rgba(239, 68, 68, 0.15)';
+        btn.style.color = '#ef4444';
+        btn.style.border = '1px solid rgba(239, 68, 68, 0.3)';
+        if (icon) icon.className = 'fa-solid fa-cloud-slash';
+        if (label) label.textContent = 'Tắt tự động lưu';
+        btn.title = 'Tự động lưu đang TẮT – Nhấn để bật';
+    }
+}
 
 function triggerAutoSave() {
     // Show 'Chưa lưu' immediately to give visual feedback
@@ -898,11 +974,14 @@ function triggerAutoSave() {
     }, 300); // 300ms debounce prevents CPU-blocking serialization lags during typing or dragging!
 
     // Real background Auto-Save to Server (3.5s after user stops interacting)
+    // Only if auto-save is enabled
     clearTimeout(backendAutoSaveTimeout);
-    backendAutoSaveTimeout = setTimeout(() => {
-        if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-indigo-400 fa-spin"></i> Đang tự động lưu...';
-        savePresentationToBackend(false); // false = do not generate costly thumbnail to save server load
-    }, 3500);
+    if (autoSaveEnabled) {
+        backendAutoSaveTimeout = setTimeout(() => {
+            if(statusEl) statusEl.innerHTML = '<i class="fa-solid fa-cloud-arrow-up text-indigo-400 fa-spin"></i> Đang tự động lưu...';
+            savePresentationToBackend(false); // false = do not generate costly thumbnail to save server load
+        }, 3500);
+    }
 }
 
 function saveCurrentSlideStateToMemory() {
@@ -2896,29 +2975,97 @@ function addImageToCanvas(url) {
 }
 
 /* --- DRAWING TOOLS LOGIC --- */
-let activeDrawerMode = 'pencil'; // 'pencil' or 'marker'
+let activeDrawerMode = 'pencil'; // 'pencil' or 'marker' or 'eraser'
 function enableDrawMode(type) {
     if(!canvas) return;
     activeDrawerMode = type;
-    canvas.isDrawingMode = true;
+    
+    if (type === 'eraser') {
+        canvas.isDrawingMode = false;
+        canvas.selection = false;
+        canvas.forEachObject(obj => {
+            obj.selectable = false;
+            obj.evented = false;
+        });
+    } else {
+        canvas.isDrawingMode = true;
+        canvas.selection = false;
+        canvas.forEachObject(obj => {
+            obj.selectable = false;
+            obj.evented = false;
+        });
+    }
     updateDrawStyle();
-    showToast(`Đã bật cọ vẽ (${type})`, 'success');
+    
+    // Toggle active state in UI
+    document.getElementById("draw-btn-pencil")?.classList.toggle("active", type === "pencil");
+    document.getElementById("draw-btn-marker")?.classList.toggle("active", type === "marker");
+    document.getElementById("draw-btn-eraser")?.classList.toggle("active", type === "eraser");
+    document.getElementById("draw-btn-pointer")?.classList.remove("active");
+    
+    showToast(`Đã bật cọ vẽ (${type === "pencil" ? "Bút chì" : (type === "marker" ? "Bút dạ" : "Cục tẩy")})`, "success");
 }
 function disableDrawMode() {
     if(!canvas) return;
     canvas.isDrawingMode = false;
-    showToast('Đã tắt chế độ vẽ', 'success');
+    canvas.selection = true;
+    canvas.defaultCursor = 'default';
+    canvas.forEachObject(obj => {
+        obj.selectable = true;
+        obj.evented = true;
+    });
+    
+    // Toggle active state in UI
+    document.getElementById("draw-btn-pencil")?.classList.remove("active");
+    document.getElementById("draw-btn-marker")?.classList.remove("active");
+    document.getElementById("draw-btn-eraser")?.classList.remove("active");
+    document.getElementById("draw-btn-pointer")?.classList.add("active");
+    
+    showToast("Đã tắt chế độ vẽ", "success");
 }
 function updateDrawStyle() {
-    if (!canvas || !canvas.isDrawingMode) return;
-    const color = document.getElementById('draw-color')?.value || '#6366f1';
-    const size = parseInt(document.getElementById('draw-size')?.value || 5, 10);
+    if (!canvas) return;
+    const color = document.getElementById("draw-color")?.value || "#6366f1";
+    const size = parseInt(document.getElementById("draw-size")?.value || 5, 10);
     
-    // Nếu activeDrawer là 'marker', làm nét mờ đi (alpha = 0.5)
+    // Hide or show the color input container depending on mode
+    const colorContainer = document.getElementById("draw-color")?.parentElement;
+    if (colorContainer) {
+        if (activeDrawerMode === "eraser") {
+            colorContainer.style.display = "none";
+        } else {
+            colorContainer.style.display = "block";
+        }
+    }
+
+    // Configure cursor (needs to be run even if isDrawingMode is false)
+    if (activeDrawerMode === "eraser") {
+        const cursorSize = Math.max(10, size);
+        const cursorSvg = `<svg xmlns="http://www.w3.org/2000/svg" width="${cursorSize}" height="${cursorSize}" viewBox="0 0 ${cursorSize} ${cursorSize}"><rect x="0.5" y="0.5" width="${cursorSize - 1}" height="${cursorSize - 1}" fill="none" stroke="red" stroke-width="1"/></svg>`;
+        const base64Svg = window.btoa(cursorSvg);
+        const cursorUrl = `url("data:image/svg+xml;base64,${base64Svg}") ${cursorSize/2} ${cursorSize/2}, crosshair`;
+        canvas.freeDrawingCursor = cursorUrl;
+        canvas.defaultCursor = cursorUrl;
+        if (canvas.upperCanvasEl) {
+            canvas.upperCanvasEl.style.cursor = cursorUrl;
+        }
+    } else {
+        canvas.freeDrawingCursor = 'crosshair';
+        canvas.defaultCursor = 'default';
+        if (canvas.upperCanvasEl) {
+            canvas.upperCanvasEl.style.cursor = canvas.isDrawingMode ? 'crosshair' : 'default';
+        }
+    }
+
+    if (!canvas.isDrawingMode) return;
+
+    // Nếu activeDrawer là "marker", làm nét mờ đi (alpha = 0.5)
     let finalColor = color;
-    if (activeDrawerMode === 'marker') {
+    if (activeDrawerMode === "marker") {
         const r = parseInt(color.slice(1, 3), 16), g = parseInt(color.slice(3, 5), 16), b = parseInt(color.slice(5, 7), 16);
         finalColor = `rgba(${r},${g},${b},0.3)`;
+    } else if (activeDrawerMode === "eraser") {
+        finalColor = "rgba(239, 68, 68, 0.4)"; // semi-transparent red for eraser path visual guide
     }
 
     canvas.freeDrawingBrush = new fabric.PencilBrush(canvas);
@@ -2930,16 +3077,233 @@ function clearDrawings() {
     const objects = canvas.getObjects();
     let removed = false;
     objects.forEach(obj => {
-        if (obj.type === 'path') {
+        if (obj.type === "path") {
             canvas.remove(obj);
             removed = true;
         }
     });
     if(removed) {
         triggerAutoSave();
-        showToast('Đã xoá các nét vẽ', 'success');
+        showToast("Đã xoá các nét vẽ", "success");
     } else {
-        showToast('Không có nét vẽ nào để xoá', 'error');
+        showToast("Không có nét vẽ nào để xoá", "error");
+    }
+}
+
+/* Helper functions for vector eraser intersection checking */
+function getPathPoints(fabricPath) {
+    const points = [];
+    if (!fabricPath || !fabricPath.path) return points;
+    
+    const matrix = fabricPath.calcTransformMatrix();
+    
+    // Fabric.js stores path data in the path's own coordinate space.
+    // pathOffset is the center of the path's bounding box in that space.
+    // We subtract pathOffset to convert to object-local coords (centered at origin),
+    // then apply the transform matrix to get canvas-global coordinates.
+    const pathOffset = fabricPath.pathOffset || { x: 0, y: 0 };
+    
+    fabricPath.path.forEach(cmd => {
+        let x, y;
+        const cmdType = cmd[0].toUpperCase();
+        if (cmdType === "M" || cmdType === "L") {
+            x = cmd[1];
+            y = cmd[2];
+        } else if (cmdType === "Q") {
+            // Also capture the control point for better curve coverage
+            const cx = cmd[1], cy = cmd[2];
+            const cpt = new fabric.Point(cx - pathOffset.x, cy - pathOffset.y);
+            points.push(fabric.util.transformPoint(cpt, matrix));
+            x = cmd[3];
+            y = cmd[4];
+        } else if (cmdType === "C") {
+            // Capture both control points for better curve coverage
+            const c1x = cmd[1], c1y = cmd[2];
+            const c1pt = new fabric.Point(c1x - pathOffset.x, c1y - pathOffset.y);
+            points.push(fabric.util.transformPoint(c1pt, matrix));
+            const c2x = cmd[3], c2y = cmd[4];
+            const c2pt = new fabric.Point(c2x - pathOffset.x, c2y - pathOffset.y);
+            points.push(fabric.util.transformPoint(c2pt, matrix));
+            x = cmd[5];
+            y = cmd[6];
+        }
+        
+        if (x !== undefined && y !== undefined) {
+            const pt = new fabric.Point(x - pathOffset.x, y - pathOffset.y);
+            const globalPt = fabric.util.transformPoint(pt, matrix);
+            points.push(globalPt);
+        }
+    });
+    return points;
+}
+
+function distanceToSegment(p, p1, p2) {
+    const x = p.x, y = p.y;
+    const x1 = p1.x, y1 = p1.y;
+    const x2 = p2.x, y2 = p2.y;
+    
+    const A = x - x1;
+    const B = y - y1;
+    const C = x2 - x1;
+    const D = y2 - y1;
+    
+    const dot = A * C + B * D;
+    const lenSq = C * C + D * D;
+    let param = -1;
+    if (lenSq !== 0) {
+        param = dot / lenSq;
+    }
+    
+    let xx, yy;
+    if (param < 0) {
+        xx = x1;
+        yy = y1;
+    } else if (param > 1) {
+        xx = x2;
+        yy = y2;
+    } else {
+        xx = x1 + param * C;
+        yy = y1 + param * D;
+    }
+    
+    const dx = x - xx;
+    const dy = y - yy;
+    return Math.sqrt(dx * dx + dy * dy);
+}
+
+function checkPathsTouch(path1, path2, maxDistance = 20) {
+    const pts1 = getPathPoints(path1);
+    const pts2 = getPathPoints(path2);
+    
+    if (pts1.length === 0 || pts2.length === 0) return false;
+    
+    for (let i = 0; i < pts2.length; i++) {
+        const p = pts2[i];
+        for (let j = 0; j < pts1.length - 1; j++) {
+            const dist = distanceToSegment(p, pts1[j], pts1[j+1]);
+            if (dist <= maxDistance) {
+                return true;
+            }
+        }
+        if (pts1.length === 1) {
+            const dx = p.x - pts1[0].x;
+            const dy = p.y - pts1[0].y;
+            if (Math.sqrt(dx * dx + dy * dy) <= maxDistance) {
+                return true;
+            }
+        }
+    }
+    return false;
+}
+
+function erasePathsAtPoint(pointer) {
+    if (!canvas || !pointer || typeof pointer.x === 'undefined') return;
+    const objects = canvas.getObjects('path').slice(); // copy array since we'll modify canvas
+    const size = parseInt(document.getElementById("draw-size")?.value || 5, 10);
+    let changed = false;
+    
+    objects.forEach(obj => {
+        const strokeW = obj.strokeWidth || 1;
+        const threshold = size / 2 + strokeW / 2 + 3;
+        const pathOffset = obj.pathOffset || { x: 0, y: 0 };
+        const matrix = obj.calcTransformMatrix();
+        
+        if (!obj.path || obj.path.length < 2) return;
+        
+        // Convert all path endpoints to global canvas coordinates
+        const globalPoints = [];
+        obj.path.forEach(cmd => {
+            let x, y;
+            const t = cmd[0].toUpperCase();
+            if (t === "M" || t === "L") { x = cmd[1]; y = cmd[2]; }
+            else if (t === "Q") { x = cmd[3]; y = cmd[4]; }
+            else if (t === "C") { x = cmd[5]; y = cmd[6]; }
+            if (x !== undefined && y !== undefined) {
+                const pt = new fabric.Point(x - pathOffset.x, y - pathOffset.y);
+                globalPoints.push(fabric.util.transformPoint(pt, matrix));
+            }
+        });
+        
+        if (globalPoints.length < 2) return;
+        
+        // Check which points are within eraser range
+        const pointErased = globalPoints.map(gp => {
+            const dx = pointer.x - gp.x;
+            const dy = pointer.y - gp.y;
+            return Math.sqrt(dx * dx + dy * dy) <= threshold;
+        });
+        
+        // Also check segments between consecutive points
+        for (let i = 0; i < globalPoints.length - 1; i++) {
+            if (!pointErased[i] && !pointErased[i + 1]) {
+                const d = distanceToSegment(pointer, globalPoints[i], globalPoints[i + 1]);
+                if (d <= threshold) {
+                    pointErased[i] = true;
+                    pointErased[i + 1] = true;
+                }
+            }
+        }
+        
+        // If nothing is touched, skip this path
+        if (!pointErased.some(e => e)) return;
+        
+        // If ALL points are erased, just remove entire path
+        if (pointErased.every(e => e)) {
+            canvas.remove(obj);
+            changed = true;
+            return;
+        }
+        
+        // Split into sub-paths: groups of consecutive kept points
+        const subPaths = [];
+        let currentGroup = null;
+        for (let i = 0; i < globalPoints.length; i++) {
+            if (!pointErased[i]) {
+                if (!currentGroup) currentGroup = [];
+                currentGroup.push(globalPoints[i]);
+            } else {
+                if (currentGroup && currentGroup.length >= 2) {
+                    subPaths.push(currentGroup);
+                }
+                currentGroup = null;
+            }
+        }
+        if (currentGroup && currentGroup.length >= 2) {
+            subPaths.push(currentGroup);
+        }
+        
+        // Remove original path
+        canvas.remove(obj);
+        changed = true;
+        
+        // Create new smaller paths from the remaining sub-paths
+        subPaths.forEach(pts => {
+            if (pts.length < 2) return;
+            let d = `M ${pts[0].x} ${pts[0].y}`;
+            for (let k = 1; k < pts.length; k++) {
+                d += ` L ${pts[k].x} ${pts[k].y}`;
+            }
+            try {
+                const newPath = new fabric.Path(d, {
+                    stroke: obj.stroke,
+                    strokeWidth: strokeW,
+                    fill: '',
+                    strokeLineCap: obj.strokeLineCap || 'round',
+                    strokeLineJoin: obj.strokeLineJoin || 'round',
+                    selectable: false,
+                    evented: false,
+                    id: _generateId(),
+                    name: 'Nét vẽ'
+                });
+                canvas.add(newPath);
+            } catch (e) {
+                console.warn('Failed to create sub-path:', e);
+            }
+        });
+    });
+    
+    if (changed) {
+        canvas.requestRenderAll();
     }
 }
 
@@ -3984,7 +4348,7 @@ function toggleDrawer(type, forceOpen = false) {
             <p style="color:#94A3B8; font-size:0.82rem; margin:0 0 14px;">Công cụ thiết kế tự động và tinh chỉnh chữ thông minh.</p>
             
             <div style="margin-bottom:20px; padding:12px; background:rgba(124,92,255,0.06); border:1px solid rgba(124,92,255,0.15); border-radius:10px;">
-                <div style="font-size:0.88rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                <div style="font-size:0.88rem; font-weight:700; color:var(--sd-text); display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                     <i class="fa-solid fa-layer-group" style="color:#a78bfa;"></i> Tạo bố cục slide
                 </div>
                 <textarea id="ai-prompt" placeholder="Ví dụ: Giới thiệu 3 thành viên sáng lập..." style="width:100%; height:70px; box-sizing:border-box; padding:8px; border-radius:6px; border:1px solid rgba(255,255,255,0.1); background:#1e293b; color:#fff; font-size:0.82rem; outline:none; resize:none; margin-bottom:8px; font-family:'Inter', sans-serif;"></textarea>
@@ -4004,7 +4368,7 @@ function toggleDrawer(type, forceOpen = false) {
             </div>
 
             <div id="ai-text-tool" style="margin-bottom:20px; padding:12px; background:rgba(34,211,238,0.04); border:1px solid rgba(34,211,238,0.15); border-radius:10px; display:none;">
-                <div style="font-size:0.88rem; font-weight:700; color:#fff; display:flex; align-items:center; gap:6px; margin-bottom:8px;">
+                <div style="font-size:0.88rem; font-weight:700; color:var(--sd-text); display:flex; align-items:center; gap:6px; margin-bottom:8px;">
                     <i class="fa-solid fa-pen-nib" style="color:#22d3ee;"></i> Tối ưu hóa văn bản
                 </div>
                 <p style="font-size:0.75rem; color:#94a3b8; margin:0 0 8px;">(Chọn một ô văn bản trên canvas để sử dụng)</p>
@@ -4024,32 +4388,32 @@ function toggleDrawer(type, forceOpen = false) {
 
             <div class="text-preset" onclick="addText('Thêm tiêu đề', 60, true)" draggable="true" ondragstart="dragStart(event, 'title')">
                 <div class="text-preset-label">Tiêu đề lớn</div>
-                <div class="text-preset-preview" style="font-size:1.4rem; font-weight:800; font-family:'Plus Jakarta Sans', 'Inter', sans-serif; color:#fff; letter-spacing:-0.02em;">Thêm tiêu đề</div>
+                <div class="text-preset-preview" style="font-size:1.4rem; font-weight:800; font-family:'Plus Jakarta Sans', 'Inter', sans-serif; color:var(--sd-text-preset-title); letter-spacing:-0.02em;">Thêm tiêu đề</div>
             </div>
 
             <div class="text-preset" onclick="addText('Thêm tiêu đề phụ', 40, false)" draggable="true" ondragstart="dragStart(event, 'subtitle')">
                 <div class="text-preset-label">Tiêu đề phụ</div>
-                <div class="text-preset-preview" style="font-size:1.05rem; font-weight:600; font-family:'Inter', sans-serif; color:#E2E8F0;">Thêm tiêu đề phụ</div>
+                <div class="text-preset-preview" style="font-size:1.05rem; font-weight:600; font-family:'Inter', sans-serif; color:var(--sd-text-preset-subtitle);">Thêm tiêu đề phụ</div>
             </div>
 
             <div class="text-preset" onclick="addText('Thêm nội dung văn bản', 24, false)" draggable="true" ondragstart="dragStart(event, 'body')">
                 <div class="text-preset-label">Văn bản thường</div>
-                <div class="text-preset-preview" style="font-size:0.9rem; font-weight:400; font-family:'Inter', sans-serif; color:#CBD5E1; line-height:1.5;">Thêm nội dung văn bản của bạn ở đây.</div>
+                <div class="text-preset-preview" style="font-size:0.9rem; font-weight:400; font-family:'Inter', sans-serif; color:var(--sd-text-preset-body); line-height:1.5;">Thêm nội dung văn bản của bạn ở đây.</div>
             </div>
 
             <div class="text-preset" onclick="addText('Trích dẫn nổi bật — thay đổi câu chữ tuỳ ý.', 28, false)" style="border-left:3px solid #7C5CFF;">
                 <div class="text-preset-label">Trích dẫn</div>
-                <div class="text-preset-preview" style="font-size:0.95rem; font-style:italic; font-family:'Georgia', serif; color:#E2E8F0; line-height:1.4;">"Trích dẫn nổi bật trên slide."</div>
+                <div class="text-preset-preview" style="font-size:0.95rem; font-style:italic; font-family:'Georgia', serif; color:var(--sd-text-preset-quote); line-height:1.4;">"Trích dẫn nổi bật trên slide."</div>
             </div>
 
             <div class="text-preset" onclick="addText('Ghi chú nhỏ — chú thích nguồn, ngày tháng…', 16, false)">
                 <div class="text-preset-label">Ghi chú</div>
-                <div class="text-preset-preview" style="font-size:0.78rem; color:#94A3B8; font-family:'Inter', sans-serif;">Ghi chú nhỏ · chú thích</div>
+                <div class="text-preset-preview" style="font-size:0.78rem; color:var(--sd-text-preset-note); font-family:'Inter', sans-serif;">Ghi chú nhỏ · chú thích</div>
             </div>
 
             <div class="text-preset" onclick="addText('LABEL · KICKER', 14, true)">
                 <div class="text-preset-label">Kicker (mác đầu)</div>
-                <div class="text-preset-preview" style="font-size:0.74rem; font-weight:800; letter-spacing:0.16em; color:#7C5CFF; font-family:'Inter', sans-serif;">LABEL · KICKER</div>
+                <div class="text-preset-preview" style="font-size:0.74rem; font-weight:800; letter-spacing:0.16em; color:var(--sd-text-preset-kicker); font-family:'Inter', sans-serif;">LABEL · KICKER</div>
             </div>
         `;
     } else if (type === 'elements') {
@@ -4168,22 +4532,73 @@ function toggleDrawer(type, forceOpen = false) {
         }
         panel.innerHTML = uploadHtml;
     } else if (type === 'draw') {
+        const isDrawing = canvas && canvas.isDrawingMode;
+        const mode = activeDrawerMode;
         panel.innerHTML = `
-            <div class="drawer-title">Công cụ Vẽ</div>
-            <div style="display:grid; grid-template-columns: 1fr 1fr 1fr; gap:10px; margin-bottom: 20px;">
-                <button class="btn-format" onclick="enableDrawMode('pencil')" title="Bút chì" style="padding:15px; width:100%;"><i class="fa-solid fa-pencil" style="font-size:20px;"></i></button>
-                <button class="btn-format" onclick="enableDrawMode('marker')" title="Bút dạ" style="padding:15px; width:100%;"><i class="fa-solid fa-marker" style="font-size:20px;"></i></button>
-                <button class="btn-format" onclick="disableDrawMode()" title="Tắt vẽ" style="padding:15px; width:100%; color:var(--success);"><i class="fa-solid fa-arrow-pointer" style="font-size:20px;"></i></button>
+            <div class="drawer-title" style="display:flex; align-items:center; gap:8px;">
+                <i class="fa-solid fa-palette" style="color:#a78bfa;"></i> Công cụ Vẽ
             </div>
-            <div class="form-group" style="margin-bottom:15px;">
-                <label style="display:block; margin-bottom:5px; font-weight:600;">Màu vẽ:</label>
-                <input type="color" id="draw-color" value="#6366f1" onchange="updateDrawStyle()" style="width:100%; height:40px; border:none; padding:0;">
+
+            <!-- Tool buttons -->
+            <div style="display:grid; grid-template-columns: repeat(4, 1fr); gap:8px; margin-bottom:20px;">
+                <button id="draw-btn-pencil" class="btn-format ${isDrawing && mode === 'pencil' ? 'active' : ''}" onclick="enableDrawMode('pencil')" title="Bút chì" style="padding:12px 6px; width:100%; display:flex; flex-direction:column; align-items:center; gap:6px; border-radius:10px;">
+                    <i class="fa-solid fa-pencil" style="font-size:18px;"></i>
+                    <span style="font-size:0.68rem; font-weight:500; opacity:0.85;">Bút chì</span>
+                </button>
+                <button id="draw-btn-marker" class="btn-format ${isDrawing && mode === 'marker' ? 'active' : ''}" onclick="enableDrawMode('marker')" title="Bút dạ" style="padding:12px 6px; width:100%; display:flex; flex-direction:column; align-items:center; gap:6px; border-radius:10px;">
+                    <i class="fa-solid fa-marker" style="font-size:18px;"></i>
+                    <span style="font-size:0.68rem; font-weight:500; opacity:0.85;">Bút dạ</span>
+                </button>
+                <button id="draw-btn-eraser" class="btn-format ${isDrawing && mode === 'eraser' ? 'active' : ''}" onclick="enableDrawMode('eraser')" title="Cục tẩy" style="padding:12px 6px; width:100%; display:flex; flex-direction:column; align-items:center; gap:6px; border-radius:10px;">
+                    <i class="fa-solid fa-eraser" style="font-size:18px;"></i>
+                    <span style="font-size:0.68rem; font-weight:500; opacity:0.85;">Tẩy</span>
+                </button>
+                <button id="draw-btn-pointer" class="btn-format ${!isDrawing ? 'active' : ''}" onclick="disableDrawMode()" title="Tắt vẽ" style="padding:12px 6px; width:100%; display:flex; flex-direction:column; align-items:center; gap:6px; border-radius:10px;">
+                    <i class="fa-solid fa-arrow-pointer" style="font-size:18px;"></i>
+                    <span style="font-size:0.68rem; font-weight:500; opacity:0.85;">Con trỏ</span>
+                </button>
             </div>
-            <div class="form-group" style="margin-bottom:20px;">
-                <label style="display:block; margin-bottom:5px; font-weight:600;">Äộ dày nét vẽ (<span id="draw-size-label">5</span>px):</label>
-                <input type="range" id="draw-size" min="1" max="50" value="5" oninput="document.getElementById('draw-size-label').innerText=this.value; updateDrawStyle()" style="width:100%;">
+
+            <!-- Color picker section -->
+            <div style="margin-bottom:16px; padding:14px; background:var(--sd-card-bg); border:1px solid var(--sd-border); border-radius:12px; ${mode === 'eraser' ? 'display:none;' : ''}">
+                <div style="display:flex; align-items:center; gap:8px; margin-bottom:10px;">
+                    <i class="fa-solid fa-droplet" style="font-size:0.78rem; color:#818cf8;"></i>
+                    <span style="font-size:0.82rem; font-weight:600; color:var(--sd-text);">Màu vẽ</span>
+                </div>
+                <div style="display:flex; gap:6px; align-items:center;">
+                    <input type="color" id="draw-color" value="#6366f1" onchange="updateDrawStyle()" style="width:42px; height:36px; border:2px solid rgba(255,255,255,0.1); border-radius:8px; padding:2px; cursor:pointer; background:transparent;">
+                    <div style="display:flex; gap:4px; flex-wrap:wrap; flex:1;">
+                        <div style="width:28px; height:28px; background:#6366f1; border-radius:6px; cursor:pointer; border:2px solid transparent; transition:0.15s;" onclick="document.getElementById('draw-color').value='#6366f1'; updateDrawStyle()" onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='transparent'"></div>
+                        <div style="width:28px; height:28px; background:#ef4444; border-radius:6px; cursor:pointer; border:2px solid transparent; transition:0.15s;" onclick="document.getElementById('draw-color').value='#ef4444'; updateDrawStyle()" onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='transparent'"></div>
+                        <div style="width:28px; height:28px; background:#10b981; border-radius:6px; cursor:pointer; border:2px solid transparent; transition:0.15s;" onclick="document.getElementById('draw-color').value='#10b981'; updateDrawStyle()" onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='transparent'"></div>
+                        <div style="width:28px; height:28px; background:#f59e0b; border-radius:6px; cursor:pointer; border:2px solid transparent; transition:0.15s;" onclick="document.getElementById('draw-color').value='#f59e0b'; updateDrawStyle()" onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='transparent'"></div>
+                        <div style="width:28px; height:28px; background:#3b82f6; border-radius:6px; cursor:pointer; border:2px solid transparent; transition:0.15s;" onclick="document.getElementById('draw-color').value='#3b82f6'; updateDrawStyle()" onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='transparent'"></div>
+                        <div style="width:28px; height:28px; background:#ffffff; border-radius:6px; cursor:pointer; border:2px solid rgba(255,255,255,0.2); transition:0.15s;" onclick="document.getElementById('draw-color').value='#ffffff'; updateDrawStyle()" onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.2)'"></div>
+                        <div style="width:28px; height:28px; background:#000000; border-radius:6px; cursor:pointer; border:2px solid rgba(255,255,255,0.15); transition:0.15s;" onclick="document.getElementById('draw-color').value='#000000'; updateDrawStyle()" onmouseover="this.style.borderColor='#fff'" onmouseout="this.style.borderColor='rgba(255,255,255,0.15)'"></div>
+                    </div>
+                </div>
             </div>
-            <button class="btn-danger" style="width:100%;" onclick="clearDrawings()"><i class="fa-solid fa-eraser"></i> Xoá nét vẽ</button>
+
+            <!-- Stroke size section -->
+            <div style="margin-bottom:20px; padding:14px; background:var(--sd-card-bg); border:1px solid var(--sd-border); border-radius:12px;">
+                <div style="display:flex; align-items:center; justify-content:space-between; margin-bottom:10px;">
+                    <div style="display:flex; align-items:center; gap:8px;">
+                        <i class="fa-solid fa-pen-ruler" style="font-size:0.78rem; color:#818cf8;"></i>
+                        <span style="font-size:0.82rem; font-weight:600; color:var(--sd-text);">${mode === 'eraser' ? 'Kích thước tẩy' : 'Độ dày nét vẽ'}</span>
+                    </div>
+                    <span id="draw-size-label" style="font-size:0.78rem; font-weight:700; color:#a78bfa; background:rgba(167,139,250,0.12); padding:2px 8px; border-radius:6px;">5px</span>
+                </div>
+                <input type="range" id="draw-size" min="1" max="50" value="5" oninput="document.getElementById('draw-size-label').innerText=this.value + 'px'; updateDrawStyle()" style="width:100%; accent-color:#818cf8;">
+                <div style="display:flex; justify-content:space-between; margin-top:4px;">
+                    <span style="font-size:0.68rem; color:#64748b;">1px</span>
+                    <span style="font-size:0.68rem; color:#64748b;">50px</span>
+                </div>
+            </div>
+
+            <!-- Clear button -->
+            <button class="btn-danger" style="width:100%; padding:10px; border-radius:10px; display:flex; align-items:center; justify-content:center; gap:8px; font-weight:600; font-size:0.82rem;" onclick="clearDrawings()">
+                <i class="fa-solid fa-trash-can"></i> Xoá tất cả nét vẽ
+            </button>
         `;
     }
 }
