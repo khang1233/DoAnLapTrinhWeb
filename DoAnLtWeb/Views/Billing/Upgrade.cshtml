@@ -1,6 +1,6 @@
 @model List<DoAnLtWeb.Models.VipPlanViewModel>
 @{
-    ViewData["Title"] = "Nang cap VIP — Slidify";
+    ViewData["Title"] = "Nâng cấp VIP — Slidify";
     var isVip = ViewBag.IsVip is bool b && b;
     var currentPlan = ViewBag.CurrentPlan as string ?? "Free";
 }
@@ -39,7 +39,7 @@
 
 <div class="upgrade-page">
     <div style="max-width:900px; margin:0 auto;">
-        <a href="/Home/Index" class="back-link">&#8592; Quay lai dashboard</a>
+        <a href="/Home/Index" class="back-link">&#8592; Quay lại dashboard</a>
 
         @if (TempData["BillingError"] != null)
         {
@@ -53,8 +53,8 @@
 
     <div class="upgrade-hero">
         <div class="upgrade-hero-label">Slidify Premium</div>
-        <h1 class="upgrade-hero-title">Mo khoa toan bo suc manh cua Slidify</h1>
-        <p class="upgrade-hero-sub">Template dai (tu 22 slide), component VIP, infographic blocks, chia se slide cho nhom — chi voi 10.000 VND / thang.</p>
+        <h1 class="upgrade-hero-title">Mở khóa toàn bộ sức mạnh của Slidify</h1>
+        <p class="upgrade-hero-sub">Template dài (từ 22 slide), component VIP, infographic blocks, chia sẻ slide cho nhóm — chỉ với 10.000 VNĐ / tháng.</p>
     </div>
 
     @if (isVip)
@@ -62,7 +62,7 @@
         <div class="vip-active-banner">
             <span style="font-size:1.5rem;">★</span>
             <div>
-                <div style="font-size:1rem;">Ban dang la thanh vien <strong>VIP</strong>. Tat ca tinh nang premium da duoc mo khoa.</div>
+                <div style="font-size:1rem;">Bạn đang là thành viên <strong>VIP</strong>. Tất cả tính năng premium đã được mở khóa.</div>
             </div>
         </div>
     }
@@ -75,23 +75,23 @@
             <div class="@cardClass">
                 @if (plan.IsRecommended)
                 {
-                    <div class="plan-rec-badge">&#9733; Khuyen dung</div>
+                    <div class="plan-rec-badge">&#9733; Khuyên dùng</div>
                 }
                 <div class="plan-name">@plan.PlanName</div>
-                <div class="plan-price">@(plan.Amount == 0 ? "Mien phi" : $"{(int)(plan.Amount/1000)}K")</div>
-                <div class="plan-period">@(plan.Amount == 0 ? "mai mai" : "/ thang")</div>
+                <div class="plan-price">@(plan.Amount == 0 ? "Miễn phí" : $"{(int)(plan.Amount/1000)}K")</div>
+                <div class="plan-period">@(plan.Amount == 0 ? "mãi mãi" : "/ tháng")</div>
                 <div class="plan-desc">@plan.Description</div>
 
                 @if (plan.Amount == 0)
                 {
-                    <div class="plan-cta-free">@(isVip ? "Goi co ban" : "Goi hien tai")</div>
+                    <div class="plan-cta-free">@(isVip ? "Gói cơ bản" : "Gói hiện tại")</div>
                 }
                 else
                 {
                     <form asp-action="CreatePayment" method="post">
                         @Html.AntiForgeryToken()
                         <input type="hidden" name="PlanName" value="@plan.PlanName" />
-                        <button type="submit" class="plan-cta-vip">@(isCurrentPlan && isVip ? "Gia han VIP" : "Nang cap len VIP")</button>
+                        <button type="submit" class="plan-cta-vip">@(isCurrentPlan && isVip ? "Gia hạn VIP" : "Nâng cấp lên VIP")</button>
                     </form>
                 }
 
@@ -109,6 +109,6 @@
     </div>
 
     <div class="billing-note">
-        <strong style="color:#e2e8f0;">Luu y thanh toan:</strong> He thong tao ma VietQR lien ket voi tai khoan MBBank. Sau khi chuyen khoan, bam <em>Da chuyen khoan</em> de bao he thong. Giao dich se len VIP sau khi admin xac nhan thu cong.
+        <strong style="color:#e2e8f0;">Lưu ý thanh toán:</strong> Hệ thống tạo mã VietQR liên kết với tài khoản MBBank. Sau khi chuyển khoản, bấm <em>Đã chuyển khoản</em> để báo hệ thống. Giao dịch sẽ lên VIP sau khi admin xác nhận thủ công.
     </div>
 </div>

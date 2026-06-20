@@ -250,6 +250,10 @@
         <input type="text" id="current-project-name" class="topbar-project-name" value="@Model.Title" maxlength="120" />
         <div class="topbar-spacer"></div>
         <span id="save-status" class="topbar-save-status"><i class="fa-solid fa-circle-check" style="color:#10b981"></i> Đã lưu</span>
+        <button id="btn-toggle-autosave" class="topbar-btn" onclick="toggleAutoSave()" title="Bật/Tắt tự động lưu" style="width: auto; font-size:0.72rem; gap:5px; display:inline-flex; align-items:center; padding:4px 10px; border-radius:6px; white-space:nowrap;">
+            <i class="fa-solid fa-cloud-arrow-up" id="autosave-icon"></i>
+            <span id="autosave-label">Tự động lưu</span>
+        </button>
         <div class="topbar-divider"></div>
         <button class="topbar-btn" id="btn-undo" title="Hoàn tác (Ctrl+Z)"><i class="fa-solid fa-rotate-left"></i></button>
         <button class="topbar-btn" id="btn-redo" title="Làm lại (Ctrl+Y)"><i class="fa-solid fa-rotate-right"></i></button>
@@ -263,6 +267,7 @@
         <div class="topbar-divider"></div>
         <button class="btn-present" onclick="openSubmitTemplateDialog()" title="Đề xuất làm mẫu"><i class="fa-solid fa-paper-plane"></i> Đề xuất làm mẫu</button>
         <button class="btn-present" onclick="openShareDialog()" title="Chia sẻ slide cho nhóm"><i class="fa-solid fa-user-group"></i> Chia sẻ</button>
+        <button class="btn-present" onclick="openExportDialog()" title="Xuất file (PDF, DOCX)"><i class="fa-solid fa-download"></i> Xuất file</button>
         <button class="btn-present" onclick="startPresentation()"><i class="fa-solid fa-play"></i> Trình chiếu</button>
         <button class="btn-save" onclick="savePresentationToBackend(true)"><i class="fa-solid fa-floppy-disk"></i> Lưu</button>
     </header>
@@ -481,6 +486,36 @@
         <div style="background:#1e293b; color:#f8fafc; padding:24px; border-radius:14px; width:520px; max-width:92vw; border:1px solid rgba(255,255,255,0.08);" id="share-modal-body"></div>
     </div>
 
+    <!-- ===== EXPORT MODAL ===== -->
+    <div id="export-modal" style="display:none; position:fixed; inset:0; background:rgba(0,0,0,0.6); z-index:9999; align-items:center; justify-content:center;">
+        <div style="background:#1e293b; color:#f8fafc; padding:24px; border-radius:14px; width:440px; max-width:92vw; border:1px solid rgba(255,255,255,0.08);">
+            <h3 style="margin:0 0 6px; font-size:1.1rem;"><i class="fa-solid fa-download" style="color:#818cf8;"></i> Xuất file</h3>
+            <p style="margin:0 0 18px; color:#94a3b8; font-size:0.85rem;">Tải bộ slide này về máy dưới các định dạng khác nhau.</p>
+            
+            <div style="display:flex; flex-direction:column; gap:12px; margin-bottom: 24px;">
+                <button class="btn-present" onclick="exportToPDF()" style="justify-content: flex-start; padding: 12px; height: auto;">
+                    <i class="fa-solid fa-file-pdf" style="font-size:24px; color:#ef4444; margin-right:12px; width:24px; text-align:center;"></i>
+                    <div style="text-align: left;">
+                        <div style="font-weight:700; color:#fff;">Tải xuống PDF</div>
+                        <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Xuất toàn bộ slide ra file PDF</div>
+                    </div>
+                </button>
+                <button class="btn-present" onclick="exportToDOCX()" style="justify-content: flex-start; padding: 12px; height: auto;">
+                    <i class="fa-solid fa-file-word" style="font-size:24px; color:#3b82f6; margin-right:12px; width:24px; text-align:center;"></i>
+                    <div style="text-align: left;">
+                        <div style="font-weight:700; color:#fff;">Tải xuống DOCX (Word)</div>
+                        <div style="font-size:0.75rem; color:#94a3b8; margin-top:2px;">Xuất slide thành hình ảnh vào file Word</div>
+                    </div>
+                </button>
+
+            </div>
+
+            <div style="display:flex; justify-content:flex-end;">
+                <button class="btn-present" onclick="closeExportDialog()">Đóng</button>
+            </div>
+        </div>
+    </div>
+
     <!-- ===== MAIN BODY ===== -->
     <div class="editor-body">
 
@@ -681,8 +716,11 @@
 
     <!-- ===== SCRIPTS ===== -->
     <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
-    <script src="~/js/slide-editor.js"></script>
-    <script src="~/js/slidify-vip-components.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js"></script>
+    <script src="https://unpkg.com/docx@7.8.2/build/index.js"></script>
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/FileSaver.js/2.0.5/FileSaver.min.js"></script>
+    <script src="~/js/slide-editor.js" asp-append-version="true" charset="utf-8"></script>
+    <script src="~/js/slidify-vip-components.js" asp-append-version="true"></script>
     <script>
         // Patch toggleDrawer to also animate the outer .editor-drawer panel
         (function () {
