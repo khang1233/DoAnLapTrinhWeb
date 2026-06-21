@@ -1915,7 +1915,7 @@ function _buildElementsPanel() {
                 { label: 'Tam giác', icon: 'fa-play fa-rotate-270', color: '#f59e0b', action: () => addTriangle() },
                 { label: 'Hình thoi', icon: 'fa-diamond', color: '#ec4899', action: () => addRhombus() },
                 { label: 'Ngũ giác', icon: 'fa-certificate', color: '#8b5cf6', action: () => addPentagon() },
-                { label: 'Lục giác', icon: 'fa-hexagon-nodes', color: '#06b6d4', action: () => addHexagon() },
+                { label: 'Lục giác', icon: 'fa-cube', color: '#06b6d4', action: () => addHexagon() },
                 { label: 'Bát giác', icon: 'fa-stop', color: '#f97316', action: () => addOctagon() },
                 { label: 'Hình bình hành', icon: 'fa-shapes', color: '#a78bfa', action: () => addParallelogram() },
                 { label: 'Hình thang', icon: 'fa-shapes', color: '#22d3ee', action: () => addTrapezoid() },
@@ -1996,7 +1996,7 @@ function _buildElementsPanel() {
             btn.title = item.label;
             btn.innerHTML = `
                 <i class="fa-solid ${item.icon}" style="font-size:22px;color:${locked ? '#475569' : item.color};"></i>
-                <span style="color:${locked ? '#64748b' : '#F1F5F9'};line-height:1.25;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${item.label}</span>
+                <span style="color:${locked ? '#94a3b8' : 'var(--text-muted, #475569)'};line-height:1.25;font-weight:600;display:-webkit-box;-webkit-line-clamp:2;-webkit-box-orient:vertical;overflow:hidden;">${item.label}</span>
                 ${locked ? '<i class="fa-solid fa-lock" style="font-size:9px;color:#7c3aed;opacity:0.7;"></i>' : ''}
             `;
             btn.onclick = locked
@@ -3678,3 +3678,157 @@ function changeBackgroundColor(color) {
 }
 
 
+// ===== EXPORT MODAL LOGIC =====
+function openExportDialog() {
+    document.getElementById('export-modal').style.display = 'flex';
+}
+
+function closeExportDialog() {
+    document.getElementById('export-modal').style.display = 'none';
+}
+
+async function getSlideImageUrls() {
+    const urls = [];
+    showToast('Đang thu thập dữ liệu slide, vui lòng đợi...', 'info');
+    
+    const tempCanvas = new fabric.StaticCanvas(null, {
+        width: canvas.width || 1280,
+        height: canvas.height || 720
+    });
+
+    for (let i = 0; i < slideDataArray.length; i++) {
+        const slide = slideDataArray[i];
+        
+        await new Promise((resolve) => {
+            const loadBgAndResolve = () => {
+                tempCanvas.backgroundColor = slide.BackgroundColor || '#ffffff';
+                if (slide.BackgroundImage) {
+                    fabric.Image.fromURL(slide.BackgroundImage, img => {
+                        if (img) {
+                            const scale = Math.max(tempCanvas.width / img.width, tempCanvas.height / img.height);
+                            img.set({ scaleX: scale, scaleY: scale, originX: 'left', originY: 'top' });
+                            tempCanvas.setBackgroundImage(img, () => {
+                                tempCanvas.renderAll();
+                                resolve();
+                            });
+                        } else {
+                            tempCanvas.setBackgroundImage(null, () => {
+                                tempCanvas.renderAll();
+                                resolve();
+                            });
+                        }
+                    }, { crossOrigin: 'anonymous' });
+                } else {
+                    tempCanvas.setBackgroundImage(null, () => {
+                        tempCanvas.renderAll();
+                        resolve();
+                    });
+                }
+            };
+
+            if (slide.ElementsJson && slide.ElementsJson !== '[]') {
+                try {
+                    const data = JSON.parse(slide.ElementsJson);
+                    tempCanvas.loadFromJSON(data, () => {
+                        loadBgAndResolve();
+                    });
+                } catch (e) {
+                    console.error("Lỗi parse JSON:", e);
+                    loadBgAndResolve();
+                }
+            } else {
+                tempCanvas.clear();
+                loadBgAndResolve();
+            }
+        });
+
+        const dataUrl = tempCanvas.toDataURL({ format: 'png', multiplier: 2 });
+        urls.push(dataUrl);
+    }
+    
+    tempCanvas.dispose();
+    return urls;
+}
+
+async function exportToPDF() {
+    try {
+        closeExportDialog();
+        const urls = await getSlideImageUrls();
+        const { jsPDF } = window.jspdf;
+        
+        const pdf = new jsPDF({
+            orientation: canvas.width > canvas.height ? 'landscape' : 'portrait',
+            unit: 'px',
+            format: [canvas.width, canvas.height]
+        });
+        
+        for(let i = 0; i < urls.length; i++){
+            if (i > 0) pdf.addPage([canvas.width, canvas.height], canvas.width > canvas.height ? 'landscape' : 'portrait');
+            pdf.addImage(urls[i], 'PNG', 0, 0, canvas.width, canvas.height);
+        }
+        
+        const projName = document.getElementById('current-project-name').value || 'presentation';
+        pdf.save(`${projName}.pdf`);
+        showToast('Xuất PDF thành công!', 'success');
+    } catch(e) {
+        console.error(e);
+        showToast('Lỗi xuất PDF: ' + (e.message || e), 'error');
+    }
+}
+
+async function exportToDOCX() {
+    try {
+        closeExportDialog();
+        const urls = await getSlideImageUrls();
+        const docChildren = [];
+        
+        // Target image width for word document (approx 600 points)
+        const imgWidth = 600;
+        const imgHeight = Math.round((canvas.height / canvas.width) * imgWidth);
+
+        for (let i = 0; i < urls.length; i++) {
+            const base64Data = urls[i].split(',')[1];
+            
+            // docx library expects a Uint8Array
+            const byteCharacters = atob(base64Data);
+            const byteNumbers = new Array(byteCharacters.length);
+            for (let j = 0; j < byteCharacters.length; j++) {
+                byteNumbers[j] = byteCharacters.charCodeAt(j);
+            }
+            const uint8Array = new Uint8Array(byteNumbers);
+
+            docChildren.push(
+                new docx.Paragraph({
+                    children: [
+                        new docx.ImageRun({
+                            data: uint8Array,
+                            transformation: { width: imgWidth, height: imgHeight }
+                        })
+                    ],
+                    alignment: docx.AlignmentType.CENTER
+                })
+            );
+            
+            // Add page break if not last slide
+            if (i < urls.length - 1) {
+                docChildren.push(new docx.Paragraph({ children: [new docx.PageBreak()] }));
+            }
+        }
+
+        const doc = new docx.Document({
+            sections: [{ properties: {}, children: docChildren }]
+        });
+
+        docx.Packer.toBlob(doc).then(blob => {
+            const projName = document.getElementById('current-project-name').value || 'presentation';
+            window.saveAs(blob, `${projName}.docx`);
+            showToast('Xuất DOCX thành công!', 'success');
+        }).catch(err => {
+            console.error(err);
+            showToast('Lỗi khi tải DOCX: ' + (err.message || err), 'error');
+        });
+    } catch(e) {
+        console.error(e);
+        showToast('Lỗi xuất DOCX: ' + (e.message || e), 'error');
+    }
+}

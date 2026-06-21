@@ -21,12 +21,12 @@ namespace DoAnLtWeb.Controllers
                 PlanName = "Free",
                 Amount = 0,
                 PriceLabel = "0 VND",
-                Description = "Goi co ban de tao va chinh sua slide thong thuong.",
+                Description = "Gói cơ bản để tạo và chỉnh sửa slide thông thường.",
                 Features = new List<string>
                 {
-                    "Template co ban",
-                    "Thanh phan tieu chuan",
-                    "Chinh sua slide khong gioi han"
+                    "Template cơ bản",
+                    "Thành phần tiêu chuẩn",
+                    "Chỉnh sửa slide không giới hạn"
                 }
             },
             new VipPlanViewModel

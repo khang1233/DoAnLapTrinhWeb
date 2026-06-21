@@ -52,7 +52,7 @@ namespace DoAnLtWeb.Data
 
             // Drop any pre-existing user that's not one of the three. Their non-template presentations
             // (and Identity rows) cascade via FK; payment transactions also cascade.
-            var staleUsers = context.Users.Where(u => !keepEmails.Contains(u.Email!)).ToList();
+            var staleUsers = context.Users.Where(u => u.Email != adminEmail && u.Email != vipEmail && u.Email != userEmail).ToList();
             if (staleUsers.Any())
             {
                 foreach (var u in staleUsers)
