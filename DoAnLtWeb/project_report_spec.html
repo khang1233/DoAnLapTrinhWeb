@@ -1,0 +1,295 @@
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Đề Cương Báo Cáo Kỹ Thuật Slidify</title>
+    <!-- Github Markdown CSS -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/github-markdown-css/5.5.0/github-markdown.min.css">
+    <style>
+        body {
+            box-sizing: border-box;
+            min-width: 200px;
+            max-width: 980px;
+            margin: 0 auto;
+            padding: 45px;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Helvetica, Arial, sans-serif, "Apple Color Emoji", "Segoe UI Emoji";
+        }
+        @media (max-width: 767px) {
+            body {
+                padding: 15px;
+            }
+        }
+        .header-actions {
+            margin-bottom: 20px;
+            text-align: right;
+        }
+        .btn-print {
+            background-color: #2da44e;
+            color: white;
+            border: none;
+            padding: 10px 20px;
+            font-size: 14px;
+            font-weight: 600;
+            border-radius: 6px;
+            cursor: pointer;
+        }
+        .btn-print:hover {
+            background-color: #2c974b;
+        }
+        @media print {
+            .header-actions {
+                display: none;
+            }
+            body {
+                padding: 0;
+            }
+        }
+    </style>
+    <!-- Marked.js for markdown parsing -->
+    <script src="https://cdn.jsdelivr.net/npm/marked/marked.min.js"></script>
+    <!-- Mermaid.js for diagram rendering -->
+    <script src="https://cdn.jsdelivr.net/npm/mermaid/dist/mermaid.min.js"></script>
+</head>
+<body class="markdown-body">
+    <div class="header-actions">
+        <button class="btn-print" onclick="window.print()">Xuất ra PDF / In báo cáo</button>
+    </div>
+    <div id="content"></div>
+    <script>
+        // Raw Markdown content
+        const markdownText = `# ĐỀ CƯƠNG BÁO CÁO KỸ THUẬT & PHÂN CHIA NHIỆM VỤ DỰ ÁN SLIDIFY
+
+Tài liệu này tổng hợp toàn bộ kiến trúc hệ thống, công nghệ sử dụng, cấu trúc cơ sở dữ liệu và các tính năng chi tiết của dự án **Slidify** (dự án thực tế trong source code \`DoAnLtWeb\`). 
+
+---
+
+## 1. Công Nghệ Sử Dụng (Tech Stack)
+
+### 1.1. Backend Framework
+- **ASP.NET Core 8.0 MVC & Web API**: Đóng vai trò là kiến trúc chính để xây dựng ứng dụng Web, xử lý các request từ client, quản lý routing và bảo mật.
+- **Entity Framework Core (EF Core) 8.0**: Sử dụng phương pháp **Code-First** để tự động tạo và tương tác với cơ sở dữ liệu thông qua các class C# (Models).
+- **ASP.NET Core Identity**: Quản lý tài khoản người dùng, phân quyền (User / Admin), bảo mật mật khẩu và quản lý phiên đăng nhập.
+
+### 1.2. Database & Storage
+- **Microsoft SQL Server (chạy trong Docker Container)**: Lưu trữ thông tin người dùng, các slide mẫu (Templates), giao dịch thanh toán và thông tin các slide cá nhân.
+- **Thư mục lưu trữ vật lý (Local Server Files)**: 
+  - \`wwwroot/thumbnails/\`: Lưu trữ ảnh thu nhỏ (thumbnail) của slide dưới dạng \`.jpg\`.
+  - \`wwwroot/uploads/\`: Lưu trữ hình ảnh người dùng upload lên slide.
+  - \`wwwroot/slide-mau/\`: Lưu trữ file PPTX mẫu của hệ thống.
+
+### 1.3. Frontend (Client-side)
+- **Fabric.js**: Thư viện JavaScript chính được sử dụng trên Canvas để vẽ các phần tử, kéo thả văn bản, hình khối, hình ảnh, thay đổi vị trí, kích thước và màu sắc.
+- **HTML5 Canvas & Vanilla JS**: Xây dựng bộ biên tập slide trực quan (Editor) mà không cần dùng framework nặng (như React/Angular).
+- **Vanilla CSS & TailwindCSS**: Xây dựng giao diện Responsive, hiện đại và mượt mà cho toàn bộ ứng dụng.
+
+### 1.4. External Integration (Tích hợp bên ngoài)
+- **Google OAuth 2.0**: Cho phép người dùng đăng nhập nhanh bằng tài khoản Google.
+- **VietQR API (img.vietqr.io)**: Tự động tạo mã QR thanh toán động dựa trên số tài khoản ngân hàng, số tiền và nội dung chuyển khoản để nâng cấp VIP.
+- **SePay.vn Gateway**: Cổng webhook ngân hàng tự động. Khi có biến động số dư, SePay tự động gọi API của ứng dụng để duyệt VIP ngay lập tức mà không cần Admin phê duyệt thủ công.
+- **Microsoft MarkItDown**: Thư viện Python hỗ trợ chuyển đổi tài liệu (Word, Excel, PDF...) sang định dạng Markdown.
+- **LibreOffice Headless (soffice)** & **Docnet.Core**: Chuyển đổi file \`.pptx\` sang PDF, sau đó chuyển PDF thành các hình ảnh tĩnh chất lượng cao trên Linux/Windows.
+
+---
+
+## 2. Cấu Trúc Cơ Sở Dữ Liệu (Database Schema)
+
+Cơ sở dữ liệu bao gồm 5 bảng chính được khai báo trong \`AppDbContext\`:
+
+\`\`\`mermaid
+erDiagram
+    Users ||--o{ Presentations : "owns"
+    Users ||--o{ PaymentTransactions : "performs"
+    Users ||--o{ Projects : "has_drafts"
+    Presentations ||--|{ Slides : "contains"
+
+    Users {
+        int Id PK
+        string Email
+        string PasswordHash
+        bool IsVip
+        string VipPlanName
+        DateTime VipExpiresAt
+    }
+    Presentations {
+        int Id PK
+        string Title
+        int UserId FK
+        bool IsTemplate
+        bool IsPremiumTemplate
+        string Category
+        string ThumbnailUrl
+        string PremiumReason
+        DateTime CreatedAt
+        DateTime UpdatedAt
+    }
+    Slides {
+        int Id PK
+        int PresentationId FK
+        int PageNumber
+        string BackgroundColor
+        string BackgroundImage
+        string ElementsJson "JSON Array of Fabric.js objects"
+    }
+    PaymentTransactions {
+        int Id PK
+        int UserId FK
+        string PaymentCode "Unique Code"
+        string PlanName
+        decimal Amount
+        string Status "Pending/Submitted/Confirmed/Rejected"
+        string BankName
+        string AccountNumber
+        string AccountName
+        string TransferContent
+        string VietQrUrl
+        DateTime CreatedAt
+        DateTime ConfirmedAt
+    }
+    Projects {
+        int Id PK
+        string Name
+        string SlideDataJson
+        int UserId FK
+    }
+\`\`\`
+
+### Chi tiết các thực thể (Models):
+1. **User (Kế thừa \`IdentityUser<int>\`)**: Thêm các thuộc tính phục vụ hệ thống Premium: \`IsVip\` (check tài khoản VIP), \`VipPlanName\` (gói dịch vụ), \`VipExpiresAt\` (ngày hết hạn VIP).
+2. **Presentation**: Lưu trữ tài liệu slide thuyết trình của cá nhân hoặc mẫu template chung. Chứa các cờ phân loại: \`IsTemplate\` (là mẫu dùng chung), \`IsPremiumTemplate\` (chỉ VIP mới được dùng).
+3. **Slide**: Chi tiết từng trang slide đơn lẻ, thuộc về một \`Presentation\`. Điểm mấu chốt là cột \`ElementsJson\` lưu trạng thái của canvas (chứa tất cả text, shapes dưới dạng chuỗi JSON).
+4. **PaymentTransaction**: Quản lý giao dịch nạp VIP bằng chuyển khoản ngân hàng. Lưu thông tin QR, trạng thái giao dịch (\`Pending\` -> \`Submitted\` -> \`Confirmed\` / \`Rejected\`).
+5. **Project**: Bảng nháp lưu trữ dữ liệu JSON thô.
+
+---
+
+## 3. Hệ Thống Danh Sách API (API Endpoint Specification)
+
+Dưới đây là đặc tả chi tiết toàn bộ các cổng kết nối (Endpoints) mà Client dùng để tương tác với Server:
+
+### 3.1. Phân hệ Tài Khoản & Bảo Mật (Authentication)
+| Method | Endpoint | Quyền truy cập | Mô tả chức năng |
+| :--- | :--- | :--- | :--- |
+| **GET** | \`/Account/Login\` | Anonymous | Hiển thị giao diện Đăng nhập |
+| **POST** | \`/Account/Login\` | Anonymous | Xử lý Đăng nhập (hỗ trợ tự nâng cấp thuật toán băm mật khẩu BCrypt -> PBKDF2) |
+| **GET** | \`/Account/Register\` | Anonymous | Hiển thị giao diện Đăng ký |
+| **POST** | \`/Account/Register\` | Anonymous | Xử lý đăng ký tài khoản mới |
+| **POST** | \`/Account/ExternalLogin\` | Anonymous | Gửi yêu cầu đăng nhập bên thứ 3 (Google OAuth) |
+| **GET** | \`/Account/ExternalLoginCallback\` | Anonymous | Tiếp nhận kết quả và đăng nhập người dùng từ Google |
+| **POST** | \`/Account/Logout\` | Authorized | Đăng xuất người dùng khỏi hệ thống |
+
+### 3.2. Phân hệ Biên Tập & Quản Lý Slide (Slide Editor Engine)
+| Method | Endpoint | Quyền truy cập | Mô tả chức năng |
+| :--- | :--- | :--- | :--- |
+| **POST** | \`/Slide/Create\` | Authorized | Tạo mới một bản thuyết trình cá nhân trống |
+| **GET** | \`/Slide/Edit/{id}\` | Authorized | Mở giao diện thiết kế Canvas Editor cho slide theo ID |
+| **POST** | \`/Slide/SavePresentation/{id}\` | Authorized | Lưu trạng thái slide (các phần tử dạng JSON & lưu thumbnail vật lý từ ảnh Base64) |
+| **POST** | \`/Slide/CloneTemplate/{id}\` | Authorized | Nhân bản một slide mẫu dùng chung về kho cá nhân (Yêu cầu VIP nếu là Premium Template) |
+| **GET** | \`/Slide/GetTemplates\` | Authorized | API lấy danh sách toàn bộ slide mẫu kèm các slide con dạng JSON |
+| **POST** | \`/Slide/UploadImage\` | Authorized | Upload hình ảnh cá nhân lên máy chủ để chèn vào canvas |
+| **POST** | \`/Slide/Delete/{id}\` | Authorized | Xóa bản thuyết trình cá nhân |
+| **POST** | \`/Slide/Duplicate/{id}\` | Authorized | Nhân bản nhanh một bản thuyết trình cá nhân |
+
+### 3.3. Phân hệ Thanh Toán & VIP (Billing & Payments)
+| Method | Endpoint | Quyền truy cập | Mô tả chức năng |
+| :--- | :--- | :--- | :--- |
+| **GET** | \`/Billing/Upgrade\` | Authorized | Xem thông tin gói VIP hiện tại và các gói nâng cấp |
+| **POST** | \`/Billing/CreatePayment\` | Authorized | Tạo yêu cầu giao dịch nạp VIP, trả về link ảnh VietQR động |
+| **GET** | \`/Billing/Payment/{id}\` | Authorized | Giao diện hiển thị QR Code và thông tin chuyển khoản ngân hàng |
+| **GET** | \`/Billing/PaymentStatus/{id}\` | Authorized | API lấy trạng thái giao dịch tức thời (AJAX Polling tự chuyển màn hình) |
+| **POST** | \`/Billing/MarkPaid/{id}\` | Authorized | Khách hàng xác nhận "Tôi đã chuyển khoản" để chờ Admin duyệt |
+
+### 3.4. Cổng Tự Động Hóa Biến Động Số Dư (SePay Webhook Integration)
+| Method | Endpoint | Quyền truy cập | Mô tả chức năng |
+| :--- | :--- | :--- | :--- |
+| **POST** | \`/api/payment/webhook/sepay\` | Anonymous (API Key Auth) | Nhận dữ liệu tự động từ SePay.vn để khớp tiền chuyển khoản ngân hàng và tự động nâng cấp tài khoản VIP của người dùng tức thời |
+
+### 3.5. Phân hệ Quản Trị Hệ Thống (Admin Panels)
+| Method | Endpoint | Quyền truy cập | Mô tả chức năng |
+| :--- | :--- | :--- | :--- |
+| **GET** | \`/Admin/Dashboard\` | Admin | Trang thống kê tổng thể tài chính, người dùng VIP, slide mẫu |
+| **GET** | \`/Admin/Payments\` | Admin | Danh sách quản lý các giao dịch nâng cấp VIP |
+| **POST** | \`/Admin/ConfirmPayment/{id}\` | Admin | Phê duyệt giao dịch nạp VIP thủ công (kích hoạt VIP +30 ngày) |
+| **POST** | \`/Admin/RejectPayment/{id}\` | Admin | Từ chối giao dịch nạp VIP thủ công |
+| **POST** | \`/Slide/PublishAsTemplate/{id}\` | Admin | Xuất bản slide cá nhân thành slide mẫu dùng chung (Slide > 10 trang gắn VIP) |
+| **POST** | \`/Admin/DeleteTrashTemplates\` | Admin | Quét dọn tự động xóa các slide mẫu lỗi hoặc tiếng Trung |
+
+---
+
+## 4. Các Phân Hệ Code Chính (System Modules)
+
+### 4.1. Phân hệ Xác thực & Phân quyền (Account System)
+- **File**: \`AccountController.cs\`
+- **Tính năng**:
+  - Đăng ký, đăng nhập tài khoản thường.
+  - Tích hợp đăng nhập Google (External Authentication Callback).
+  - **Đặc biệt (Bảo mật)**: Tự động phát hiện mật khẩu băm theo chuẩn BCrypt cũ của dự án trước để cập nhật âm thầm sang mã hóa PBKDF2 của ASP.NET Identity khi người dùng đăng nhập thành công.
+
+### 4.2. Phân hệ Quản lý & Biên Tập Slide (Slide Editor Engine)
+- **File**: \`SlideController.cs\` và \`wwwroot/js/slide-editor.js\`
+- **Tính năng**:
+  - Tạo mới, nhân bản (duplicate), xóa bản thuyết trình.
+  - Sao chép slide mẫu về tài khoản cá nhân (\`CloneTemplate\`).
+  - **Bản lưu trữ Canvas**: Gửi danh sách phần tử dạng Base64 và JSON để lưu trên server. Giải mã ảnh Base64 thành ảnh đại diện vật lý (\`.jpg\`) hiển thị ở trang chủ.
+  - Tải ảnh cá nhân lên slide.
+
+### 4.3. Phân hệ Thành phần VIP & Kiểm Soát Bản Quyền (VIP & Pricing System)
+- **File**: \`wwwroot/js/slidify-vip-components.js\` và \`BillingController.cs\`
+- **Tính năng**:
+  - Tự động sinh mã VietQR động dựa trên gói nạp VIP (99k/tháng).
+  - Cho phép người dùng bấm "Tôi đã chuyển khoản" để gửi yêu cầu phê duyệt nạp VIP lên Admin.
+  - **Kiểm soát quyền**: Chặn các tính năng VIP (Timeline, Infographic, Mockup Card, Bảng so sánh...) khi người dùng miễn phí cố tình kéo thả vào canvas, tự động hiển thị thông báo và chuyển hướng qua trang nâng cấp VIP sau 500ms.
+
+### 4.4. Phân hệ Quản Trị & Nhập Slide PowerPoint Nâng Cao (Admin System)
+- **File**: \`AdminController.cs\`
+- **Tính năng**:
+  - Bảng thống kê tài chính doanh thu, số lượng người dùng thường/VIP.
+  - Quản lý danh sách duyệt giao dịch thanh toán VIP.
+  - **PPTX Importer (Đặc biệt)**: Cho phép tải file \`.pptx\` gốc lên server. Hệ thống tự động gọi ngầm LibreOffice để convert sang PDF -> kết xuất hình ảnh qua Docnet.Core -> đọc cấu hình XML của file PPTX để tự động tạo lại các text box có thể click chỉnh sửa văn bản trên giao diện web.
+  - Tự động dọn dẹp các slide rác hoặc slide bị lỗi phông chữ tiếng Trung.
+
+### 4.5. Phân hệ Chuyển đổi Tài liệu sang Markdown (MarkItDown Tool)
+- **File**: \`MarkItDown.cshtml\` và \`convert_to_md.py\`
+- **Tính năng**:
+  - Hỗ trợ kéo thả các file PDF, DOCX, XLSX, PPTX lên trang web.
+  - Gọi ngầm thư viện Python \`Microsoft MarkItDown\` để phân tích và trả về nội dung text dưới dạng Markdown trực quan.
+
+---
+
+## 5. Gợi Ý Phân Chia Nhiệm Vụ Làm Báo Cáo (Report Division)
+
+Nếu bạn chia việc với bạn cùng nhóm để viết báo cáo tốt nghiệp hoặc đồ án, dưới đây là gợi ý phân chia chi tiết:
+
+| Người Thực Hiện | Nội Dung Đảm Nhận Trong Báo Cáo | Chi Tiết Mục Cần Viết |
+| :--- | :--- | :--- |
+| **Thành viên A** (Backend & Database) | **Chương 1**: Tổng quan đề tài & Công nghệ sử dụng<br>**Chương 2**: Thiết kế cơ sở dữ liệu (Database Schema)<br>**Chương 3**: Phân hệ Xác thực & Quản trị (Admin Dashboard) | - Giới thiệu về ASP.NET Core, EF Core, SQL Server.<br>- Vẽ và giải thích sơ đồ quan hệ thực thể ERD (5 bảng dữ liệu).<br>- Viết quy trình chuyển đổi mật khẩu từ BCrypt sang PBKDF2.<br>- Mô tả danh sách API Account, Admin và khớp giao dịch tự động của SePay. |
+| **Thành viên B** (Frontend & Features) | **Chương 4**: Bộ biên tập slide trực tuyến (Editor Canvas)<br>**Chương 5**: Phân hệ Thanh Toán VietQR & VIP System<br>**Chương 6**: Công cụ PPTX Importer & Markdown Converter | - Giải thích cơ chế hoạt động của Canvas Fabric.js (lưu trữ slide dạng JSON).<br>- Các API biên tập slide và lưu thumbnail.<br>- Cách thức kiểm tra và chặn tính năng VIP trên giao diện JavaScript.<br>- Quy trình sinh VietQR thanh toán động.<br>- Sơ đồ thuật toán đọc file XML của file PPTX để phân tích đối tượng văn bản. |`;
+
+        // Render Markdown
+        const htmlContent = marked.parse(markdownText);
+        
+        // Convert to temp DOM to replace mermaid blocks
+        const tempDiv = document.createElement('div');
+        tempDiv.innerHTML = htmlContent;
+        
+        // Find and convert mermaid code blocks
+        tempDiv.querySelectorAll('pre code.language-mermaid').forEach(codeBlock => {
+            const mermaidDiv = document.createElement('div');
+            mermaidDiv.className = 'mermaid';
+            mermaidDiv.textContent = codeBlock.textContent;
+            
+            const preElement = codeBlock.parentElement;
+            preElement.parentElement.replaceChild(mermaidDiv, preElement);
+        });
+        
+        document.getElementById('content').appendChild(tempDiv);
+        
+        // Initialize Mermaid after DOM insertion
+        mermaid.initialize({ 
+            startOnLoad: true,
+            theme: 'default',
+            securityLevel: 'loose'
+        });
+    </script>
+</body>
+</html>
