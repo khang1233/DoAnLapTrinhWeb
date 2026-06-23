@@ -1,0 +1,465 @@
+@model dynamic
+@{
+    ViewData["Title"] = "Dashboard";
+    Layout = null;
+    bool isVip = Model.IsVip;
+    bool isAdmin = User.IsInRole("Admin") || User.Identity?.Name == "admin@gmail.com";
+    var categories = new List<(string Key, string Label, string Icon)>
+    {
+        ("", "Tất cả", "fa-grid-2"),
+        ("Slidify Mẫu / Kinh doanh", "Kinh doanh", "fa-briefcase"),
+        ("Slidify Mẫu / Giáo dục", "Giáo dục", "fa-graduation-cap"),
+        ("Slidify Mẫu / Marketing", "Marketing", "fa-bullhorn"),
+        ("Slidify Mẫu / Công nghệ", "Công nghệ", "fa-microchip"),
+        ("Slidify Mẫu / Khởi nghiệp", "Khởi nghiệp", "fa-rocket"),
+        ("Slidify Mẫu / Sáng tạo", "Sáng tạo", "fa-palette"),
+        ("Slidify Mẫu / Sự kiện & Cá nhân", "Sự kiện", "fa-calendar-heart"),
+    };
+    string activeCat = (string)(Model.ActiveCategory ?? "");
+    int totalProjects = ((IEnumerable<object>)Model.MyProjects).Count();
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Dashboard · Slidify</title>
+    <link rel="stylesheet" href="~/css/styles.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        :root {
+            --sd-bg: #0B0F1A;
+            --sd-bg-soft: #0F1524;
+            --sd-panel: #131A2C;
+            --sd-panel-2: #1A2238;
+            --sd-line: rgba(255,255,255,0.07);
+            --sd-line-strong: rgba(255,255,255,0.12);
+            --sd-text: #E8ECF5;
+            --sd-mute: #8893AD;
+            --sd-mute-2: #5C6679;
+            --sd-accent: #7C5CFF;
+            --sd-accent-2: #22D3EE;
+            --sd-vip: #F4B400;
+            --sd-radius: 14px;
+            --sd-radius-lg: 22px;
+        }
+        * { box-sizing: border-box; }
+        body { margin: 0; background: var(--sd-bg); color: var(--sd-text); font-family: 'Inter', system-ui, sans-serif; -webkit-font-smoothing: antialiased; }
+        .display-font { font-family: 'Plus Jakarta Sans', 'Inter', sans-serif; }
+
+        /* ---------- Layout ---------- */
+        .sd-shell { display:flex; min-height:100vh; }
+        .sd-sidebar {
+            width:248px; flex-shrink:0;
+            background:var(--sd-bg-soft); border-right:1px solid var(--sd-line);
+            padding:24px 18px; display:flex; flex-direction:column;
+            position:fixed; height:100vh; left:0; top:0; z-index:50;
+        }
+        .sd-main { margin-left:248px; flex:1; padding:32px 40px 60px; max-width:calc(100vw - 248px); }
+
+        /* ---------- Sidebar ---------- */
+        .sd-brand { display:flex; align-items:center; gap:10px; padding:4px 8px; margin-bottom:28px; }
+        .sd-brand-mark { width:32px; height:32px; border-radius:9px; background:linear-gradient(135deg, var(--sd-accent), var(--sd-accent-2)); display:flex; align-items:center; justify-content:center; color:#fff; font-weight:800; font-size:0.95rem; box-shadow:0 4px 14px rgba(124,92,255,0.4); }
+        .sd-brand-name { font-family:'Plus Jakarta Sans', sans-serif; font-weight:800; font-size:1.15rem; letter-spacing:-0.01em; }
+        .sd-nav { display:flex; flex-direction:column; gap:2px; flex:1; }
+        .sd-nav-group { font-size:0.72rem; text-transform:uppercase; letter-spacing:0.08em; color:var(--sd-mute-2); padding:14px 12px 8px; font-weight:700; }
+        .sd-nav a { display:flex; align-items:center; gap:11px; padding:10px 12px; border-radius:10px; color:var(--sd-mute); text-decoration:none; font-size:0.93rem; font-weight:500; transition:background .15s, color .15s; }
+        .sd-nav a i { width:18px; text-align:center; font-size:0.95rem; }
+        .sd-nav a:hover { background:rgba(255,255,255,0.04); color:var(--sd-text); }
+        .sd-nav a.active { background:rgba(124,92,255,0.12); color:#fff; }
+        .sd-nav a.active i { color:var(--sd-accent); }
+        .sd-nav a.is-admin { color:#fb923c; }
+
+        .sd-user { display:flex; align-items:center; gap:10px; padding:12px; border:1px solid var(--sd-line); border-radius:14px; background:var(--sd-panel); margin-top:14px; }
+        .sd-user .avatar { width:36px; height:36px; border-radius:50%; background:linear-gradient(135deg, var(--sd-accent), var(--sd-accent-2)); display:flex; align-items:center; justify-content:center; font-weight:700; color:#fff; flex-shrink:0; }
+        .sd-user .meta { flex:1; min-width:0; }
+        .sd-user .meta .name { font-size:0.85rem; font-weight:600; color:var(--sd-text); white-space:nowrap; overflow:hidden; text-overflow:ellipsis; }
+        .sd-user .meta .plan { font-size:0.72rem; color:var(--sd-mute); }
+        .sd-user .logout { background:none; border:none; color:var(--sd-mute); cursor:pointer; padding:6px; border-radius:8px; }
+        .sd-user .logout:hover { background:rgba(255,255,255,0.05); color:var(--sd-text); }
+        .sd-tag { display:inline-block; padding:2px 6px; border-radius:5px; font-size:0.62rem; font-weight:700; margin-left:4px; vertical-align:middle; }
+        .sd-tag-vip { background:linear-gradient(90deg, var(--sd-vip), #f59e0b); color:#1f1300; }
+        .sd-tag-admin { background:#ef4444; color:#fff; }
+        .sd-tag-free { background:rgba(255,255,255,0.08); color:var(--sd-mute); }
+
+        /* ---------- Topbar ---------- */
+        .sd-topbar { display:flex; align-items:center; gap:16px; margin-bottom:28px; }
+        .sd-search { position:relative; flex:1; max-width:420px; }
+        .sd-search i { position:absolute; left:14px; top:50%; transform:translateY(-50%); color:var(--sd-mute); }
+        .sd-search input { width:100%; padding:11px 14px 11px 40px; border-radius:11px; border:1px solid var(--sd-line); background:var(--sd-panel); color:var(--sd-text); font-family:inherit; font-size:0.92rem; outline:none; transition:border-color .15s; }
+        .sd-search input:focus { border-color:var(--sd-accent); }
+        .sd-topbar .spacer { flex:1; }
+        .sd-btn-primary { display:inline-flex; align-items:center; gap:8px; padding:11px 18px; border-radius:11px; background:linear-gradient(135deg, var(--sd-accent), #6047e0); color:#fff; font-weight:600; text-decoration:none; border:none; cursor:pointer; font-family:inherit; font-size:0.92rem; transition:transform .12s, box-shadow .15s; box-shadow:0 6px 18px -8px rgba(124,92,255,0.6); }
+        .sd-btn-primary:hover { transform:translateY(-1px); box-shadow:0 10px 24px -10px rgba(124,92,255,0.7); }
+        .sd-btn-ghost { display:inline-flex; align-items:center; gap:8px; padding:10px 16px; border-radius:11px; background:transparent; color:var(--sd-text); font-weight:600; text-decoration:none; border:1px solid var(--sd-line-strong); font-size:0.9rem; }
+        .sd-btn-ghost:hover { background:rgba(255,255,255,0.04); }
+
+        /* ---------- Hero ---------- */
+        .sd-hero { position:relative; padding:30px 32px; border-radius:var(--sd-radius-lg); border:1px solid var(--sd-line); background:radial-gradient(120% 200% at 0% 0%, rgba(124,92,255,0.16), transparent 50%), radial-gradient(120% 200% at 100% 100%, rgba(34,211,238,0.12), transparent 60%), var(--sd-panel); margin-bottom:36px; overflow:hidden; }
+        .sd-hero::after { content:""; position:absolute; right:-80px; top:-80px; width:280px; height:280px; border-radius:50%; background:radial-gradient(circle, rgba(124,92,255,0.22), transparent 70%); pointer-events:none; }
+        .sd-hero-grid { display:grid; grid-template-columns: 1fr auto; gap:30px; align-items:center; position:relative; z-index:1; }
+        .sd-hero-kicker { display:inline-flex; align-items:center; gap:8px; padding:5px 12px; border-radius:99px; background:rgba(124,92,255,0.16); color:#c7baff; font-size:0.74rem; font-weight:700; letter-spacing:0.06em; text-transform:uppercase; margin-bottom:14px; }
+        .sd-hero h1 { font-family:'Plus Jakarta Sans', sans-serif; font-size:2rem; font-weight:800; line-height:1.15; letter-spacing:-0.02em; margin:0 0 12px; max-width:640px; }
+        .sd-hero p { color:var(--sd-mute); font-size:0.98rem; margin:0 0 20px; max-width:560px; line-height:1.5; }
+        .sd-hero-cta { display:flex; gap:10px; flex-wrap:wrap; }
+        .sd-hero-plan { padding:18px 22px; border:1px solid var(--sd-line); border-radius:16px; background:rgba(11,15,26,0.55); min-width:220px; backdrop-filter:blur(8px); }
+        .sd-hero-plan .lbl { font-size:0.7rem; text-transform:uppercase; letter-spacing:0.12em; color:var(--sd-mute); }
+        .sd-hero-plan .name { font-family:'Plus Jakarta Sans', sans-serif; font-size:1.7rem; font-weight:800; margin-top:6px; }
+        .sd-hero-plan .exp { font-size:0.78rem; color:var(--sd-mute); margin-top:6px; }
+
+        /* ---------- Section header ---------- */
+        .sd-section { margin-bottom:38px; }
+        .sd-section-head { display:flex; align-items:center; justify-content:space-between; gap:16px; margin-bottom:16px; }
+        .sd-section-title { font-family:'Plus Jakarta Sans', sans-serif; font-size:1.18rem; font-weight:800; letter-spacing:-0.01em; margin:0; }
+        .sd-section-sub { font-size:0.82rem; color:var(--sd-mute); margin:2px 0 0; }
+        .sd-section-action { font-size:0.82rem; color:var(--sd-accent); text-decoration:none; font-weight:600; }
+        .sd-section-action:hover { color:#a18fff; }
+
+        /* ---------- Carousel ---------- */
+        .sd-carousel { position:relative; }
+        .sd-carousel-track { display:flex; gap:14px; overflow-x:auto; overflow-y:hidden; scroll-behavior:smooth; scrollbar-width:none; padding:4px 4px 12px; }
+        .sd-carousel-track::-webkit-scrollbar { display:none; }
+        .sd-carousel-track .sd-card { flex:0 0 240px; }
+        .sd-carousel-track .sd-card-wrap { flex:0 0 240px; position:relative; }
+        .sd-carousel-track .sd-card-wrap .sd-card { flex:initial; }
+        .sd-carousel-fade-l, .sd-carousel-fade-r { position:absolute; top:0; bottom:14px; width:60px; pointer-events:none; z-index:2; }
+        .sd-carousel-fade-l { left:0; background:linear-gradient(90deg, var(--sd-bg) 0%, transparent 100%); }
+        .sd-carousel-fade-r { right:0; background:linear-gradient(-90deg, var(--sd-bg) 0%, transparent 100%); }
+        .sd-carousel-btn { position:absolute; top:50%; transform:translateY(-50%); width:38px; height:38px; border-radius:50%; background:var(--sd-panel-2); border:1px solid var(--sd-line-strong); color:var(--sd-text); display:flex; align-items:center; justify-content:center; cursor:pointer; box-shadow:0 8px 18px -8px rgba(0,0,0,0.5); z-index:3; transition:background .15s; }
+        .sd-carousel-btn:hover { background:var(--sd-accent); border-color:var(--sd-accent); }
+        .sd-carousel-btn-prev { left:-8px; }
+        .sd-carousel-btn-next { right:-8px; }
+
+        /* ---------- Cards ---------- */
+        .sd-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+        .sd-card { display:block; background:var(--sd-panel); border:1px solid var(--sd-line); border-radius:var(--sd-radius); overflow:hidden; text-decoration:none; color:inherit; transition:transform .18s ease, border-color .18s ease, box-shadow .18s ease; position:relative; }
+        .sd-card:hover { transform:translateY(-3px); border-color:var(--sd-line-strong); box-shadow:0 18px 32px -20px rgba(124,92,255,0.45); }
+        .sd-card-thumb { aspect-ratio:16/9; position:relative; overflow:hidden; background:#1e293b; }
+        .sd-card-thumb canvas { position:absolute; inset:0; width:100%; height:100%; }
+        .sd-card-thumb img { position:absolute; inset:0; width:100%; height:100%; object-fit:cover; }
+        .sd-card-body { padding:12px 14px 14px; }
+        .sd-card-title { font-size:0.92rem; font-weight:700; color:var(--sd-text); margin:0 0 4px; line-height:1.35; display:-webkit-box; -webkit-line-clamp:2; -webkit-box-orient:vertical; overflow:hidden; min-height:2.55em; }
+        .sd-card-meta { font-size:0.74rem; color:var(--sd-mute); display:flex; align-items:center; gap:6px; }
+        .sd-card-meta i { font-size:0.65rem; }
+        .sd-card-meta .dot { width:3px; height:3px; border-radius:50%; background:var(--sd-mute-2); }
+        .sd-vip-badge { position:absolute; top:10px; right:10px; padding:4px 8px; border-radius:99px; background:linear-gradient(90deg, var(--sd-vip), #f59e0b); color:#1f1300; font-size:0.66rem; font-weight:800; letter-spacing:0.04em; z-index:3; box-shadow:0 4px 10px rgba(244,180,0,0.25); }
+        .sd-admin-del { position:absolute; top:10px; left:10px; width:28px; height:28px; border-radius:50%; background:rgba(15,23,42,0.85); color:#fca5a5; border:1px solid rgba(252,165,165,0.3); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5; opacity:0; transition:opacity .15s, background .15s; font-size:0.78rem; padding:0; }
+        .sd-card:hover .sd-admin-del { opacity:1; }
+        .sd-admin-del:hover { background:#dc2626; color:#fff; }
+        /* Trash button on recent project cards — owner-only since carousel = my projects. */
+        .sd-trash-btn { position:absolute; top:8px; right:8px; width:28px; height:28px; border-radius:50%; background:rgba(15,23,42,0.85); color:#fca5a5; border:1px solid rgba(252,165,165,0.25); display:flex; align-items:center; justify-content:center; cursor:pointer; z-index:5; opacity:0; transition:opacity .15s, background .15s; font-size:0.78rem; padding:0; }
+        .sd-card:hover .sd-trash-btn { opacity:1; }
+        .sd-trash-btn:hover { background:#dc2626; color:#fff; }
+        .sd-lock-note { font-size:0.7rem; color:var(--sd-vip); font-weight:600; margin-top:6px; display:flex; align-items:center; gap:5px; }
+
+        /* ---------- Empty state ---------- */
+        .sd-empty { padding:38px 28px; border:1px dashed var(--sd-line-strong); border-radius:var(--sd-radius-lg); text-align:center; background:rgba(255,255,255,0.015); }
+        .sd-empty i { font-size:1.6rem; color:var(--sd-mute); margin-bottom:10px; }
+        .sd-empty h3 { font-size:1rem; font-weight:700; margin:0 0 6px; }
+        .sd-empty p { font-size:0.86rem; color:var(--sd-mute); margin:0 0 14px; }
+
+        /* ---------- Filter chips ---------- */
+        .sd-chips { display:flex; gap:8px; flex-wrap:wrap; margin-bottom:18px; }
+        .sd-chip { display:inline-flex; align-items:center; gap:7px; padding:8px 14px; border-radius:99px; border:1px solid var(--sd-line); background:var(--sd-panel); color:var(--sd-mute); font-size:0.83rem; font-weight:600; text-decoration:none; transition:border-color .15s, color .15s, background .15s; }
+        .sd-chip i { font-size:0.78rem; }
+        .sd-chip:hover { color:var(--sd-text); border-color:var(--sd-line-strong); }
+        .sd-chip.active { background:rgba(124,92,255,0.16); border-color:rgba(124,92,255,0.5); color:#fff; }
+        .sd-chip.active i { color:var(--sd-accent); }
+
+        /* ---------- Responsive ---------- */
+        @@media (max-width: 1024px) {
+            .sd-sidebar { transform:translateX(-100%); transition:transform .25s; }
+            .sd-sidebar.open { transform:translateX(0); }
+            .sd-main { margin-left:0; max-width:100vw; padding:24px; }
+            .sd-hero-grid { grid-template-columns:1fr; }
+            .sd-hero-plan { width:fit-content; }
+        }
+    </style>
+</head>
+<body>
+    <div class="sd-shell">
+        <aside class="sd-sidebar">
+            <div class="sd-brand">
+                <div class="sd-brand-mark">S</div>
+                <div class="sd-brand-name">Slidify</div>
+            </div>
+
+            <nav class="sd-nav">
+                <div class="sd-nav-group">Không gian làm việc</div>
+                <a href="/Home/Index" class="active"><i class="fa-solid fa-folder-open"></i> Dự án của tôi</a>
+                <a href="/Home/Shared"><i class="fa-solid fa-user-group"></i> Được chia sẻ</a>
+                <a href="/Home/Trash"><i class="fa-solid fa-trash-can"></i> Thùng rác</a>
+
+                <div class="sd-nav-group">Công cụ</div>
+                <a href="/Billing/Upgrade"><i class="fa-solid fa-crown"></i> @(isVip ? "VIP đang hoạt động" : "Nâng cấp VIP")</a>
+                @if (isAdmin)
+                {
+                    <div class="sd-nav-group">Quản trị</div>
+                    <a href="/Admin/Dashboard" class="is-admin"><i class="fa-solid fa-gauge"></i> Dashboard Admin</a>
+                    <a href="/Admin/TemplateSubmissions" class="is-admin"><i class="fa-solid fa-clipboard-check"></i> Đề xuất mẫu</a>
+                }
+            </nav>
+
+            <div class="sd-user">
+                <div class="avatar">@(User.Identity?.Name?.Substring(0,1).ToUpper() ?? "U")</div>
+                <div class="meta">
+                    <div class="name">
+                        @User.Identity?.Name
+                        @if (isAdmin) { <span class="sd-tag sd-tag-admin">Admin</span> }
+                        else if (isVip) { <span class="sd-tag sd-tag-vip">VIP</span> }
+                        else { <span class="sd-tag sd-tag-free">Free</span> }
+                    </div>
+                    <div class="plan">@(isAdmin ? "Quản trị viên" : (isVip ? "Thành viên VIP" : "Thành viên Free"))</div>
+                </div>
+                <form asp-controller="Account" asp-action="Logout" method="post" style="margin:0;">
+                    <button type="submit" class="logout" title="Đăng xuất"><i class="fa-solid fa-right-from-bracket"></i></button>
+                </form>
+            </div>
+        </aside>
+
+        <main class="sd-main">
+            <div class="sd-topbar">
+                <form method="get" class="sd-search">
+                    <i class="fa-solid fa-magnifying-glass"></i>
+                    <input type="text" name="search" value="@Model.SearchQuery" placeholder="Tìm dự án hoặc mẫu slide…" />
+                </form>
+                <div class="spacer"></div>
+                <form asp-controller="Slide" asp-action="Create" method="post" style="margin:0;">
+                    <button type="submit" class="sd-btn-primary"><i class="fa-solid fa-plus"></i> Tạo slide mới</button>
+                </form>
+            </div>
+
+            <section class="sd-hero">
+                <div class="sd-hero-grid">
+                    <div>
+                        <span class="sd-hero-kicker"><i class="fa-solid fa-sparkles"></i> Studio slide của bạn</span>
+                        <h1>@(isVip ? "Chào mừng trở lại — bạn đang ở chế độ VIP." : "Biến ý tưởng thành slide trong vài phút.")</h1>
+                        <p>@(isVip ? "Truy cập toàn bộ template premium, component nâng cao và editor chuyên nghiệp." : "Hơn 50 mẫu slide chia theo 7 chủ đề, mỗi mẫu có thể chỉnh sửa từng phần tử ngay trong trình duyệt.")</p>
+                        <div class="sd-hero-cta">
+                            <form asp-controller="Slide" asp-action="Create" method="post" style="margin:0;">
+                                <button type="submit" class="sd-btn-primary"><i class="fa-solid fa-file-circle-plus"></i> Tạo bài thuyết trình mới</button>
+                            </form>
+                            <a class="sd-btn-ghost" href="/Billing/Upgrade"><i class="fa-solid fa-crown"></i> @(isVip ? "Quản lý VIP" : "Xem quyền lợi VIP")</a>
+                        </div>
+                    </div>
+                    <div class="sd-hero-plan">
+                        <div class="lbl">Gói hiện tại</div>
+                        <div class="name">@Model.VipPlanName</div>
+                        <div class="exp">@(Model.VipExpiresAt != null ? $"Hết hạn {Model.VipExpiresAt:dd/MM/yyyy}" : "Truy cập cơ bản")</div>
+                    </div>
+                </div>
+            </section>
+
+            @* ----- Recent projects on TOP, with prev/next ----- *@
+            <section class="sd-section">
+                <div class="sd-section-head">
+                    <div>
+                        <h2 class="sd-section-title">Gần đây</h2>
+                        <p class="sd-section-sub">Dự án của bạn — mở lại để chỉnh sửa tiếp.</p>
+                    </div>
+                    @if (totalProjects > 0)
+                    {
+                        <span class="sd-section-action">@totalProjects dự án</span>
+                    }
+                </div>
+                @if (totalProjects == 0)
+                {
+                    <div class="sd-empty">
+                        <i class="fa-regular fa-folder-open"></i>
+                        <h3>Chưa có dự án nào</h3>
+                        <p>Bắt đầu bằng cách tạo bài thuyết trình mới hoặc chọn một mẫu bên dưới.</p>
+                        <form asp-controller="Slide" asp-action="Create" method="post" style="display:inline;">
+                            <button type="submit" class="sd-btn-primary"><i class="fa-solid fa-plus"></i> Tạo bài mới</button>
+                        </form>
+                    </div>
+                }
+                else
+                {
+                    <div class="sd-carousel">
+                        <button type="button" class="sd-carousel-btn sd-carousel-btn-prev" onclick="sdScroll('recent-track', -1)" title="Lùi lại"><i class="fa-solid fa-chevron-left"></i></button>
+                        <div class="sd-carousel-fade-l"></div>
+                        <div class="sd-carousel-track" id="recent-track">
+                            @foreach (var project in Model.MyProjects)
+                            {
+                                var firstSlide = project.Slides != null && project.Slides.Count > 0 ? project.Slides[0] : null;
+                                var firstBg = firstSlide?.BackgroundColor ?? "#1e293b";
+                                var firstBgImg = firstSlide?.BackgroundImage ?? "";
+                                var firstJson = firstSlide?.ElementsJson ?? "";
+                                <div class="sd-card-wrap">
+                                    <a class="sd-card" href="/Slide/Edit/@project.Id"
+                                       data-elemjson='@Html.Raw(firstJson)'
+                                       data-bg="@firstBg" data-bgimg="@firstBgImg">
+                                        <div class="sd-card-thumb" style="background:@firstBg;">
+                                            @if (!string.IsNullOrWhiteSpace(firstBgImg))
+                                            {
+                                                <img src="@firstBgImg" alt="" />
+                                            }
+                                            <canvas class="proj-thumb-canvas" width="240" height="135"></canvas>
+                                        </div>
+                                        <div class="sd-card-body">
+                                            <div class="sd-card-title">@project.Title</div>
+                                            <div class="sd-card-meta">
+                                                <span>@project.Slides.Count slide</span>
+                                                <span class="dot"></span>
+                                                <span>@project.UpdatedAt.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                                            </div>
+                                        </div>
+                                    </a>
+                                    <button class="sd-trash-btn" title="Chuyển vào thùng rác"
+                                            onclick="event.preventDefault(); event.stopPropagation(); trashRecent(@project.Id, '@Html.Raw(project.Title.Replace("'", "\\'"))');">
+                                        <i class="fa-solid fa-trash"></i>
+                                    </button>
+                                </div>
+                            }
+                        </div>
+                        <div class="sd-carousel-fade-r"></div>
+                        <button type="button" class="sd-carousel-btn sd-carousel-btn-next" onclick="sdScroll('recent-track', 1)" title="Xem tiếp"><i class="fa-solid fa-chevron-right"></i></button>
+                    </div>
+                }
+            </section>
+
+            @* ----- Templates with category chips ----- *@
+            <section class="sd-section">
+                <div class="sd-section-head">
+                    <div>
+                        <h2 class="sd-section-title">Mẫu slide có sẵn</h2>
+                        <p class="sd-section-sub">@(Model.Templates is IEnumerable<object> tplsIE ? tplsIE.Count() : 0) mẫu · chọn một để bắt đầu</p>
+                    </div>
+                    <a href="/Billing/Upgrade" class="sd-section-action">Mở khóa VIP <i class="fa-solid fa-arrow-right"></i></a>
+                </div>
+
+                <div class="sd-chips">
+                    @foreach (var c in categories)
+                    {
+                        var qs = string.IsNullOrEmpty(c.Key) ? "/Home/Index" : $"/Home/Index?category={Uri.EscapeDataString(c.Key)}";
+                        var cls = activeCat == c.Key ? "sd-chip active" : "sd-chip";
+                        <a href="@qs" class="@cls"><i class="fa-solid @c.Icon"></i> @c.Label</a>
+                    }
+                </div>
+
+                <div class="sd-grid">
+                    @foreach (var tpl in Model.Templates)
+                    {
+                        var slideCount = tpl.Slides?.Count ?? 0;
+                        var premium = (bool)tpl.IsPremiumTemplate;
+                        var firstSlide = tpl.Slides != null && tpl.Slides.Count > 0 ? tpl.Slides[0] : null;
+                        var firstBg = firstSlide?.BackgroundColor ?? "#1e293b";
+                        var firstBgImg = firstSlide?.BackgroundImage ?? "";
+                        var firstJson = firstSlide?.ElementsJson ?? "";
+                        string shortCat = ((string)tpl.Category)?.Replace("Slidify Mẫu / ", "")?.Replace("Slidify / ", "") ?? "";
+                        <form asp-controller="Slide" asp-action="CloneTemplate" method="post" class="sd-card" style="padding:0; margin:0;"
+                              data-elemjson='@Html.Raw(firstJson)' data-bg="@firstBg" data-bgimg="@firstBgImg">
+                            <input type="hidden" name="id" value="@tpl.Id" />
+                            @if (isAdmin)
+                            {
+                                <button type="button" class="sd-admin-del" title="Xóa mẫu này"
+                                        onclick="event.preventDefault(); event.stopPropagation(); confirmDeleteTemplate(@tpl.Id, '@Html.Raw(((string)tpl.Title).Replace("'", "\\'"))');">
+                                    <i class="fa-solid fa-trash"></i>
+                                </button>
+                            }
+                            <button type="submit" style="all:unset; display:block; width:100%; cursor:pointer;">
+                                <div class="sd-card-thumb" style="background:@firstBg;">
+                                    @if (!string.IsNullOrWhiteSpace(tpl.ThumbnailUrl))
+                                    {
+                                        <img src="@tpl.ThumbnailUrl" alt="@tpl.Title" />
+                                    }
+                                    else if (!string.IsNullOrWhiteSpace(firstBgImg))
+                                    {
+                                        <img src="@firstBgImg" alt="@tpl.Title" />
+                                    }
+                                    <canvas class="thumb-canvas" width="240" height="135"></canvas>
+                                    @if (premium)
+                                    {
+                                        <span class="sd-vip-badge"><i class="fa-solid fa-crown"></i> VIP</span>
+                                    }
+                                </div>
+                                <div class="sd-card-body">
+                                    <div class="sd-card-title">@tpl.Title</div>
+                                    <div class="sd-card-meta">
+                                        <span>@shortCat</span>
+                                        <span class="dot"></span>
+                                        <span>@slideCount slide</span>
+                                    </div>
+                                    @if (premium && !isVip)
+                                    {
+                                        <div class="sd-lock-note"><i class="fa-solid fa-lock"></i> Cần VIP</div>
+                                    }
+                                </div>
+                            </button>
+                        </form>
+                    }
+                </div>
+            </section>
+        </main>
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <form id="sd-del-tpl-form" asp-controller="Slide" asp-action="DeleteTemplate" method="post" style="display:none;">
+        <input type="hidden" name="id" id="sd-del-tpl-id" />
+    </form>
+    <script>
+        function showDevToast(message) { alert(message); }
+        async function trashRecent(id, title) {
+            if (!confirm(`Chuyển "${title}" vào thùng rác? Có thể khôi phục sau.`)) return;
+            const fd = new FormData(); fd.append('id', id);
+            const r = await fetch('/Slide/Delete', { method: 'POST', body: fd });
+            if (r.ok) window.location.reload();
+            else alert('Không xoá được. Thử lại.');
+        }
+        function confirmDeleteTemplate(id, title) {
+            if (!confirm('Xóa mẫu "' + title + '" khỏi thư viện? Không thể hoàn tác.')) return;
+            document.getElementById('sd-del-tpl-id').value = id;
+            document.getElementById('sd-del-tpl-form').submit();
+        }
+        function sdScroll(id, dir) {
+            const t = document.getElementById(id);
+            if (t) t.scrollBy({ left: dir * (t.clientWidth * 0.85), behavior: 'smooth' });
+        }
+
+        document.querySelectorAll('.proj-thumb-canvas, .thumb-canvas').forEach(canvas => {
+            const card = canvas.closest('[data-elemjson]');
+            if (!card) return;
+            const elemJson = card.getAttribute('data-elemjson') || '';
+            const bg = card.getAttribute('data-bg') || '#1e293b';
+            const bgImg = card.getAttribute('data-bgimg') || '';
+            if (!elemJson) return;
+            let parsed;
+            try { parsed = JSON.parse(elemJson); } catch(e) { return; }
+            const fc = new fabric.StaticCanvas(canvas, { width: 240, height: 135, backgroundColor: bg });
+            const sourceW = parsed.canvasWidth || parsed.width || 1280;
+            const sourceH = parsed.canvasHeight || parsed.height || 720;
+            const scaleX = 240 / sourceW, scaleY = 135 / sourceH;
+            if (bgImg) {
+                fabric.Image.fromURL(bgImg, img => {
+                    img.set({ left:0, top:0, scaleX: 240/img.width, scaleY: 135/img.height, selectable:false });
+                    fc.backgroundImage = img;
+                    loadObjects(fc, parsed, scaleX, scaleY);
+                }, { crossOrigin: 'anonymous' });
+            } else {
+                loadObjects(fc, parsed, scaleX, scaleY);
+            }
+        });
+
+        function loadObjects(fc, parsed, scaleX, scaleY) {
+            const objs = parsed.objects || [];
+            fabric.util.enlivenObjects(objs, enlivened => {
+                enlivened.forEach(obj => {
+                    obj.set({
+                        left: (obj.left || 0) * scaleX,
+                        top: (obj.top || 0) * scaleY,
+                        scaleX: (obj.scaleX || 1) * scaleX,
+                        scaleY: (obj.scaleY || 1) * scaleY,
+                        selectable: false, evented: false
+                    });
+                    if (obj.fontSize) obj.set('fontSize', obj.fontSize * Math.min(scaleX, scaleY));
+                    fc.add(obj);
+                });
+                fc.renderAll();
+            }, 'fabric');
+        }
+    </script>
+</body>
+</html>

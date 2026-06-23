@@ -1,0 +1,7 @@
+
+# Exclude large uploaded images
+wwwroot/uploads/imported/
+wwwroot/uploads/template-assets/
+bin/
+obj/
+

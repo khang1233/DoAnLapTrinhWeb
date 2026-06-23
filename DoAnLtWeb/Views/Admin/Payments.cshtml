@@ -1,0 +1,150 @@
+@model List<DoAnLtWeb.Models.PaymentTransaction>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Admin — Quan ly giao dich";
+}
+
+<style>
+.admin-panel { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+.admin-header { display: flex; align-items: center; gap: 16px; margin-bottom: 32px; }
+.admin-title { font-size: 1.6rem; font-weight: 800; color: #0f172a; }
+.admin-badge { padding: 4px 12px; background: #7c3aed; color: #fff; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+.alert-success { background: #f0fdf4; border: 1px solid #86efac; color: #14532d; padding: 14px 18px; border-radius: 12px; margin-bottom: 24px; font-weight: 600; }
+.txn-table { width: 100%; border-collapse: collapse; background: #fff; border-radius: 16px; overflow: hidden; box-shadow: 0 4px 24px rgba(15,23,42,0.07); }
+.txn-table thead { background: #f8fafc; }
+.txn-table th { padding: 14px 16px; text-align: left; font-size: 0.8rem; font-weight: 700; color: #64748b; text-transform: uppercase; letter-spacing: 0.04em; border-bottom: 1px solid #e2e8f0; }
+.txn-table td { padding: 14px 16px; font-size: 0.9rem; color: #0f172a; border-bottom: 1px solid #f1f5f9; vertical-align: middle; }
+.txn-table tr:last-child td { border-bottom: none; }
+.txn-table tr:hover td { background: #f8fafc; }
+.status-badge { display: inline-block; padding: 4px 10px; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+.status-Pending { background: #fef9c3; color: #854d0e; }
+.status-Submitted { background: #dbeafe; color: #1d4ed8; }
+.status-Confirmed { background: #dcfce7; color: #15803d; }
+.status-Rejected { background: #fee2e2; color: #b91c1c; }
+.status-Expired { background: #f1f5f9; color: #64748b; }
+.btn-confirm { padding: 6px 14px; background: #059669; color: #fff; border: none; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.btn-confirm:hover { background: #047857; }
+.btn-reject { padding: 6px 14px; background: #dc2626; color: #fff; border: none; border-radius: 8px; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.btn-reject:hover { background: #b91c1c; }
+.qr-link { font-size: 0.8rem; color: #7c3aed; text-decoration: none; }
+.qr-link:hover { text-decoration: underline; }
+.empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+.nav-links { display: flex; gap: 12px; margin-bottom: 24px; }
+.nav-link { padding: 8px 16px; border-radius: 10px; background: #f1f5f9; color: #475569; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+.nav-link:hover { background: #e2e8f0; }
+</style>
+
+<div class="admin-panel">
+    <div class="nav-links">
+        <a href="/Admin/Dashboard" class="nav-link">Dashboard</a>
+        <a href="/Admin/Payments" class="nav-link" style="background:#7c3aed; color:#fff;">Giao dịch</a>
+        <a href="/Admin/Templates" class="nav-link">Template</a>
+        <a href="/Admin/ImportPptx" class="nav-link">Import PPTX</a>
+        <a href="/Home/Index" class="nav-link">Giao diện User</a>
+    </div>
+
+    <div class="admin-header">
+        <div class="admin-title">Quản lý giao dịch</div>
+        <span class="admin-badge">Admin</span>
+    </div>
+
+    @if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert-success">@TempData["AdminSuccess"]</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <div style="font-size:3rem; margin-bottom:12px;">📭</div>
+            <div style="font-size:1.1rem; font-weight:600;">Chưa có giao dịch nào.</div>
+            <div style="margin-top:6px;">Khi người dùng tạo yêu cầu nâng cấp, chúng sẽ hiển thị ở đây.</div>
+        </div>
+    }
+    else
+    {
+        <table class="txn-table">
+            <thead>
+                <tr>
+                    <th>Mã GD</th>
+                    <th>Người dùng</th>
+                    <th>Gói</th>
+                    <th>Số tiền</th>
+                    <th>Trạng thái</th>
+                    <th>Thời gian</th>
+                    <th>Nội dung CK</th>
+                    <th>QR</th>
+                    <th>Hành động</th>
+                </tr>
+            </thead>
+            <tbody>
+                @foreach (var t in Model)
+                {
+                    <tr>
+                        <td><code style="font-size:0.8rem; color:#7c3aed;">@t.PaymentCode</code></td>
+                        <td>
+                            <div style="font-weight:600;">@(t.User?.UserName ?? "—")</div>
+                            <div style="font-size:0.78rem; color:#64748b;">@(t.User?.Email ?? "")</div>
+                        </td>
+                        <td>@t.PlanName</td>
+                        <td style="font-weight:700;">@t.Amount.ToString("N0") VND</td>
+                        <td><span class="status-badge status-@t.Status">@t.Status</span></td>
+                        <td>
+                            <div>@t.CreatedAt.ToString("dd/MM/yyyy HH:mm")</div>
+                            @{
+                                var expired = t.ExpiresAt < DateTime.UtcNow;
+                            }
+                            <div style="font-size:0.75rem; color:@(expired ? "#dc2626" : "#64748b");">
+                                @(expired ? "Hết hạn" : "Hết hạn:") @t.ExpiresAt.ToString("HH:mm dd/MM")
+                            </div>
+                        </td>
+                        <td style="font-size:0.82rem; color:#475569; max-width:160px; word-break:break-all;">@t.TransferContent</td>
+                        <td>
+                            @if (!string.IsNullOrEmpty(t.VietQrUrl))
+                            {
+                                <a href="@t.VietQrUrl" target="_blank" class="qr-link">Xem QR</a>
+                            }
+                            else
+                            {
+                                <span style="color:#cbd5e1;">—</span>
+                            }
+                        </td>
+                        <td>
+                            @if (t.Status == "Submitted" || t.Status == "Pending")
+                            {
+                                <div style="display:flex; gap:6px; flex-wrap:nowrap;">
+                                    <form method="post" asp-action="ConfirmPayment" asp-route-id="@t.Id" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-confirm"
+                                                onclick="return confirm('Xác nhận giao dịch @t.PaymentCode?')">
+                                            Xác nhận
+                                        </button>
+                                    </form>
+                                    <form method="post" asp-action="RejectPayment" asp-route-id="@t.Id" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-reject"
+                                                onclick="return confirm('Từ chối giao dịch @t.PaymentCode?')">
+                                            Từ chối
+                                        </button>
+                                    </form>
+                                </div>
+                            }
+                            else if (t.Status == "Confirmed")
+                            {
+                                <span style="color:#059669; font-weight:700; font-size:0.85rem;">✓ Đã xác nhận</span>
+                                @if (t.ConfirmedAt.HasValue)
+                                {
+                                    <div style="font-size:0.75rem; color:#94a3b8;">@t.ConfirmedAt.Value.ToString("dd/MM HH:mm")</div>
+                                }
+                            }
+                            else if (t.Status == "Rejected")
+                            {
+                                <span style="color:#dc2626; font-weight:700; font-size:0.85rem;">✕ Đã từ chối</span>
+                            }
+                        </td>
+                    </tr>
+                }
+            </tbody>
+        </table>
+    }
+</div>

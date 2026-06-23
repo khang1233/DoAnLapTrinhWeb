@@ -1,0 +1,179 @@
+@model List<DoAnLtWeb.Models.TemplateSubmission>
+@{
+    ViewData["Title"] = "Đề xuất mẫu từ người dùng";
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Đề xuất mẫu · Admin</title>
+    <link rel="stylesheet" href="~/css/styles.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@600;700;800&display=swap" rel="stylesheet">
+    <style>
+        body { margin:0; background:#0B0F1A; color:#E8ECF5; font-family:'Inter',sans-serif; }
+        .ts-shell { max-width:1280px; margin:0 auto; padding:30px 40px 60px; }
+        .ts-topbar { display:flex; align-items:center; gap:14px; margin-bottom:24px; }
+        .ts-topbar a { color:#8893AD; text-decoration:none; font-size:0.86rem; }
+        .ts-topbar a:hover { color:#fff; }
+        h1 { font-family:'Plus Jakarta Sans',sans-serif; font-size:1.6rem; margin:6px 0 24px; }
+        .ts-tabs { display:flex; gap:8px; margin-bottom:20px; }
+        .ts-tab { padding:8px 16px; border-radius:99px; background:#131A2C; color:#8893AD; font-size:0.85rem; font-weight:600; border:1px solid rgba(255,255,255,0.06); cursor:pointer; }
+        .ts-tab.active { background:rgba(124,92,255,0.16); color:#fff; border-color:rgba(124,92,255,0.5); }
+        .ts-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(380px, 1fr)); gap:18px; }
+        .ts-card { background:#131A2C; border:1px solid rgba(255,255,255,0.07); border-radius:16px; overflow:hidden; }
+        .ts-card-head { padding:16px 18px; border-bottom:1px solid rgba(255,255,255,0.05); }
+        .ts-card-head .who { font-size:0.76rem; color:#8893AD; }
+        .ts-card-head .title { font-family:'Plus Jakarta Sans',sans-serif; font-weight:800; font-size:1.05rem; margin:4px 0 6px; }
+        .ts-card-head .meta { font-size:0.76rem; color:#8893AD; display:flex; align-items:center; gap:8px; }
+        .ts-pill { display:inline-block; padding:2px 8px; border-radius:99px; background:rgba(124,92,255,0.16); color:#c7baff; font-size:0.7rem; font-weight:700; }
+        .ts-pill.approved { background:rgba(34,197,94,0.16); color:#86efac; }
+        .ts-pill.rejected { background:rgba(239,68,68,0.16); color:#fca5a5; }
+        .ts-pill.pending { background:rgba(244,180,0,0.16); color:#fcd34d; }
+        .ts-body { padding:16px 18px; }
+        .ts-body .note { font-size:0.84rem; color:#8893AD; margin-bottom:14px; min-height:1.2em; line-height:1.5; }
+        .ts-preview { display:grid; grid-template-columns:repeat(3, 1fr); gap:6px; margin-bottom:14px; }
+        .ts-preview > div { aspect-ratio:16/9; background:#1A2238; border-radius:6px; position:relative; overflow:hidden; }
+        .ts-preview canvas { position:absolute; inset:0; width:100%; height:100%; }
+        .ts-actions { display:flex; gap:8px; padding:14px 18px; border-top:1px solid rgba(255,255,255,0.05); background:rgba(0,0,0,0.15); }
+        .ts-btn { flex:1; padding:8px 12px; border-radius:9px; border:none; cursor:pointer; font-family:'Inter',sans-serif; font-size:0.84rem; font-weight:700; display:inline-flex; align-items:center; justify-content:center; gap:6px; }
+        .ts-btn-approve { background:#22c55e; color:#052e16; }
+        .ts-btn-approve:hover { background:#16a34a; color:#fff; }
+        .ts-btn-reject { background:#dc2626; color:#fff; }
+        .ts-btn-reject:hover { background:#b91c1c; }
+        .ts-empty { padding:48px 20px; text-align:center; color:#8893AD; background:#131A2C; border:1px dashed rgba(255,255,255,0.1); border-radius:16px; }
+        .ts-empty i { font-size:1.6rem; margin-bottom:10px; display:block; }
+    </style>
+</head>
+<body>
+    <div class="ts-shell">
+        <div class="ts-topbar">
+            <a href="/Home/Index"><i class="fa-solid fa-arrow-left"></i> Về trang chính</a>
+            <span style="color:#5C6679;">/</span>
+            <a href="/Admin/Dashboard">Dashboard Admin</a>
+            <span style="color:#5C6679;">/</span>
+            <span style="color:#fff;">Đề xuất mẫu</span>
+        </div>
+        <h1><i class="fa-solid fa-clipboard-check" style="color:#7C5CFF;"></i> Đề xuất mẫu từ người dùng</h1>
+
+        <div class="ts-tabs">
+            <button class="ts-tab active" onclick="ts_filter('all', this)">Tất cả (@Model.Count)</button>
+            <button class="ts-tab" onclick="ts_filter('pending', this)">Đang chờ (@Model.Count(m => m.Status == DoAnLtWeb.Models.TemplateSubmissionStatus.Pending))</button>
+            <button class="ts-tab" onclick="ts_filter('approved', this)">Đã duyệt (@Model.Count(m => m.Status == DoAnLtWeb.Models.TemplateSubmissionStatus.Approved))</button>
+            <button class="ts-tab" onclick="ts_filter('rejected', this)">Từ chối (@Model.Count(m => m.Status == DoAnLtWeb.Models.TemplateSubmissionStatus.Rejected))</button>
+        </div>
+
+        @if (Model.Count == 0)
+        {
+            <div class="ts-empty">
+                <i class="fa-regular fa-folder-open"></i>
+                Chưa có đề xuất nào.
+            </div>
+        }
+        else
+        {
+            <div class="ts-grid" id="ts-grid">
+                @foreach (var s in Model)
+                {
+                    var statusCls = s.Status == DoAnLtWeb.Models.TemplateSubmissionStatus.Approved ? "approved"
+                        : s.Status == DoAnLtWeb.Models.TemplateSubmissionStatus.Rejected ? "rejected" : "pending";
+                    var statusText = s.Status == DoAnLtWeb.Models.TemplateSubmissionStatus.Approved ? "Đã duyệt"
+                        : s.Status == DoAnLtWeb.Models.TemplateSubmissionStatus.Rejected ? "Từ chối" : "Đang chờ";
+                    var slides = s.Presentation?.Slides.OrderBy(x => x.PageNumber).Take(3).ToList() ?? new();
+                    <div class="ts-card" data-status="@statusCls">
+                        <div class="ts-card-head">
+                            <div class="who">Đề xuất bởi <strong>@(s.User?.Email ?? "?")</strong></div>
+                            <div class="title">@s.ProposedTitle</div>
+                            <div class="meta">
+                                <span class="ts-pill">@s.ProposedCategory</span>
+                                <span class="ts-pill @statusCls">@statusText</span>
+                                <span>· @s.SubmittedAt.ToLocalTime().ToString("dd/MM HH:mm")</span>
+                            </div>
+                        </div>
+                        <div class="ts-body">
+                            <div class="note">@(string.IsNullOrWhiteSpace(s.Note) ? "(Không có ghi chú)" : s.Note)</div>
+                            <div class="ts-preview">
+                                @foreach (var sl in slides)
+                                {
+                                    <div data-elemjson='@Html.Raw(sl.ElementsJson)' data-bg="@sl.BackgroundColor">
+                                        <canvas class="ts-thumb" width="200" height="113"></canvas>
+                                    </div>
+                                }
+                                @for (int i = slides.Count; i < 3; i++)
+                                {
+                                    <div></div>
+                                }
+                            </div>
+                            <div style="font-size:0.78rem; color:#8893AD;">
+                                <i class="fa-solid fa-layer-group"></i> @(s.Presentation?.Slides.Count ?? 0) slide
+                                @if (s.Presentation != null)
+                                {
+                                    <span> · <a href="/Slide/Edit/@s.Presentation.Id" target="_blank" style="color:#7C5CFF;">Xem bản gốc <i class="fa-solid fa-arrow-up-right-from-square" style="font-size:0.65rem;"></i></a></span>
+                                }
+                            </div>
+                        </div>
+                        @if (s.Status == DoAnLtWeb.Models.TemplateSubmissionStatus.Pending)
+                        {
+                            <div class="ts-actions">
+                                <form asp-action="ApproveSubmission" method="post" style="flex:1; margin:0;">
+                                    <input type="hidden" name="id" value="@s.Id" />
+                                    <button type="submit" class="ts-btn ts-btn-approve"><i class="fa-solid fa-check"></i> Duyệt</button>
+                                </form>
+                                <form asp-action="RejectSubmission" method="post" style="flex:1; margin:0;">
+                                    <input type="hidden" name="id" value="@s.Id" />
+                                    <button type="submit" class="ts-btn ts-btn-reject"><i class="fa-solid fa-xmark"></i> Từ chối</button>
+                                </form>
+                            </div>
+                        }
+                        else
+                        {
+                            <div class="ts-actions" style="justify-content:flex-start;">
+                                <span style="font-size:0.78rem; color:#8893AD;">Đã xử lý @(s.ReviewedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "")</span>
+                            </div>
+                        }
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <script src="https://cdnjs.cloudflare.com/ajax/libs/fabric.js/5.3.0/fabric.min.js"></script>
+    <script>
+        function ts_filter(kind, el) {
+            document.querySelectorAll('.ts-tab').forEach(t => t.classList.remove('active'));
+            el.classList.add('active');
+            document.querySelectorAll('#ts-grid .ts-card').forEach(c => {
+                c.style.display = (kind === 'all' || c.dataset.status === kind) ? '' : 'none';
+            });
+        }
+
+        document.querySelectorAll('.ts-thumb').forEach(canvas => {
+            const card = canvas.closest('[data-elemjson]');
+            if (!card) return;
+            const j = card.getAttribute('data-elemjson') || '';
+            const bg = card.getAttribute('data-bg') || '#1e293b';
+            if (!j) return;
+            let parsed;
+            try { parsed = JSON.parse(j); } catch (e) { return; }
+            const fc = new fabric.StaticCanvas(canvas, { width: 200, height: 113, backgroundColor: bg });
+            const w = parsed.canvasWidth || 1280, h = parsed.canvasHeight || 720;
+            const sx = 200 / w, sy = 113 / h;
+            fabric.util.enlivenObjects(parsed.objects || [], objs => {
+                objs.forEach(o => {
+                    o.set({
+                        left: (o.left || 0) * sx,
+                        top: (o.top || 0) * sy,
+                        scaleX: (o.scaleX || 1) * sx,
+                        scaleY: (o.scaleY || 1) * sy,
+                        selectable: false, evented: false
+                    });
+                    if (o.fontSize) o.set('fontSize', o.fontSize * Math.min(sx, sy));
+                    fc.add(o);
+                });
+                fc.renderAll();
+            }, 'fabric');
+        });
+    </script>
+</body>
+</html>

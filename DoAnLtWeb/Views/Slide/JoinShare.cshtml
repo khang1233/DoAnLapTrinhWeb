@@ -1,0 +1,74 @@
+@model DoAnLtWeb.Models.Presentation
+@{
+    Layout = null;
+    ViewData["Title"] = "Tham gia chia sẻ · Slidify";
+    var error = ViewBag.JoinError as string;
+    var token = ViewBag.ShareToken as string;
+    var ownerEmail = ViewBag.OwnerEmail as string;
+    var title = ViewBag.PresentationTitle as string ?? Model.Title;
+    var slideCount = ViewBag.SlideCount is int sc ? sc : 0;
+    var alreadyMember = ViewBag.AlreadyMember is bool am && am;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        body { margin:0; background:radial-gradient(140% 100% at 50% 0%, rgba(124,92,255,0.18), transparent 60%), #0B0F1A; color:#E8ECF5; font-family:'Inter',sans-serif; min-height:100vh; display:flex; align-items:center; justify-content:center; padding:24px; }
+        .jn-card { background:#131A2C; border:1px solid rgba(255,255,255,0.08); border-radius:20px; padding:40px 38px; max-width:520px; width:100%; box-shadow:0 30px 60px -30px rgba(0,0,0,0.5); text-align:center; }
+        .jn-avatar { width:80px; height:80px; border-radius:50%; background:linear-gradient(135deg,#7C5CFF,#22D3EE); display:flex; align-items:center; justify-content:center; color:#fff; font-family:'Plus Jakarta Sans',sans-serif; font-size:1.8rem; font-weight:800; margin:0 auto 20px; }
+        .jn-kicker { font-size:0.74rem; text-transform:uppercase; letter-spacing:0.1em; color:#7C5CFF; font-weight:700; margin-bottom:10px; }
+        h1 { font-family:'Plus Jakarta Sans',sans-serif; font-size:1.5rem; font-weight:800; margin:0 0 16px; line-height:1.3; }
+        h1 strong { color:#7C5CFF; }
+        .jn-deck { background:rgba(124,92,255,0.08); border:1px solid rgba(124,92,255,0.2); padding:16px 20px; border-radius:12px; margin:20px 0 24px; }
+        .jn-deck-title { font-size:1.05rem; font-weight:700; color:#E8ECF5; margin-bottom:4px; }
+        .jn-deck-meta { font-size:0.82rem; color:#8893AD; }
+        .jn-sub { color:#8893AD; font-size:0.9rem; line-height:1.55; margin:0 0 28px; }
+        .jn-actions { display:flex; gap:10px; }
+        .jn-btn { flex:1; padding:13px 18px; border-radius:11px; font-family:'Inter',sans-serif; font-weight:600; font-size:0.93rem; cursor:pointer; border:1px solid rgba(255,255,255,0.1); background:rgba(255,255,255,0.04); color:#E8ECF5; text-decoration:none; display:inline-flex; align-items:center; justify-content:center; gap:8px; }
+        .jn-btn:hover { background:rgba(255,255,255,0.08); }
+        .jn-btn-primary { background:linear-gradient(135deg,#7C5CFF,#6047e0); border-color:transparent; color:#fff; box-shadow:0 10px 24px -10px rgba(124,92,255,0.6); }
+        .jn-btn-primary:hover { background:linear-gradient(135deg,#8b6dff,#6f56e8); }
+        .jn-error { color:#fca5a5; background:rgba(239,68,68,0.1); border:1px solid rgba(239,68,68,0.25); padding:14px 18px; border-radius:11px; font-size:0.88rem; margin-bottom:20px; }
+        .jn-note { font-size:0.78rem; color:#8893AD; margin-top:18px; }
+        .jn-note a { color:#7C5CFF; text-decoration:none; }
+    </style>
+</head>
+<body>
+    <div class="jn-card">
+        @if (!string.IsNullOrEmpty(error))
+        {
+            <div class="jn-error"><i class="fa-solid fa-circle-exclamation"></i> @error</div>
+            <a class="jn-btn jn-btn-primary" href="/Home/Index"><i class="fa-solid fa-house"></i> Về trang chủ</a>
+        }
+        else
+        {
+            <div class="jn-avatar">@((ownerEmail ?? "?").Substring(0,1).ToUpper())</div>
+            <div class="jn-kicker"><i class="fa-solid fa-user-group"></i> Lời mời cộng tác</div>
+            <h1>Bạn được <strong>@ownerEmail</strong> chia sẻ slide</h1>
+
+            <div class="jn-deck">
+                <div class="jn-deck-title">@title</div>
+                <div class="jn-deck-meta"><i class="fa-solid fa-layer-group"></i> @slideCount slide @(alreadyMember ? "· Bạn đã tham gia trước đó" : "")</div>
+            </div>
+
+            <p class="jn-sub">Bấm bên dưới để @(alreadyMember ? "tiếp tục" : "tham gia") chỉnh sửa bộ slide này cùng nhóm. Mọi thay đổi sẽ tự động đồng bộ.</p>
+
+            <div class="jn-actions">
+                <a class="jn-btn" href="/Home/Index">Để sau</a>
+                <form method="post" asp-action="ConfirmJoin" asp-route-token="@token" style="flex:1; margin:0;">
+                    @Html.AntiForgeryToken()
+                    <button type="submit" class="jn-btn jn-btn-primary" style="width:100%;">
+                        <i class="fa-solid fa-arrow-right"></i> @(alreadyMember ? "Tiếp tục chỉnh sửa" : "Bắt đầu chỉnh sửa")
+                    </button>
+                </form>
+            </div>
+            <div class="jn-note">Khi tham gia, bạn đồng ý cùng @ownerEmail làm bài nhóm. Bạn có thể rời nhóm bất cứ lúc nào — chủ slide cũng có thể mời bạn ra.</div>
+        }
+    </div>
+</body>
+</html>

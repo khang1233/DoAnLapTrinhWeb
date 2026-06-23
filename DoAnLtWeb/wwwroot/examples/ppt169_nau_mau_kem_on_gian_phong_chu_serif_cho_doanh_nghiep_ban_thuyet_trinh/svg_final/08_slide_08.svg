@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1920" height="1080" viewBox="0 0 1920 1080"><rect x="0" y="0" width="1920" height="1080" fill="#3B352E"/>
+<g id="shape-2" data-name="TextBox 2">
+<rect x="108" y="100.33" width="993.23" height="258.67" fill="none"/>
+<text x="108" y="179.67" text-anchor="start" xml:space="preserve" font-family="&quot;Vollkorn Bold&quot;, sans-serif" font-size="93.33" fill="#F6F2E5"><tspan fill="#F6F2E5" font-size="93.33">Hãy viết chủ đề</tspan></text>
+<text x="108" y="291.67" text-anchor="start" xml:space="preserve" font-family="&quot;Vollkorn Bold&quot;, sans-serif" font-size="93.33" fill="#F6F2E5"><tspan fill="#F6F2E5" font-size="93.33">hoặc ý tưởng của bạn</tspan></text>
+</g>
+<g id="shape-3" data-name="TextBox 3">
+<rect x="1071.64" y="857.27" width="740.36" height="112" fill="none"/>
+<text x="1812" y="891.27" text-anchor="end" xml:space="preserve" font-family="&quot;Public Sans&quot;, sans-serif" font-size="40" fill="#F6F2E5"><tspan fill="#F6F2E5" font-size="40">Hãy trình bày ngắn gọn về</tspan></text>
+<text x="1812" y="939.27" text-anchor="end" xml:space="preserve" font-family="&quot;Public Sans&quot;, sans-serif" font-size="40" fill="#F6F2E5"><tspan fill="#F6F2E5" font-size="40">những gì bạn muốn thảo luận.</tspan></text>
+</g></svg>

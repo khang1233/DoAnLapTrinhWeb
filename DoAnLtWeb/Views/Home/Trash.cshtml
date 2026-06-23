@@ -1,0 +1,101 @@
+@model List<DoAnLtWeb.Models.Presentation>
+@{
+    ViewData["Title"] = "Thùng rác · Slidify";
+    Layout = null;
+}
+<!DOCTYPE html>
+<html lang="vi">
+<head>
+    <meta charset="utf-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>@ViewData["Title"]</title>
+    <link rel="stylesheet" href="~/css/styles.css" />
+    <link href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css" rel="stylesheet">
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Plus+Jakarta+Sans:wght@700;800&display=swap" rel="stylesheet">
+    <style>
+        body { margin:0; background:#0B0F1A; color:#E8ECF5; font-family:'Inter',sans-serif; }
+        .tr-shell { max-width:1180px; margin:0 auto; padding:32px 40px 60px; }
+        .tr-topbar { display:flex; align-items:center; gap:12px; margin-bottom:18px; font-size:0.85rem; }
+        .tr-topbar a { color:#8893AD; text-decoration:none; }
+        .tr-topbar a:hover { color:#fff; }
+        h1 { font-family:'Plus Jakarta Sans',sans-serif; font-size:1.7rem; font-weight:800; margin:6px 0 6px; }
+        h1 i { color:#EF4444; margin-right:6px; }
+        .sub { color:#8893AD; font-size:0.92rem; margin:0 0 24px; }
+        .tr-notice { padding:14px 18px; border-radius:11px; background:rgba(244,180,0,0.08); border:1px solid rgba(244,180,0,0.2); color:#fcd34d; font-size:0.85rem; margin-bottom:24px; display:flex; align-items:flex-start; gap:10px; }
+        .tr-notice i { color:#F4B400; margin-top:2px; }
+        .tr-grid { display:grid; grid-template-columns:repeat(auto-fill, minmax(220px, 1fr)); gap:16px; }
+        .tr-card { background:#131A2C; border:1px solid rgba(255,255,255,0.07); border-radius:14px; overflow:hidden; transition:border-color .15s; position:relative; }
+        .tr-card:hover { border-color:rgba(255,255,255,0.12); }
+        .tr-thumb { aspect-ratio:16/9; background:#1e293b; display:flex; align-items:center; justify-content:center; color:rgba(255,255,255,0.4); font-size:0.78rem; opacity:0.6; filter:grayscale(0.4); }
+        .tr-body { padding:12px 14px 14px; }
+        .tr-title { font-size:0.92rem; font-weight:700; margin:0 0 4px; }
+        .tr-meta { font-size:0.74rem; color:#8893AD; }
+        .tr-actions { display:flex; gap:6px; padding:10px 14px 14px; }
+        .tr-btn { flex:1; padding:7px 10px; border-radius:8px; border:1px solid rgba(255,255,255,0.08); background:#1A2238; color:#E8ECF5; cursor:pointer; font-family:inherit; font-size:0.8rem; font-weight:600; display:inline-flex; align-items:center; justify-content:center; gap:5px; }
+        .tr-btn-restore:hover { background:rgba(34,197,94,0.16); color:#86efac; border-color:rgba(34,197,94,0.3); }
+        .tr-btn-purge:hover { background:rgba(239,68,68,0.16); color:#fca5a5; border-color:rgba(239,68,68,0.3); }
+        .tr-empty { padding:48px 24px; border:1px dashed rgba(255,255,255,0.12); border-radius:14px; text-align:center; color:#8893AD; }
+        .tr-empty i { font-size:2rem; margin-bottom:10px; display:block; color:#5C6679; }
+        .tr-empty h3 { font-size:1rem; margin:0 0 6px; color:#E8ECF5; }
+    </style>
+</head>
+<body>
+    <div class="tr-shell">
+        <div class="tr-topbar">
+            <a href="/Home/Index"><i class="fa-solid fa-arrow-left"></i> Trang chủ</a>
+            <span style="color:#5C6679;">/</span>
+            <span style="color:#fff;">Thùng rác</span>
+        </div>
+        <h1><i class="fa-solid fa-trash-can"></i> Thùng rác</h1>
+        <p class="sub">Các dự án bạn đã xoá. Có thể khôi phục lại bất cứ lúc nào trong vòng 30 ngày.</p>
+
+        <div class="tr-notice">
+            <i class="fa-solid fa-circle-info"></i>
+            <span>Dự án trong thùng rác sẽ <strong>tự động bị xoá vĩnh viễn sau 30 ngày</strong>. Bạn vẫn có thể bấm "Xoá vĩnh viễn" để dọn ngay.</span>
+        </div>
+
+        @if (Model.Count == 0)
+        {
+            <div class="tr-empty">
+                <i class="fa-regular fa-trash-can"></i>
+                <h3>Thùng rác trống</h3>
+                <p style="margin:0; font-size:0.84rem;">Khi bạn xoá một dự án, nó sẽ chuyển vào đây trước khi bị xoá hẳn.</p>
+            </div>
+        }
+        else
+        {
+            <div class="tr-grid">
+                @foreach (var p in Model)
+                {
+                    var daysLeft = p.TrashedAt.HasValue ? Math.Max(0, 30 - (int)(DateTime.UtcNow - p.TrashedAt.Value).TotalDays) : 30;
+                    <div class="tr-card">
+                        <div class="tr-thumb">@p.Slides.Count slide</div>
+                        <div class="tr-body">
+                            <div class="tr-title">@p.Title</div>
+                            <div class="tr-meta">Xoá lúc @(p.TrashedAt?.ToLocalTime().ToString("dd/MM HH:mm") ?? "?") · còn @daysLeft ngày</div>
+                        </div>
+                        <div class="tr-actions">
+                            <button class="tr-btn tr-btn-restore" onclick="trRestore(@p.Id)"><i class="fa-solid fa-rotate-left"></i> Khôi phục</button>
+                            <button class="tr-btn tr-btn-purge" onclick="trPurge(@p.Id, '@Html.Raw(p.Title.Replace("'", "\\'"))')"><i class="fa-solid fa-fire"></i> Xoá vĩnh viễn</button>
+                        </div>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <script>
+        async function trRestore(id) {
+            const fd = new FormData(); fd.append('id', id);
+            const r = await fetch('/Slide/RestoreFromTrash', { method: 'POST', body: fd });
+            if (r.ok) window.location.reload();
+        }
+        async function trPurge(id, title) {
+            if (!confirm(`Xoá vĩnh viễn "${title}"? Không thể hoàn tác.`)) return;
+            const fd = new FormData(); fd.append('id', id);
+            const r = await fetch('/Slide/PurgeFromTrash', { method: 'POST', body: fd });
+            if (r.ok) window.location.reload();
+        }
+    </script>
+</body>
+</html>

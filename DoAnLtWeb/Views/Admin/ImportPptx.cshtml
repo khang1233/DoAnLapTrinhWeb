@@ -1,0 +1,119 @@
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Admin — Import PPTX";
+    var files = ViewBag.PptxFiles as List<string?> ?? new List<string?>();
+}
+
+<style>
+.import-panel { max-width: 900px; margin: 40px auto; padding: 0 20px; }
+.import-title { font-size: 1.5rem; font-weight: 800; color: #0f172a; margin-bottom: 6px; }
+.import-sub { font-size: 0.9rem; color: #64748b; margin-bottom: 28px; line-height: 1.6; }
+.nav-links { display: flex; gap: 12px; margin-bottom: 28px; flex-wrap: wrap; }
+.nav-link { padding: 8px 16px; border-radius: 10px; background: #f1f5f9; color: #475569; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+.nav-link.active { background: #7c3aed; color: #fff; }
+.alert-success { background: #f0fdf4; border: 1px solid #86efac; color: #14532d; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-weight: 600; }
+.alert-error { background: #fef2f2; border: 1px solid #fca5a5; color: #991b1b; padding: 14px 18px; border-radius: 12px; margin-bottom: 20px; font-weight: 600; }
+.section-card { background: #fff; border: 1px solid #e2e8f0; border-radius: 16px; padding: 24px; margin-bottom: 24px; box-shadow: 0 2px 8px rgba(15,23,42,0.05); }
+.section-title { font-size: 1rem; font-weight: 700; color: #0f172a; margin-bottom: 16px; }
+.file-list { display: flex; flex-direction: column; gap: 10px; }
+.file-row { display: flex; align-items: center; gap: 12px; padding: 12px 16px; border-radius: 10px; background: #f8fafc; border: 1px solid #e2e8f0; }
+.file-icon { font-size: 1.4rem; flex-shrink: 0; }
+.file-name { flex: 1; font-size: 0.88rem; font-weight: 600; color: #1e293b; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.file-form { display: flex; gap: 8px; align-items: center; flex-shrink: 0; }
+.cat-input { padding: 6px 10px; border: 1px solid #cbd5e1; border-radius: 8px; font-size: 0.82rem; width: 120px; }
+.btn-import { padding: 7px 16px; border: none; border-radius: 8px; background: #7c3aed; color: #fff; font-size: 0.82rem; font-weight: 700; cursor: pointer; white-space: nowrap; }
+.btn-import:hover { background: #6d28d9; }
+.btn-import-all { padding: 12px 24px; border: none; border-radius: 12px; background: linear-gradient(90deg,#7c3aed,#4f46e5); color: #fff; font-size: 0.9rem; font-weight: 800; cursor: pointer; }
+.btn-import-all:hover { opacity: 0.88; }
+.empty-state { text-align: center; padding: 40px; color: #94a3b8; }
+.dir-hint { font-size: 0.82rem; color: #64748b; background: #f1f5f9; padding: 10px 14px; border-radius: 8px; margin-top: 10px; font-family: monospace; }
+</style>
+
+<div class="import-panel">
+    <div class="nav-links">
+        <a href="/Admin/Dashboard" class="nav-link">Dashboard</a>
+        <a href="/Admin/Payments" class="nav-link">Giao dịch</a>
+        <a href="/Admin/Templates" class="nav-link">Template</a>
+        <a href="/Admin/ImportPptx" class="nav-link active">Import PPTX</a>
+        <a href="/Home/Index" class="nav-link">Giao diện User</a>
+    </div>
+
+    <div class="import-title">Import PPTX làm Template</div>
+    <p class="import-sub">
+        Đặt file <strong>.pptx</strong> vào thư mục <code>wwwroot/slide-mau/</code>, sau đó import từ đây.<br>
+        Hệ thống sẽ đọc từng slide, trích xuất text và hình → tạo template có thể chỉnh sửa trên Fabric.js.
+    </p>
+
+    @if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert-success">@TempData["AdminSuccess"]</div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert-error">@TempData["AdminError"]</div>
+    }
+
+    <!-- Import all -->
+    <div class="section-card">
+        <div class="section-title">Import tất cả (nhanh)</div>
+        <form method="post" asp-action="ImportAllPptx">
+            @Html.AntiForgeryToken()
+            <div style="display:flex; gap:12px; align-items:center; flex-wrap:wrap;">
+                <input name="category" class="cat-input" style="width:160px;" placeholder="Category (vd: Nhập khẩu)" value="Imported" />
+                <label style="display:flex; align-items:center; gap:6px; font-size:0.85rem; color:#475569; cursor:pointer;">
+                    <input type="checkbox" name="isPremium" value="true" style="width:16px; height:16px;" />
+                    VIP template
+                </label>
+                <button type="submit" class="btn-import-all"
+                        onclick="return confirm('Import tất cả @files.Count file PPTX chưa được import?')">
+                    Import tất cả @files.Count file
+                </button>
+            </div>
+        </form>
+    </div>
+
+    <!-- File list -->
+    <div class="section-card">
+        <div class="section-title">Danh sách file trong slide-mau/</div>
+
+        @if (!files.Any())
+        {
+            <div class="empty-state">
+                <div style="font-size:2.5rem; margin-bottom:10px;">📂</div>
+                <div>Chưa có file PPTX nào trong thư mục <strong>wwwroot/slide-mau/</strong></div>
+                <div class="dir-hint">C:\Users\khang\source\repos\DoAnLtWeb\DoAnLtWeb\wwwroot\slide-mau\</div>
+                <div style="margin-top:10px; font-size:0.85rem;">Hãy bỏ file .pptx vào thư mục trên rồi reload trang này.</div>
+            </div>
+        }
+        else
+        {
+            <div class="file-list">
+                @foreach (var f in files)
+                {
+                    if (f == null) continue;
+                    <div class="file-row">
+                        <span class="file-icon">📊</span>
+                        <span class="file-name" title="@f">@f</span>
+                        <form method="post" asp-action="ImportPptx" class="file-form">
+                            @Html.AntiForgeryToken()
+                            <input type="hidden" name="fileName" value="@f" />
+                            <input name="category" class="cat-input" placeholder="Category" value="Imported" />
+                            <label style="display:flex; align-items:center; gap:4px; font-size:0.8rem; color:#475569; cursor:pointer; white-space:nowrap;">
+                                <input type="checkbox" name="isPremium" value="true" />
+                                VIP
+                            </label>
+                            <button type="submit" class="btn-import">Import</button>
+                        </form>
+                    </div>
+                }
+            </div>
+        }
+    </div>
+
+    <div style="font-size:0.82rem; color:#94a3b8; line-height:1.7;">
+        <strong>Lưu ý:</strong> PPTX được parse bằng ZIP+XML nội bộ — không cần thư viện ngoài.<br>
+        Text box → Fabric.js <code>Textbox</code> (chỉnh sửa được). Hình → <code>Rect</code>.<br>
+        Ảnh nền trong PPTX hiện chưa được import (chỉ màu nền sẽ được giữ lại).<br>
+        Sau khi import, vào <a href="/Admin/Templates" style="color:#7c3aed;">Quản lý Template</a> để xem và xóa nếu cần.
+    </div>
+</div>

@@ -1,0 +1,101 @@
+@model List<DoAnLtWeb.Models.Presentation>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Admin — Quản lý Template";
+}
+
+<style>
+.admin-panel { max-width: 1100px; margin: 40px auto; padding: 0 20px; }
+.admin-header { display: flex; align-items: center; gap: 16px; margin-bottom: 28px; flex-wrap: wrap; }
+.admin-title { font-size: 1.5rem; font-weight: 800; color: #0f172a; }
+.admin-badge { padding: 4px 12px; background: #7c3aed; color: #fff; border-radius: 999px; font-size: 0.75rem; font-weight: 700; }
+.alert-success { background: #f0fdf4; border: 1px solid #86efac; color: #14532d; padding: 14px 18px; border-radius: 12px; margin-bottom: 24px; font-weight: 600; }
+.alert-warning { background: #fffbeb; border: 1px solid #fde68a; color: #92400e; padding: 14px 18px; border-radius: 12px; margin-bottom: 24px; font-weight: 600; }
+.tpl-grid { display: grid; grid-template-columns: repeat(auto-fill, minmax(220px, 1fr)); gap: 16px; }
+.tpl-card { border: 1px solid #e2e8f0; border-radius: 14px; overflow: hidden; background: #fff; box-shadow: 0 2px 8px rgba(15,23,42,0.05); }
+.tpl-thumb { aspect-ratio: 16/9; background: #f1f5f9; display: flex; align-items: center; justify-content: center; font-size: 2rem; color: #94a3b8; }
+.tpl-info { padding: 12px 14px; }
+.tpl-name { font-size: 0.88rem; font-weight: 700; color: #0f172a; margin-bottom: 4px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.tpl-meta { font-size: 0.75rem; color: #64748b; margin-bottom: 10px; }
+.badge-0slide { display: inline-block; padding: 2px 7px; border-radius: 999px; background: #fee2e2; color: #b91c1c; font-size: 0.7rem; font-weight: 700; margin-bottom: 6px; }
+.btn-del { width: 100%; padding: 7px; border: none; border-radius: 8px; background: #fee2e2; color: #b91c1c; font-size: 0.82rem; font-weight: 700; cursor: pointer; }
+.btn-del:hover { background: #fecaca; }
+.btn-trash-all { padding: 12px 22px; border: none; border-radius: 12px; background: #dc2626; color: #fff; font-size: 0.9rem; font-weight: 800; cursor: pointer; }
+.btn-trash-all:hover { background: #b91c1c; }
+.nav-links { display: flex; gap: 12px; margin-bottom: 24px; flex-wrap: wrap; }
+.nav-link { padding: 8px 16px; border-radius: 10px; background: #f1f5f9; color: #475569; text-decoration: none; font-size: 0.85rem; font-weight: 600; }
+.nav-link:hover { background: #e2e8f0; }
+.empty-state { text-align: center; padding: 60px 20px; color: #94a3b8; }
+</style>
+
+<div class="admin-panel">
+    <div class="nav-links">
+        <a href="/Admin/Dashboard" class="nav-link">Dashboard</a>
+        <a href="/Admin/Payments" class="nav-link">Giao dịch</a>
+        <a href="/Admin/Templates" class="nav-link" style="background:#7c3aed; color:#fff;">Template</a>
+        <a href="/Admin/ImportPptx" class="nav-link">Import PPTX</a>
+        <a href="/Home/Index" class="nav-link">Giao diện User</a>
+    </div>
+
+    <div class="admin-header">
+        <div class="admin-title">Quản lý Template</div>
+        <span class="admin-badge">Admin</span>
+        <span style="margin-left:auto; color:#64748b; font-size:0.9rem;">@Model.Count mẫu</span>
+
+        <form method="post" asp-action="DeleteTrashTemplates" style="margin-left:8px;"
+              onsubmit="return confirm('Xóa TẤT CẢ mẫu rác (0 slide hoặc tên chứa China/CQU/Telecom/[14x])? Không thể hoàn tác!')">
+            @Html.AntiForgeryToken()
+            <button type="submit" class="btn-trash-all">🗑 Xóa toàn bộ mẫu rác</button>
+        </form>
+    </div>
+
+    @if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert-success">@TempData["AdminSuccess"]</div>
+    }
+
+    @{
+        var trashKeywords = new[] { "China", "CQU", "Telecom", "CMB", "Chongqing", "ChinaUni" };
+        var trashCount = Model.Count(p => !p.Slides.Any() || trashKeywords.Any(kw => p.Title.Contains(kw, StringComparison.OrdinalIgnoreCase)) || System.Text.RegularExpressions.Regex.IsMatch(p.Title, @"\[\d+"));
+    }
+    @if (trashCount > 0)
+    {
+        <div class="alert-warning">⚠ Phát hiện @trashCount mẫu rác (0 slide hoặc tên chứa số kiểu [125]). Nhấn "Xóa toàn bộ mẫu rác" để dọn sạch.</div>
+    }
+
+    @if (!Model.Any())
+    {
+        <div class="empty-state">
+            <div style="font-size:3rem; margin-bottom:12px;">📭</div>
+            <div style="font-size:1.1rem; font-weight:600;">Chưa có template nào trong DB.</div>
+        </div>
+    }
+    else
+    {
+        <div class="tpl-grid">
+            @foreach (var tpl in Model)
+            {
+                var isTrash = !tpl.Slides.Any() || trashKeywords.Any(kw => tpl.Title.Contains(kw, StringComparison.OrdinalIgnoreCase)) || System.Text.RegularExpressions.Regex.IsMatch(tpl.Title, @"\[\d+");
+                <div class="tpl-card" style="@(isTrash ? "border-color:#fca5a5; background:#fff5f5;" : "")">
+                    <div class="tpl-thumb" style="@(tpl.ThumbnailUrl != null ? $"background:url('{tpl.ThumbnailUrl}') center/cover;" : "")">
+                        @if (tpl.ThumbnailUrl == null) { <span>🎨</span> }
+                    </div>
+                    <div class="tpl-info">
+                        @if (isTrash) { <div class="badge-0slide">⚠ Rác</div> }
+                        <div class="tpl-name" title="@tpl.Title">@tpl.Title</div>
+                        <div class="tpl-meta">
+                            @tpl.Slides.Count trang
+                            @if (tpl.IsPremiumTemplate) { <span style="color:#7c3aed;"> · VIP</span> }
+                            @if (!string.IsNullOrEmpty(tpl.Category)) { <span> · @tpl.Category</span> }
+                        </div>
+                        <form method="post" asp-action="DeleteTemplate" asp-route-id="@tpl.Id">
+                            @Html.AntiForgeryToken()
+                            <button type="submit" class="btn-del"
+                                    onclick="return confirm('Xóa mẫu này?')">Xóa</button>
+                        </form>
+                    </div>
+                </div>
+            }
+        </div>
+    }
+</div>

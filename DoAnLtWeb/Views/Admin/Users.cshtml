@@ -1,0 +1,188 @@
+@model List<DoAnLtWeb.Models.User>
+@{
+    Layout = "~/Views/Shared/_Layout.cshtml";
+    ViewData["Title"] = "Admin — Quản lý Người dùng";
+}
+
+<style>
+    .dashboard-panel {
+        max-width: 1200px;
+        margin: 30px auto;
+        padding: 0 15px;
+    }
+    .page-header {
+        margin-bottom: 30px;
+    }
+    .page-title {
+        font-size: 1.8rem;
+        font-weight: 800;
+        background: linear-gradient(135deg, #f97316, #eab308);
+        -webkit-background-clip: text;
+        -webkit-text-fill-color: transparent;
+    }
+    .nav-links {
+        display: flex;
+        gap: 12px;
+        margin-bottom: 30px;
+        flex-wrap: wrap;
+    }
+    .nav-link {
+        padding: 10px 18px;
+        border-radius: 10px;
+        background: rgba(255, 255, 255, 0.05);
+        color: var(--text-muted) !important;
+        text-decoration: none;
+        font-size: 0.88rem;
+        font-weight: 600;
+        transition: 0.2s;
+        border: 1px solid rgba(255,255,255,0.05);
+    }
+    .nav-link:hover {
+        background: rgba(255, 255, 255, 0.1);
+        color: #fff !important;
+    }
+    .nav-link.active {
+        background: linear-gradient(90deg, #7c3aed, #2563eb);
+        color: #fff !important;
+        border-color: transparent;
+    }
+
+    .dashboard-card {
+        background: var(--panel-bg);
+        border: 1px solid var(--border-color);
+        border-radius: 20px;
+        padding: 24px;
+        margin-bottom: 24px;
+        box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.2);
+    }
+    .custom-table {
+        width: 100%;
+        border-collapse: collapse;
+    }
+    .custom-table th {
+        padding: 12px;
+        text-align: left;
+        font-size: 0.75rem;
+        text-transform: uppercase;
+        color: var(--text-muted);
+        font-weight: 700;
+        border-bottom: 1px solid var(--border-color);
+    }
+    .custom-table td {
+        padding: 14px 12px;
+        font-size: 0.88rem;
+        border-bottom: 1px solid rgba(255,255,255,0.03);
+        vertical-align: middle;
+    }
+    .custom-table tr:hover td {
+        background: rgba(255,255,255,0.02);
+    }
+    .btn-action {
+        padding: 5px 10px;
+        border-radius: 6px;
+        font-weight: 700;
+        font-size: 0.78rem;
+        border: none;
+        cursor: pointer;
+        transition: 0.2s;
+    }
+    .btn-deny { background: #ef4444; color: #fff; }
+    .btn-deny:hover { background: #dc2626; }
+</style>
+
+<div class="dashboard-panel">
+    <div class="nav-links">
+        <a href="/Admin/Dashboard" class="nav-link">Dashboard</a>
+        <a href="/Admin/Users" class="nav-link active">Người dùng</a>
+        <a href="/Admin/Payments" class="nav-link">Giao dịch</a>
+        <a href="/Admin/Templates" class="nav-link">Template</a>
+        <a href="/Admin/ImportPptx" class="nav-link">Import PPTX</a>
+        <a href="/Home/Index" class="nav-link">Giao diện User</a>
+    </div>
+
+    @if (TempData["AdminSuccess"] != null)
+    {
+        <div class="alert alert-success" style="background: rgba(16, 185, 129, 0.15); color: #10b981; border: 1px solid #10b981;">
+            @TempData["AdminSuccess"]
+        </div>
+    }
+    @if (TempData["AdminError"] != null)
+    {
+        <div class="alert alert-danger" style="background: rgba(239, 68, 68, 0.15); color: #ef4444; border: 1px solid #ef4444;">
+            @TempData["AdminError"]
+        </div>
+    }
+
+    <div class="page-header d-flex justify-content-between align-items-center">
+        <div>
+            <h1 class="page-title">Quản lý người dùng</h1>
+            <p style="color:var(--text-muted); font-size: 0.95rem;">Danh sách tài khoản hệ thống.</p>
+        </div>
+        <div>
+            <form method="get" asp-action="Users" class="d-flex gap-2">
+                <input type="text" name="search" value="@ViewBag.Search" class="form-control" placeholder="Tìm tên hoặc email..." style="background: rgba(255,255,255,0.05); color: #fff; border: 1px solid var(--border-color); border-radius: 8px;">
+                <button type="submit" class="btn btn-primary" style="border-radius: 8px;"><i class="fa-solid fa-search"></i> Tìm</button>
+            </form>
+        </div>
+    </div>
+
+    <div class="dashboard-card">
+        <div class="table-responsive">
+            <table class="custom-table">
+                <thead>
+                    <tr>
+                        <th>ID</th>
+                        <th>Tên người dùng</th>
+                        <th>Email đăng ký</th>
+                        <th>Loại tài khoản</th>
+                        <th>Hạn VIP</th>
+                        <th>Hành động</th>
+                    </tr>
+                </thead>
+                <tbody>
+                    @foreach (var user in Model)
+                    {
+                        <tr>
+                            <td>@user.Id</td>
+                            <td style="font-weight:600;">@user.UserName</td>
+                            <td>@user.Email</td>
+                            <td>
+                                @if (user.Email == "admin@gmail.com" || user.Email == "admin@slidify.com")
+                                {
+                                    <span class="role-badge role-admin" style="background: #ef4444; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;"><i class="fa-solid fa-user-shield"></i> Admin</span>
+                                }
+                                else if (user.IsVip)
+                                {
+                                    <span class="role-badge role-vip" style="background: #8b5cf6; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;"><i class="fa-solid fa-crown"></i> VIP</span>
+                                }
+                                else
+                                {
+                                    <span class="role-badge role-user" style="background: #6b7280; color: #fff; padding: 4px 10px; border-radius: 6px; font-size: 0.75rem; font-weight: 700;"><i class="fa-solid fa-user"></i> User</span>
+                                }
+                            </td>
+                            <td>
+                                @if (user.IsVip && user.VipExpiresAt.HasValue)
+                                {
+                                    <span>@user.VipExpiresAt.Value.ToLocalTime().ToString("dd/MM/yyyy")</span>
+                                }
+                                else
+                                {
+                                    <span style="color:var(--text-muted);">Cơ bản</span>
+                                }
+                            </td>
+                            <td>
+                                @if (user.Email != "admin@gmail.com" && user.Email != "admin@slidify.com")
+                                {
+                                    <form method="post" asp-action="DeleteUser" asp-route-id="@user.Id" style="display:inline;">
+                                        @Html.AntiForgeryToken()
+                                        <button type="submit" class="btn-action btn-deny" onclick="return confirm('Bạn có chắc chắn muốn xóa tài khoản @user.Email không? Hành động này sẽ xóa toàn bộ dữ liệu dự án của người dùng này.')">Xóa</button>
+                                    </form>
+                                }
+                            </td>
+                        </tr>
+                    }
+                </tbody>
+            </table>
+        </div>
+    </div>
+</div>

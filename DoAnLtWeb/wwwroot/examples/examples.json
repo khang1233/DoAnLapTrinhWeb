@@ -1,0 +1,2185 @@
+{
+  "version": 1,
+  "updated": "2026-06-07",
+  "stats": {
+    "examples": 13,
+    "pages": 158,
+    "templates": 13
+  },
+  "projects": [
+    {
+      "id": "ppt169_attention_is_all_you_need",
+      "title": "Attention Is All You Need",
+      "description": "Transformer paper deep-read — academic blueprint style with structure diagrams, tables, formulas, and animation export",
+      "icon": "🧠",
+      "color": "#1A365D",
+      "style": "technical",
+      "styleName": "Academic Blueprint",
+      "desc": "Paper-reading deck for Vaswani et al. 2017, Attention Is All You Need. Combines blueprint-style Transformer diagrams, native editable tables and formula slides, per-slide speaker notes, and narrated PPTX export.",
+      "tags": [
+        "Paper Reading",
+        "Transformer",
+        "Technical Blueprint"
+      ],
+      "isNew": true,
+      "folder": "ppt169_attention_is_all_you_need/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "Attention Is All You Need"
+        },
+        {
+          "file": "02_why_it_matters.svg",
+          "title": "why it matters",
+          "desc": "A simpler model, better results, less training"
+        },
+        {
+          "file": "03_sequence_evolution.svg",
+          "title": "sequence evolution",
+          "desc": "From recurrent chains to attention mesh"
+        },
+        {
+          "file": "04_rnn_cnn_limits.svg",
+          "title": "rnn cnn limits",
+          "desc": "Sequential bottleneck, path length, memory ceiling"
+        },
+        {
+          "file": "05_architecture_overview.svg",
+          "title": "architecture overview",
+          "desc": "Figure 1 Transformer architecture"
+        },
+        {
+          "file": "06_encoder_decoder.svg",
+          "title": "encoder decoder",
+          "desc": "Encoder stack vs decoder stack"
+        },
+        {
+          "file": "07_scaled_dot_product.svg",
+          "title": "scaled dot-product",
+          "desc": "The attention equation"
+        },
+        {
+          "file": "08_multi_head_attention.svg",
+          "title": "multi-head attention",
+          "desc": "Eight parallel attention heads"
+        },
+        {
+          "file": "09_three_uses.svg",
+          "title": "three uses",
+          "desc": "Encoder self, decoder masked, cross attention"
+        },
+        {
+          "file": "10_ffn_residual_layernorm.svg",
+          "title": "ffn residual layernorm",
+          "desc": "The supporting layer components"
+        },
+        {
+          "file": "11_positional_encoding.svg",
+          "title": "positional encoding",
+          "desc": "Sinusoidal order injection"
+        },
+        {
+          "file": "12_complexity_table.svg",
+          "title": "complexity table",
+          "desc": "Why constant path length matters"
+        },
+        {
+          "file": "13_training_setup.svg",
+          "title": "training setup",
+          "desc": "Hardware, schedule, optimizer, regularization"
+        },
+        {
+          "file": "14_results.svg",
+          "title": "results",
+          "desc": "WMT14 BLEU and training cost"
+        },
+        {
+          "file": "15_ablations.svg",
+          "title": "ablations",
+          "desc": "Five takeaways from the variation study"
+        },
+        {
+          "file": "16_conclusion.svg",
+          "title": "conclusion",
+          "desc": "One paper, a generation of models"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_lora_hu_2021",
+      "title": "LoRA Hu 2021",
+      "description": "LoRA paper reading — blueprint technical style with structure diagrams, tables, KPI cards",
+      "icon": "🧠",
+      "color": "#1B3A5C",
+      "style": "technical",
+      "styleName": "Blueprint Technical",
+      "desc": "Technical reading deck for Hu et al. 2021, LoRA: Low-Rank Adaptation of Large Language Models. Combines blueprint-style AI diagrams, native editable charts and tables, per-slide speaker notes, and a narrated PPTX export.",
+      "tags": [
+        "Paper Reading",
+        "LLM",
+        "Technical Blueprint"
+      ],
+      "isNew": true,
+      "folder": "ppt169_lora_hu_2021/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "LoRA: Low-Rank Adaptation of Large Language Models"
+        },
+        {
+          "file": "02_agenda.svg",
+          "title": "agenda",
+          "desc": "What this talk covers"
+        },
+        {
+          "file": "03_problem.svg",
+          "title": "problem",
+          "desc": "Full fine-tuning is infeasible at scale"
+        },
+        {
+          "file": "04_limitations.svg",
+          "title": "limitations",
+          "desc": "Why existing efficient methods fall short"
+        },
+        {
+          "file": "05_insight.svg",
+          "title": "low-rank insight",
+          "desc": "Weight updates are intrinsically low-rank"
+        },
+        {
+          "file": "06_method.svg",
+          "title": "method",
+          "desc": "Freeze W0, inject low-rank BA"
+        },
+        {
+          "file": "07_implementation.svg",
+          "title": "implementation",
+          "desc": "One alpha constant, one deployment merge"
+        },
+        {
+          "file": "08_transformer.svg",
+          "title": "transformer",
+          "desc": "Adapting attention weights only"
+        },
+        {
+          "file": "09_advantages.svg",
+          "title": "advantages",
+          "desc": "Four key advantages of LoRA"
+        },
+        {
+          "file": "10_latency.svg",
+          "title": "latency",
+          "desc": "Adapters add latency; LoRA does not"
+        },
+        {
+          "file": "11_setup.svg",
+          "title": "setup",
+          "desc": "Covering NLU to NLG across four model types"
+        },
+        {
+          "file": "12_glue.svg",
+          "title": "glue",
+          "desc": "Fewer params, equal or better results"
+        },
+        {
+          "file": "13_gpt3.svg",
+          "title": "gpt-3",
+          "desc": "Holds at 175B scale"
+        },
+        {
+          "file": "14_understanding.svg",
+          "title": "understanding",
+          "desc": "Which to adapt? How large a rank?"
+        },
+        {
+          "file": "15_conclusion.svg",
+          "title": "conclusion",
+          "desc": "Conclusion and impact"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_brutalist_ai_newspaper_2026",
+      "title": "Brutalist AI Newspaper 2026",
+      "description": "AI industry 2026 year-end report — Brutalist newspaper style with dense type, data grids, halftone images",
+      "icon": "📰",
+      "color": "#C8102E",
+      "style": "editorial",
+      "styleName": "Brutalist Newspaper",
+      "desc": "Year-end report on the AI industry in Brutalist newspaper style — dense small type, irregular column grids, halftone monochrome photos with single-spot red emphasis.",
+      "tags": [
+        "Brutalist",
+        "Newspaper",
+        "Annual Report"
+      ],
+      "isNew": true,
+      "folder": "ppt169_brutalist_ai_newspaper_2026/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "cover"
+        },
+        {
+          "file": "02_issue_at_a_glance.svg",
+          "title": "issue at a glance",
+          "desc": "issue at a glance"
+        },
+        {
+          "file": "03_revenue_league.svg",
+          "title": "revenue league",
+          "desc": "revenue league"
+        },
+        {
+          "file": "04_arpu_divide.svg",
+          "title": "arpu divide",
+          "desc": "arpu divide"
+        },
+        {
+          "file": "05_training_cost.svg",
+          "title": "training cost",
+          "desc": "training cost"
+        },
+        {
+          "file": "06_inference_watts.svg",
+          "title": "inference watts",
+          "desc": "inference watts"
+        },
+        {
+          "file": "07_benchmarks_saturated.svg",
+          "title": "benchmarks saturated",
+          "desc": "benchmarks saturated"
+        },
+        {
+          "file": "08_three_rulebooks.svg",
+          "title": "three rulebooks",
+          "desc": "three rulebooks"
+        },
+        {
+          "file": "09_timeline.svg",
+          "title": "timeline",
+          "desc": "timeline"
+        },
+        {
+          "file": "10_closing_read.svg",
+          "title": "closing read",
+          "desc": "closing read"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_pritzker_2026",
+      "title": "Pritzker 2026",
+      "description": "2026 Pritzker Architecture Prize deep-read — photography-forward editorial layout",
+      "icon": "🏛️",
+      "color": "#594A3C",
+      "style": "editorial",
+      "styleName": "Architecture Editorial",
+      "desc": "Long-read on the 2026 Pritzker laureate. Photography-forward editorial layout designed for reading clubs, architecture courses, and long-form social posts.",
+      "tags": [
+        "Architecture",
+        "Editorial",
+        "Reading Club"
+      ],
+      "isNew": true,
+      "folder": "ppt169_pritzker_2026/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "cover"
+        },
+        {
+          "file": "02_overview.svg",
+          "title": "overview",
+          "desc": "overview"
+        },
+        {
+          "file": "03_ando.svg",
+          "title": "ando",
+          "desc": "ando"
+        },
+        {
+          "file": "04_chipperfield.svg",
+          "title": "chipperfield",
+          "desc": "chipperfield"
+        },
+        {
+          "file": "05_zaha.svg",
+          "title": "zaha",
+          "desc": "zaha"
+        },
+        {
+          "file": "06_foster.svg",
+          "title": "foster",
+          "desc": "foster"
+        },
+        {
+          "file": "07_oma_sanaa.svg",
+          "title": "oma sanaa",
+          "desc": "oma sanaa"
+        },
+        {
+          "file": "08_zumthor.svg",
+          "title": "zumthor",
+          "desc": "zumthor"
+        },
+        {
+          "file": "09_gehry.svg",
+          "title": "gehry",
+          "desc": "gehry"
+        },
+        {
+          "file": "10_kere.svg",
+          "title": "kere",
+          "desc": "kere"
+        },
+        {
+          "file": "11_epilogue.svg",
+          "title": "epilogue",
+          "desc": "epilogue"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_global_ai_capital_2026",
+      "title": "Global AI Capital 2026",
+      "description": "Annual global AI capital flow review — Bloomberg / Economist data-journalism style",
+      "icon": "💰",
+      "color": "#1F3A5F",
+      "style": "consulting",
+      "styleName": "Bloomberg Editorial",
+      "desc": "Year-in-review on global AI capital flows in the dense data-journalism style of Bloomberg and The Economist — multi-column layouts, micro-charts, editorial sidebars.",
+      "tags": [
+        "Data Journalism",
+        "Finance",
+        "Annual Review"
+      ],
+      "isNew": true,
+      "folder": "ppt169_global_ai_capital_2026/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "cover"
+        },
+        {
+          "file": "02_editor_note.svg",
+          "title": "editor note",
+          "desc": "editor note"
+        },
+        {
+          "file": "03_contents.svg",
+          "title": "contents",
+          "desc": "contents"
+        },
+        {
+          "file": "04_q1_vc_landscape.svg",
+          "title": "q1 vc landscape",
+          "desc": "q1 vc landscape"
+        },
+        {
+          "file": "05_hyperscaler_capex.svg",
+          "title": "hyperscaler capex",
+          "desc": "hyperscaler capex"
+        },
+        {
+          "file": "06_big_three_valuation_leap.svg",
+          "title": "big three valuation leap",
+          "desc": "big three valuation leap"
+        },
+        {
+          "file": "07_valuation_vs_revenue_bubble.svg",
+          "title": "valuation vs revenue bubble",
+          "desc": "valuation vs revenue bubble"
+        },
+        {
+          "file": "08_openai_investor_donut.svg",
+          "title": "openai investor donut",
+          "desc": "openai investor donut"
+        },
+        {
+          "file": "09_big_three_comparison.svg",
+          "title": "big three comparison",
+          "desc": "big three comparison"
+        },
+        {
+          "file": "10_china_five_ranking.svg",
+          "title": "china five ranking",
+          "desc": "china five ranking"
+        },
+        {
+          "file": "11_us_china_dual_track.svg",
+          "title": "us china dual track",
+          "desc": "us china dual track"
+        },
+        {
+          "file": "12_second_tier.svg",
+          "title": "second tier",
+          "desc": "second tier"
+        },
+        {
+          "file": "13_chapter_nvidia.svg",
+          "title": "chapter nvidia",
+          "desc": "chapter nvidia"
+        },
+        {
+          "file": "14_nvidia_sankey.svg",
+          "title": "nvidia sankey",
+          "desc": "nvidia sankey"
+        },
+        {
+          "file": "15_nvidia_pareto.svg",
+          "title": "nvidia pareto",
+          "desc": "nvidia pareto"
+        },
+        {
+          "file": "16_stargate_hub.svg",
+          "title": "stargate hub",
+          "desc": "stargate hub"
+        },
+        {
+          "file": "17_chapter_bubble.svg",
+          "title": "chapter bubble",
+          "desc": "chapter bubble"
+        },
+        {
+          "file": "18_capex_vs_revenue.svg",
+          "title": "capex vs revenue",
+          "desc": "capex vs revenue"
+        },
+        {
+          "file": "19_four_risks_quadrant.svg",
+          "title": "four risks quadrant",
+          "desc": "four risks quadrant"
+        },
+        {
+          "file": "20_closing.svg",
+          "title": "closing",
+          "desc": "closing"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_swiss_grid_systems",
+      "title": "Swiss Grid Systems",
+      "description": "Swiss International Typographic Style design history lecture — Müller-Brockmann tribute",
+      "icon": "🅢",
+      "color": "#C8102E",
+      "style": "creative",
+      "styleName": "Swiss Typographic",
+      "desc": "Design-history lecture on Swiss International Typographic Style — strict grid, Helvetica, asymmetric balance, two-color print sensibility; an homage to Müller-Brockmann.",
+      "tags": [
+        "Swiss Style",
+        "Typography",
+        "Design History"
+      ],
+      "isNew": true,
+      "folder": "ppt169_swiss_grid_systems/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "cover"
+        },
+        {
+          "file": "02_quote.svg",
+          "title": "quote",
+          "desc": "quote"
+        },
+        {
+          "file": "03_origin.svg",
+          "title": "origin",
+          "desc": "origin"
+        },
+        {
+          "file": "04_principles.svg",
+          "title": "principles",
+          "desc": "principles"
+        },
+        {
+          "file": "05_figures.svg",
+          "title": "figures",
+          "desc": "figures"
+        },
+        {
+          "file": "06_brockmann.svg",
+          "title": "brockmann",
+          "desc": "brockmann"
+        },
+        {
+          "file": "07_typefaces.svg",
+          "title": "typefaces",
+          "desc": "typefaces"
+        },
+        {
+          "file": "08_grid_types.svg",
+          "title": "grid types",
+          "desc": "grid types"
+        },
+        {
+          "file": "09_modular.svg",
+          "title": "modular",
+          "desc": "modular"
+        },
+        {
+          "file": "10_negative_space.svg",
+          "title": "negative space",
+          "desc": "negative space"
+        },
+        {
+          "file": "11_outputs.svg",
+          "title": "outputs",
+          "desc": "outputs"
+        },
+        {
+          "file": "12_digital_era.svg",
+          "title": "digital era",
+          "desc": "digital era"
+        },
+        {
+          "file": "13_brands.svg",
+          "title": "brands",
+          "desc": "brands"
+        },
+        {
+          "file": "14_closing.svg",
+          "title": "closing",
+          "desc": "closing"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_glassmorphism_demo",
+      "title": "Glassmorphism Demo",
+      "description": "AI product launch — frosted-glass surfaces, soft gradients, modern SaaS visual language",
+      "icon": "💎",
+      "color": "#6366F1",
+      "style": "general",
+      "styleName": "Glassmorphism SaaS",
+      "desc": "AI product launch deck with frosted-glass surfaces, soft gradients, and depth layering — modern SaaS visual language.",
+      "tags": [
+        "SaaS",
+        "Modern",
+        "Product Launch"
+      ],
+      "isNew": true,
+      "folder": "ppt169_glassmorphism_demo/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "cover"
+        },
+        {
+          "file": "02_hero_demo_to_prod.svg",
+          "title": "hero demo to prod",
+          "desc": "hero demo to prod"
+        },
+        {
+          "file": "03_three_pains.svg",
+          "title": "three pains",
+          "desc": "three pains"
+        },
+        {
+          "file": "04_agent_architecture.svg",
+          "title": "agent architecture",
+          "desc": "agent architecture"
+        },
+        {
+          "file": "05_three_modes.svg",
+          "title": "three modes",
+          "desc": "three modes"
+        },
+        {
+          "file": "06_tool_orchestration.svg",
+          "title": "tool orchestration",
+          "desc": "tool orchestration"
+        },
+        {
+          "file": "07_context_engineering.svg",
+          "title": "context engineering",
+          "desc": "context engineering"
+        },
+        {
+          "file": "08_kpi_dashboard.svg",
+          "title": "kpi dashboard",
+          "desc": "kpi dashboard"
+        },
+        {
+          "file": "09_metrics_trend.svg",
+          "title": "metrics trend",
+          "desc": "metrics trend"
+        },
+        {
+          "file": "10_failure_modes.svg",
+          "title": "failure modes",
+          "desc": "failure modes"
+        },
+        {
+          "file": "11_roadmap.svg",
+          "title": "roadmap",
+          "desc": "roadmap"
+        },
+        {
+          "file": "12_cta_closing.svg",
+          "title": "cta closing",
+          "desc": "cta closing"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_sugar_rush_memphis",
+      "title": "Sugar Rush Memphis",
+      "description": "Fictional music festival annual book — Memphis design movement, flat-graphic, hi-saturation",
+      "icon": "🎵",
+      "color": "#FF4488",
+      "style": "creative",
+      "styleName": "Memphis / Pop",
+      "desc": "Fictional music festival annual book in the Memphis design movement's flat-graphic, hi-saturation style — geometric shapes, terrazzo, 80s typography.",
+      "tags": [
+        "Memphis Design",
+        "Music Festival",
+        "Pop"
+      ],
+      "isNew": true,
+      "folder": "ppt169_sugar_rush_memphis/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "cover"
+        },
+        {
+          "file": "02_what.svg",
+          "title": "what",
+          "desc": "what"
+        },
+        {
+          "file": "03_numbers.svg",
+          "title": "numbers",
+          "desc": "numbers"
+        },
+        {
+          "file": "04_principles.svg",
+          "title": "principles",
+          "desc": "principles"
+        },
+        {
+          "file": "05_who.svg",
+          "title": "who",
+          "desc": "who"
+        },
+        {
+          "file": "06_headliners.svg",
+          "title": "headliners",
+          "desc": "headliners"
+        },
+        {
+          "file": "07_flavors.svg",
+          "title": "flavors",
+          "desc": "flavors"
+        },
+        {
+          "file": "08_where.svg",
+          "title": "where",
+          "desc": "where"
+        },
+        {
+          "file": "09_stages.svg",
+          "title": "stages",
+          "desc": "stages"
+        },
+        {
+          "file": "10_schedule.svg",
+          "title": "schedule",
+          "desc": "schedule"
+        },
+        {
+          "file": "11_vibes.svg",
+          "title": "vibes",
+          "desc": "vibes"
+        },
+        {
+          "file": "12_beyond.svg",
+          "title": "beyond",
+          "desc": "beyond"
+        },
+        {
+          "file": "13_tickets.svg",
+          "title": "tickets",
+          "desc": "tickets"
+        },
+        {
+          "file": "14_closing.svg",
+          "title": "closing",
+          "desc": "closing"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_indie_bookstore_zine_guide",
+      "title": "Indie Bookstore Zine Guide",
+      "description": "DIY zine-making guide — Risograph printing, halftone textures, hand-cut poster typography",
+      "icon": "📖",
+      "color": "#E85D75",
+      "style": "creative",
+      "styleName": "Risograph Zine",
+      "desc": "DIY zine-making guide pitched at indie-bookstore audiences, using risograph color separations, halftone textures, and hand-cut poster typography.",
+      "tags": [
+        "Zine",
+        "Risograph",
+        "DIY"
+      ],
+      "isNew": true,
+      "folder": "ppt169_indie_bookstore_zine_guide/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "cover"
+        },
+        {
+          "file": "02_toc.svg",
+          "title": "toc",
+          "desc": "toc"
+        },
+        {
+          "file": "03_zine_what.svg",
+          "title": "zine what",
+          "desc": "zine what"
+        },
+        {
+          "file": "04_zine_history.svg",
+          "title": "zine history",
+          "desc": "zine history"
+        },
+        {
+          "file": "05_risograph_origin.svg",
+          "title": "risograph origin",
+          "desc": "risograph origin"
+        },
+        {
+          "file": "06_risograph_process.svg",
+          "title": "risograph process",
+          "desc": "risograph process"
+        },
+        {
+          "file": "07_zine_folding.svg",
+          "title": "zine folding",
+          "desc": "zine folding"
+        },
+        {
+          "file": "08_zine_content_types.svg",
+          "title": "zine content types",
+          "desc": "zine content types"
+        },
+        {
+          "file": "09_jimbocho.svg",
+          "title": "jimbocho",
+          "desc": "jimbocho"
+        },
+        {
+          "file": "10_three_cities.svg",
+          "title": "three cities",
+          "desc": "three cities"
+        },
+        {
+          "file": "11_berlin.svg",
+          "title": "berlin",
+          "desc": "berlin"
+        },
+        {
+          "file": "12_china_bookstore_map.svg",
+          "title": "china bookstore map",
+          "desc": "china bookstore map"
+        },
+        {
+          "file": "13_china_art_book_fair.svg",
+          "title": "china art book fair",
+          "desc": "china art book fair"
+        },
+        {
+          "file": "14_how_to_browse.svg",
+          "title": "how to browse",
+          "desc": "how to browse"
+        },
+        {
+          "file": "15_how_to_collect.svg",
+          "title": "how to collect",
+          "desc": "how to collect"
+        },
+        {
+          "file": "16_action_checklist.svg",
+          "title": "action checklist",
+          "desc": "action checklist"
+        },
+        {
+          "file": "17_sources.svg",
+          "title": "sources",
+          "desc": "sources"
+        },
+        {
+          "file": "18_outro.svg",
+          "title": "outro",
+          "desc": "outro"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_kubernetes_blueprint_2026",
+      "title": "Kubernetes Blueprint 2026",
+      "description": "10-page Kubernetes cluster architecture walkthrough — isometric engineering-drawing style",
+      "icon": "📐",
+      "color": "#3FB4D9",
+      "style": "general",
+      "styleName": "Engineering Blueprint",
+      "desc": "Ten-page walkthrough of Kubernetes cluster architecture in an isometric engineering-drawing style — blueprint cyan / amber on deep navy paper.",
+      "tags": [
+        "Blueprint",
+        "Kubernetes",
+        "Technical Drawing"
+      ],
+      "isNew": true,
+      "folder": "ppt169_kubernetes_blueprint_2026/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "cover",
+          "desc": "cover"
+        },
+        {
+          "file": "02_two_planes.svg",
+          "title": "two planes",
+          "desc": "two planes"
+        },
+        {
+          "file": "03_control_plane.svg",
+          "title": "control plane",
+          "desc": "control plane"
+        },
+        {
+          "file": "04_worker_node.svg",
+          "title": "worker node",
+          "desc": "worker node"
+        },
+        {
+          "file": "05_pod_lifecycle.svg",
+          "title": "pod lifecycle",
+          "desc": "pod lifecycle"
+        },
+        {
+          "file": "06_service_types.svg",
+          "title": "service types",
+          "desc": "service types"
+        },
+        {
+          "file": "07_storage.svg",
+          "title": "storage",
+          "desc": "storage"
+        },
+        {
+          "file": "08_ha_topology.svg",
+          "title": "ha topology",
+          "desc": "ha topology"
+        },
+        {
+          "file": "09_api_spine.svg",
+          "title": "api spine",
+          "desc": "api spine"
+        },
+        {
+          "file": "10_takeaways.svg",
+          "title": "takeaways",
+          "desc": "takeaways"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_building_effective_agents",
+      "title": "Building Effective Agents",
+      "description": "Anthropic engineering blog — AI Agent architecture and workflow patterns",
+      "icon": "🤖",
+      "color": "#D4845A",
+      "style": "general",
+      "styleName": "General + Dark Tech",
+      "desc": "Based on Anthropic's Building Effective Agents — augmented LLM, five workflow patterns, and autonomous agent practice.",
+      "tags": [
+        "Dark Theme",
+        "AI/ML",
+        "Anthropic"
+      ],
+      "isNew": false,
+      "folder": "ppt169_building_effective_agents/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "Cover",
+          "desc": "Cover"
+        },
+        {
+          "file": "02_what_are_agents.svg",
+          "title": "What Are Agents",
+          "desc": "What Are Agents"
+        },
+        {
+          "file": "03_when_to_use_agents.svg",
+          "title": "When To Use Agents",
+          "desc": "When To Use Agents"
+        },
+        {
+          "file": "04_augmented_llm.svg",
+          "title": "Augmented Llm",
+          "desc": "Augmented Llm"
+        },
+        {
+          "file": "05_prompt_chaining.svg",
+          "title": "Prompt Chaining",
+          "desc": "Prompt Chaining"
+        },
+        {
+          "file": "06_routing.svg",
+          "title": "Routing",
+          "desc": "Routing"
+        },
+        {
+          "file": "07_parallelization.svg",
+          "title": "Parallelization",
+          "desc": "Parallelization"
+        },
+        {
+          "file": "08_orchestrator_workers.svg",
+          "title": "Orchestrator Workers",
+          "desc": "Orchestrator Workers"
+        },
+        {
+          "file": "09_evaluator_optimizer.svg",
+          "title": "Evaluator Optimizer",
+          "desc": "Evaluator Optimizer"
+        },
+        {
+          "file": "10_agents.svg",
+          "title": "Agents",
+          "desc": "Agents"
+        },
+        {
+          "file": "11_agents_in_practice.svg",
+          "title": "Agents In Practice",
+          "desc": "Agents In Practice"
+        },
+        {
+          "file": "12_summary.svg",
+          "title": "Summary",
+          "desc": "Summary"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_kimsoong_loyalty_programme",
+      "title": "Kimsoong Loyalty Programme",
+      "description": "MBB-style automotive brand customer loyalty strategy proposal",
+      "icon": "💎",
+      "color": "#E8A838",
+      "style": "consulting",
+      "styleName": "Top Consulting",
+      "desc": "Customer loyalty strategy proposal for Kimsoong's European HQ, covering root-cause analysis, four strategic pillars, and implementation roadmap.",
+      "tags": [
+        "Consulting",
+        "Loyalty",
+        "Automotive"
+      ],
+      "isNew": false,
+      "folder": "ppt169_kimsoong_loyalty_programme/svg_final",
+      "cover": "slide_01_cover.svg",
+      "slides": [
+        {
+          "file": "slide_01_cover.svg",
+          "title": "Cover",
+          "desc": "Cover"
+        },
+        {
+          "file": "slide_02_critical_challenge.svg",
+          "title": "Critical Challenge",
+          "desc": "Critical Challenge"
+        },
+        {
+          "file": "slide_03_company_profile.svg",
+          "title": "Company Profile",
+          "desc": "Company Profile"
+        },
+        {
+          "file": "slide_04_customer_profile.svg",
+          "title": "Customer Profile",
+          "desc": "Customer Profile"
+        },
+        {
+          "file": "slide_05_priorities_gap.svg",
+          "title": "Priorities Gap",
+          "desc": "Priorities Gap"
+        },
+        {
+          "file": "slide_06_root_cause.svg",
+          "title": "Root Cause",
+          "desc": "Root Cause"
+        },
+        {
+          "file": "slide_07_strategic_pillars.svg",
+          "title": "Strategic Pillars",
+          "desc": "Strategic Pillars"
+        },
+        {
+          "file": "slide_08_initiatives.svg",
+          "title": "Initiatives",
+          "desc": "Initiatives"
+        },
+        {
+          "file": "slide_09_roadmap.svg",
+          "title": "Roadmap",
+          "desc": "Roadmap"
+        },
+        {
+          "file": "slide_10_conclusion.svg",
+          "title": "Conclusion",
+          "desc": "Conclusion"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_general_dark_tech_claude_code_auto_mode",
+      "title": "Claude Code Auto Mode",
+      "description": "Anthropic AI safety engineering — classifier-based permission system for safer autonomous coding",
+      "icon": "🛡️",
+      "color": "#D4A574",
+      "style": "general",
+      "styleName": "General + Dark Tech",
+      "desc": "Based on Anthropic's engineering blog — classifier-based permission system for safer autonomous coding.",
+      "tags": [
+        "Dark Theme",
+        "AI Safety",
+        "Anthropic"
+      ],
+      "isNew": false,
+      "folder": "ppt169_general_dark_tech_claude_code_auto_mode/svg_final",
+      "cover": "01_cover.svg",
+      "slides": [
+        {
+          "file": "01_cover.svg",
+          "title": "Cover",
+          "desc": "Claude Code Auto Mode"
+        },
+        {
+          "file": "02_approval_fatigue.svg",
+          "title": "Approval Fatigue",
+          "desc": "93% approval rate problem"
+        },
+        {
+          "file": "03_auto_mode.svg",
+          "title": "Auto Mode",
+          "desc": "Classifier-delegated approvals"
+        },
+        {
+          "file": "04_architecture.svg",
+          "title": "Architecture",
+          "desc": "Two layers of defense"
+        },
+        {
+          "file": "05_threat_model.svg",
+          "title": "Threat Model",
+          "desc": "Four threat categories"
+        },
+        {
+          "file": "06_permissions.svg",
+          "title": "Permissions",
+          "desc": "Three-tier permission system"
+        },
+        {
+          "file": "07_classifier.svg",
+          "title": "Classifier",
+          "desc": "Reasoning-blind by design"
+        },
+        {
+          "file": "08_results.svg",
+          "title": "Results",
+          "desc": "Evaluation metrics"
+        },
+        {
+          "file": "09_design_decisions.svg",
+          "title": "Design Decisions",
+          "desc": "Key engineering choices"
+        },
+        {
+          "file": "10_closing.svg",
+          "title": "Closing",
+          "desc": "Substantially safer"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_black_and_gold_modern_project_history_presentation",
+      "title": "Black and Gold Modern Project History Presentation",
+      "description": "Mẫu thiết kế slide: Black and Gold Modern Project History Presentation",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Black and Gold Modern Project History Presentation",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_black_and_gold_modern_project_history_presentation/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Black and Gold Modern Project History Presentation"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Black and Gold Modern Project History Presentation"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Black and Gold Modern Project History Presentation"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Black and Gold Modern Project History Presentation"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Black and Gold Modern Project History Presentation"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Black and Gold Modern Project History Presentation"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Black and Gold Modern Project History Presentation"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Black and Gold Modern Project History Presentation"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Black and Gold Modern Project History Presentation"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Black and Gold Modern Project History Presentation"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_brown_and_beige_simple_modern_creative_brainstorm_presentation",
+      "title": "Brown and Beige Simple Modern Creative Brainstorm Presentation",
+      "description": "Mẫu thiết kế slide: Brown and Beige Simple Modern Creative Brainstorm Presentation",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Brown and Beige Simple Modern Creative Brainstorm Presentation",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_brown_and_beige_simple_modern_creative_brainstorm_presentation/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "11_slide_11.svg",
+          "title": "Trang 11",
+          "desc": "Trang 11 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "12_slide_12.svg",
+          "title": "Trang 12",
+          "desc": "Trang 12 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "13_slide_13.svg",
+          "title": "Trang 13",
+          "desc": "Trang 13 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "14_slide_14.svg",
+          "title": "Trang 14",
+          "desc": "Trang 14 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        },
+        {
+          "file": "15_slide_15.svg",
+          "title": "Trang 15",
+          "desc": "Trang 15 của slide Brown and Beige Simple Modern Creative Brainstorm Presentation"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_anh_duong_am_xanh_la_da_quang_tim_chuyen_nghiep_mau_chuyen_tiep_ke_hoach_du_an_ban_thuyet_trinh_kinh_doanh",
+      "title": "anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh",
+      "description": "Mẫu thiết kế slide: anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_anh_duong_am_xanh_la_da_quang_tim_chuyen_nghiep_mau_chuyen_tiep_ke_hoach_du_an_ban_thuyet_trinh_kinh_doanh/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "11_slide_11.svg",
+          "title": "Trang 11",
+          "desc": "Trang 11 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "12_slide_12.svg",
+          "title": "Trang 12",
+          "desc": "Trang 12 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "13_slide_13.svg",
+          "title": "Trang 13",
+          "desc": "Trang 13 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "14_slide_14.svg",
+          "title": "Trang 14",
+          "desc": "Trang 14 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "15_slide_15.svg",
+          "title": "Trang 15",
+          "desc": "Trang 15 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "16_slide_16.svg",
+          "title": "Trang 16",
+          "desc": "Trang 16 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "17_slide_17.svg",
+          "title": "Trang 17",
+          "desc": "Trang 17 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        },
+        {
+          "file": "18_slide_18.svg",
+          "title": "Trang 18",
+          "desc": "Trang 18 của slide anh dương Đậm Xanh lá Dạ quang Tím Chuyên nghiệp Màu chuyển tiếp Kế hoạch Dự án Bản thuyết trình Kinh doanh"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_bai_thuyet_trinh_ke_hoach_kinh_doanh_en_trang_on_gian",
+      "title": "Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản",
+      "description": "Mẫu thiết kế slide: Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_bai_thuyet_trinh_ke_hoach_kinh_doanh_en_trang_on_gian/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "11_slide_11.svg",
+          "title": "Trang 11",
+          "desc": "Trang 11 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "12_slide_12.svg",
+          "title": "Trang 12",
+          "desc": "Trang 12 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "13_slide_13.svg",
+          "title": "Trang 13",
+          "desc": "Trang 13 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "14_slide_14.svg",
+          "title": "Trang 14",
+          "desc": "Trang 14 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        },
+        {
+          "file": "15_slide_15.svg",
+          "title": "Trang 15",
+          "desc": "Trang 15 của slide Bài thuyết trình Kế hoạch kinh doanh Đen Trắng Đơn giản"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_bai_thuyet_trinh_moodboard_phim_truyen_hinh_va_ien_anh_xanh_la_vang_ong_trang_phong_cach_toi_gian_ien_anh",
+      "title": "Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh",
+      "description": "Mẫu thiết kế slide: Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_bai_thuyet_trinh_moodboard_phim_truyen_hinh_va_ien_anh_xanh_la_vang_ong_trang_phong_cach_toi_gian_ien_anh/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Bài thuyết trình Moodboard Phim Truyền hình và Điện ảnh Xanh lá Vàng đồng Trắng Phong cách Tối giản Điện ảnh"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_nau_mau_kem_on_gian_phong_chu_serif_cho_doanh_nghiep_ban_thuyet_trinh",
+      "title": "Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình",
+      "description": "Mẫu thiết kế slide: Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_nau_mau_kem_on_gian_phong_chu_serif_cho_doanh_nghiep_ban_thuyet_trinh/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "11_slide_11.svg",
+          "title": "Trang 11",
+          "desc": "Trang 11 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "12_slide_12.svg",
+          "title": "Trang 12",
+          "desc": "Trang 12 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "13_slide_13.svg",
+          "title": "Trang 13",
+          "desc": "Trang 13 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "14_slide_14.svg",
+          "title": "Trang 14",
+          "desc": "Trang 14 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "15_slide_15.svg",
+          "title": "Trang 15",
+          "desc": "Trang 15 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "16_slide_16.svg",
+          "title": "Trang 16",
+          "desc": "Trang 16 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "17_slide_17.svg",
+          "title": "Trang 17",
+          "desc": "Trang 17 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "18_slide_18.svg",
+          "title": "Trang 18",
+          "desc": "Trang 18 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "19_slide_19.svg",
+          "title": "Trang 19",
+          "desc": "Trang 19 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "20_slide_20.svg",
+          "title": "Trang 20",
+          "desc": "Trang 20 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "21_slide_21.svg",
+          "title": "Trang 21",
+          "desc": "Trang 21 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "22_slide_22.svg",
+          "title": "Trang 22",
+          "desc": "Trang 22 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "23_slide_23.svg",
+          "title": "Trang 23",
+          "desc": "Trang 23 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "24_slide_24.svg",
+          "title": "Trang 24",
+          "desc": "Trang 24 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "25_slide_25.svg",
+          "title": "Trang 25",
+          "desc": "Trang 25 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "26_slide_26.svg",
+          "title": "Trang 26",
+          "desc": "Trang 26 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "27_slide_27.svg",
+          "title": "Trang 27",
+          "desc": "Trang 27 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "28_slide_28.svg",
+          "title": "Trang 28",
+          "desc": "Trang 28 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "29_slide_29.svg",
+          "title": "Trang 29",
+          "desc": "Trang 29 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        },
+        {
+          "file": "30_slide_30.svg",
+          "title": "Trang 30",
+          "desc": "Trang 30 của slide Nâu Màu kem Đơn giản Phông chữ Serif cho Doanh nghiệp Bản thuyết trình"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_xanh_la_truyen_thong_bai_tap_nhom_nghien_cuu_tac_gia_van_hoc_bai_thuyet_trinh",
+      "title": "Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình",
+      "description": "Mẫu thiết kế slide: Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_xanh_la_truyen_thong_bai_tap_nhom_nghien_cuu_tac_gia_van_hoc_bai_thuyet_trinh/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Xanh Lá Truyền Thống Bài Tập Nhóm Nghiên Cứu Tác Giả Văn Học Bài Thuyết Trình"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_xanh_la_trang_chu_lon_in_am_ban_thuyet_trinh_on_gian",
+      "title": "Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản",
+      "description": "Mẫu thiết kế slide: Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_xanh_la_trang_chu_lon_in_am_ban_thuyet_trinh_on_gian/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "11_slide_11.svg",
+          "title": "Trang 11",
+          "desc": "Trang 11 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "12_slide_12.svg",
+          "title": "Trang 12",
+          "desc": "Trang 12 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "13_slide_13.svg",
+          "title": "Trang 13",
+          "desc": "Trang 13 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "14_slide_14.svg",
+          "title": "Trang 14",
+          "desc": "Trang 14 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "15_slide_15.svg",
+          "title": "Trang 15",
+          "desc": "Trang 15 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "16_slide_16.svg",
+          "title": "Trang 16",
+          "desc": "Trang 16 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "17_slide_17.svg",
+          "title": "Trang 17",
+          "desc": "Trang 17 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "18_slide_18.svg",
+          "title": "Trang 18",
+          "desc": "Trang 18 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "19_slide_19.svg",
+          "title": "Trang 19",
+          "desc": "Trang 19 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "20_slide_20.svg",
+          "title": "Trang 20",
+          "desc": "Trang 20 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "21_slide_21.svg",
+          "title": "Trang 21",
+          "desc": "Trang 21 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "22_slide_22.svg",
+          "title": "Trang 22",
+          "desc": "Trang 22 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "23_slide_23.svg",
+          "title": "Trang 23",
+          "desc": "Trang 23 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "24_slide_24.svg",
+          "title": "Trang 24",
+          "desc": "Trang 24 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "25_slide_25.svg",
+          "title": "Trang 25",
+          "desc": "Trang 25 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "26_slide_26.svg",
+          "title": "Trang 26",
+          "desc": "Trang 26 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "27_slide_27.svg",
+          "title": "Trang 27",
+          "desc": "Trang 27 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "28_slide_28.svg",
+          "title": "Trang 28",
+          "desc": "Trang 28 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "29_slide_29.svg",
+          "title": "Trang 29",
+          "desc": "Trang 29 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        },
+        {
+          "file": "30_slide_30.svg",
+          "title": "Trang 30",
+          "desc": "Trang 30 của slide Xanh lá Trắng Chữ lớn In đậm Bản thuyết trình Đơn giản"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_xanh_la_trang_gian_di_du_lich_viet_nam_trinh_bay",
+      "title": "Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày",
+      "description": "Mẫu thiết kế slide: Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_xanh_la_trang_gian_di_du_lich_viet_nam_trinh_bay/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Xanh Lá Trắng Giản Dị Du Lịch Việt Nam Trình Bày"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_o_va_vang_truyen_thong_kham_pha_van_hoa_viet_nam_presentation",
+      "title": "Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation",
+      "description": "Mẫu thiết kế slide: Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_o_va_vang_truyen_thong_kham_pha_van_hoa_viet_nam_presentation/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Đỏ Và Vàng Truyền Thống Khám Phá Văn Hóa Việt Nam Presentation"
+        }
+      ]
+    },
+    {
+      "id": "ppt169_o_va_en_khoi_uong_cheo_thang_may_ban_thuyet_trinh_ban_quang_cao_chieu_hang",
+      "title": "Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng",
+      "description": "Mẫu thiết kế slide: Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng",
+      "icon": "🎨",
+      "color": "#1e293b",
+      "style": "creative",
+      "styleName": "Sáng tạo",
+      "desc": "Mẫu thiết kế slide: Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng",
+      "tags": [
+        "Slide Mẫu",
+        "Imported"
+      ],
+      "isNew": true,
+      "folder": "ppt169_o_va_en_khoi_uong_cheo_thang_may_ban_thuyet_trinh_ban_quang_cao_chieu_hang/svg_final",
+      "cover": "01_slide_01.svg",
+      "slides": [
+        {
+          "file": "01_slide_01.svg",
+          "title": "Trang 1",
+          "desc": "Trang 1 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "02_slide_02.svg",
+          "title": "Trang 2",
+          "desc": "Trang 2 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "03_slide_03.svg",
+          "title": "Trang 3",
+          "desc": "Trang 3 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "04_slide_04.svg",
+          "title": "Trang 4",
+          "desc": "Trang 4 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "05_slide_05.svg",
+          "title": "Trang 5",
+          "desc": "Trang 5 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "06_slide_06.svg",
+          "title": "Trang 6",
+          "desc": "Trang 6 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "07_slide_07.svg",
+          "title": "Trang 7",
+          "desc": "Trang 7 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "08_slide_08.svg",
+          "title": "Trang 8",
+          "desc": "Trang 8 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "09_slide_09.svg",
+          "title": "Trang 9",
+          "desc": "Trang 9 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "10_slide_10.svg",
+          "title": "Trang 10",
+          "desc": "Trang 10 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        },
+        {
+          "file": "11_slide_11.svg",
+          "title": "Trang 11",
+          "desc": "Trang 11 của slide Đỏ và Đen Khối đường chéo Thang máy Bản thuyết trình Bản quảng cáo chiêu hàng"
+        }
+      ]
+    }
+  ]
+}

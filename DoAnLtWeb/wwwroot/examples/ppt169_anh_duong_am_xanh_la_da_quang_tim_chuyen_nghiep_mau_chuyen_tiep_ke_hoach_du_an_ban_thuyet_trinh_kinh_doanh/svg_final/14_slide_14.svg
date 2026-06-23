@@ -1,0 +1,179 @@
+<svg xmlns="http://www.w3.org/2000/svg" xmlns:xlink="http://www.w3.org/1999/xlink" version="1.1" width="1920" height="1080" viewBox="0 0 1920 1080"><defs><marker id="marrow1" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow2" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow3" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow4" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow5" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow6" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow7" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow8" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow9" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow10" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow11" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker><marker id="marrow12" viewBox="0 0 10 10" refX="10" refY="5" markerWidth="5" markerHeight="7" orient="auto" markerUnits="strokeWidth"><path d="M 0 0 L 10 5 L 0 10 z" fill="#FFFFFF"/></marker></defs><rect x="0" y="0" width="1920" height="1080" fill="#020327"/>
+<g id="shape-2" data-name="Group 2">
+<g id="shape-3" data-name="Freeform 3">
+<path d="M 811.92 367.2 L 1115.82 367.2 C 1124.57 367.2 1132.96 370.68 1139.15 376.87 C 1145.34 383.06 1148.82 391.45 1148.82 400.2 L 1148.82 491.72 C 1148.82 500.47 1145.34 508.86 1139.15 515.05 C 1132.96 521.24 1124.57 524.71 1115.82 524.71 L 811.92 524.71 C 803.17 524.71 794.78 521.24 788.59 515.05 C 782.4 508.86 778.92 500.47 778.92 491.72 L 778.92 400.2 C 778.92 391.45 782.4 383.06 788.59 376.87 C 794.78 370.68 803.17 367.2 811.92 367.2 Z" fill="#C7F837" stroke-linecap="round" stroke="none" stroke-linejoin="round"/>
+</g>
+<g id="shape-4" data-name="TextBox 4">
+<rect x="778.92" y="349.86" width="369.89" height="174.85" fill="none"/>
+<text x="963.87" y="445.62" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="33.32" fill="#020327"><tspan fill="#020327" font-size="33.32">Thêm chủ đề chính</tspan></text>
+</g>
+</g>
+<g id="shape-5" data-name="Group 5">
+<g id="shape-6" data-name="Freeform 6">
+<path d="M 487.21 388.72 L 649.14 388.72 C 654.94 388.72 659.65 393.43 659.65 399.23 L 659.65 492.69 C 659.65 498.49 654.94 503.19 649.14 503.19 L 487.21 503.19 C 481.4 503.19 476.7 498.49 476.7 492.69 L 476.7 399.23 C 476.7 393.43 481.4 388.72 487.21 388.72 Z" fill="#17F1EA" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-7" data-name="TextBox 7">
+<rect x="476.7" y="382.58" width="182.94" height="120.61" fill="none"/>
+<text x="568.17" y="435.89" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#020327"><tspan fill="#020327" font-size="20">Thêm ý tưởng</tspan></text>
+<text x="568.17" y="459.89" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#020327"><tspan fill="#020327" font-size="20">liên quan</tspan></text>
+</g>
+</g>
+<g id="shape-8" data-name="Group 8">
+<g id="shape-9" data-name="Freeform 9">
+<path d="M 871.74 177.7 L 1056 177.7 C 1058.51 177.7 1060.92 178.7 1062.69 180.47 C 1064.46 182.25 1065.46 184.65 1065.46 187.16 L 1065.46 282.71 C 1065.46 285.22 1064.46 287.63 1062.69 289.4 C 1060.92 291.18 1058.51 292.17 1056 292.17 L 871.74 292.17 C 869.23 292.17 866.83 291.18 865.05 289.4 C 863.28 287.63 862.28 285.22 862.28 282.71 L 862.28 187.16 C 862.28 184.65 863.28 182.25 865.05 180.47 C 866.83 178.7 869.23 177.7 871.74 177.7 Z" fill="#17F1EA"/>
+</g>
+<g id="shape-10" data-name="TextBox 10">
+<rect x="862.28" y="171.56" width="203.18" height="120.61" fill="none"/>
+<text x="963.87" y="224.87" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#020327"><tspan fill="#020327" font-size="20">Thêm ý tưởng</tspan></text>
+<text x="963.87" y="248.87" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#020327"><tspan fill="#020327" font-size="20">liên quan</tspan></text>
+</g>
+</g>
+<g id="shape-11" data-name="Group 11">
+<g id="shape-12" data-name="Freeform 12">
+<path d="M 868.87 688.87 L 1058.87 688.87 C 1061.31 688.87 1063.66 689.84 1065.39 691.57 C 1067.12 693.3 1068.09 695.65 1068.09 698.09 L 1068.09 794.12 C 1068.09 796.57 1067.12 798.91 1065.39 800.64 C 1063.66 802.37 1061.31 803.34 1058.87 803.34 L 868.87 803.34 C 866.43 803.34 864.08 802.37 862.35 800.64 C 860.63 798.91 859.65 796.57 859.65 794.12 L 859.65 698.09 C 859.65 695.65 860.63 693.3 862.35 691.57 C 864.08 689.84 866.43 688.87 868.87 688.87 Z" fill="#17F1EA" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-13" data-name="TextBox 13">
+<rect x="859.65" y="682.73" width="208.43" height="120.61" fill="none"/>
+<text x="963.87" y="736.04" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#020327"><tspan fill="#020327" font-size="20">Thêm ý tưởng</tspan></text>
+<text x="963.87" y="760.04" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#020327"><tspan fill="#020327" font-size="20">liên quan</tspan></text>
+</g>
+</g>
+<g id="shape-14" data-name="Group 14">
+<g id="shape-15" data-name="Freeform 15">
+<path d="M 1265.03 524.71 L 1426.96 524.71 C 1432.76 524.71 1437.47 529.42 1437.47 535.22 L 1437.47 628.68 C 1437.47 634.48 1432.76 639.18 1426.96 639.18 L 1265.03 639.18 C 1259.23 639.18 1254.52 634.48 1254.52 628.68 L 1254.52 535.22 C 1254.52 529.42 1259.23 524.71 1265.03 524.71 Z" fill="#17F1EA" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-16" data-name="TextBox 16">
+<rect x="1254.52" y="518.57" width="182.94" height="120.61" fill="none"/>
+<text x="1345.99" y="571.88" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#020327"><tspan fill="#020327" font-size="20">Thêm ý tưởng</tspan></text>
+<text x="1345.99" y="595.88" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#020327"><tspan fill="#020327" font-size="20">liên quan</tspan></text>
+</g>
+</g>
+<g id="shape-17" data-name="AutoShape 17">
+<line x1="1148.82" y1="445.96" x2="1254.52" y2="581.95" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow1)" fill="none"/>
+</g>
+<g id="shape-18" data-name="AutoShape 18">
+<line x1="659.65" y1="445.96" x2="778.92" y2="445.96" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow2)" fill="none"/>
+</g>
+<g id="shape-19" data-name="AutoShape 19">
+<line x1="963.87" y1="292.17" x2="963.87" y2="367.2" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow3)" fill="none"/>
+</g>
+<g id="shape-20" data-name="AutoShape 20">
+<line x1="963.87" y1="524.71" x2="963.87" y2="688.87" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow4)" fill="none"/>
+</g>
+<g id="shape-21" data-name="Group 21">
+<g id="shape-22" data-name="Freeform 22">
+<path d="M 1249.68 186.42 L 1473.59 186.42 C 1475.53 186.42 1477.4 187.19 1478.77 188.56 C 1480.14 189.94 1480.91 191.8 1480.91 193.74 L 1480.91 273.11 C 1480.91 277.15 1477.64 280.43 1473.59 280.43 L 1249.68 280.43 C 1245.64 280.43 1242.36 277.15 1242.36 273.11 L 1242.36 193.74 C 1242.36 189.7 1245.64 186.42 1249.68 186.42 Z" fill="#A34ABD" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-23" data-name="TextBox 23">
+<rect x="1242.36" y="180.28" width="238.56" height="100.16" fill="none"/>
+<text x="1361.64" y="235.35" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">Thêm ý tưởng phụ</tspan></text>
+</g>
+</g>
+<g id="shape-24" data-name="AutoShape 24">
+<line x1="1065.46" y1="233.43" x2="1242.36" y2="234.94" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow5)" fill="none"/>
+</g>
+<g id="shape-25" data-name="Group 25">
+<g id="shape-26" data-name="Freeform 26">
+<path d="M 1248.94 318.83 L 1472.85 318.83 C 1474.79 318.83 1476.65 319.61 1478.03 320.98 C 1479.4 322.35 1480.17 324.22 1480.17 326.16 L 1480.17 405.52 C 1480.17 409.57 1476.89 412.85 1472.85 412.85 L 1248.94 412.85 C 1244.89 412.85 1241.62 409.57 1241.62 405.52 L 1241.62 326.16 C 1241.62 322.11 1244.89 318.83 1248.94 318.83 Z" fill="#A34ABD" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-27" data-name="TextBox 27">
+<rect x="1241.62" y="312.69" width="238.56" height="100.16" fill="none"/>
+<text x="1360.89" y="367.77" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">Thêm ý tưởng phụ</tspan></text>
+</g>
+</g>
+<g id="shape-28" data-name="AutoShape 28">
+<line x1="1148.82" y1="365.84" x2="1241.62" y2="445.96" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow6)" fill="none"/>
+</g>
+<g id="shape-29" data-name="Group 29">
+<g id="shape-30" data-name="Freeform 30">
+<path d="M 1564.62 266.25 L 1788.53 266.25 C 1790.47 266.25 1792.34 267.02 1793.71 268.4 C 1795.08 269.77 1795.85 271.63 1795.85 273.58 L 1795.85 352.94 C 1795.85 356.99 1792.58 360.27 1788.53 360.27 L 1564.62 360.27 C 1560.58 360.27 1557.3 356.99 1557.3 352.94 L 1557.3 273.58 C 1557.3 269.53 1560.58 266.25 1564.62 266.25 Z" fill="#604ABD" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-31" data-name="TextBox 31">
+<rect x="1557.3" y="260.11" width="238.56" height="100.16" fill="none"/>
+<text x="1676.58" y="303.19" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">Thêm </tspan><tspan fill="#FFFFFF" font-size="20">ý tưởng</tspan></text>
+<text x="1676.58" y="327.19" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">phụ hơn nữa</tspan></text>
+</g>
+</g>
+<g id="shape-32" data-name="Group 32">
+<g id="shape-33" data-name="Freeform 33">
+<path d="M 1564.62 400.74 L 1788.53 400.74 C 1790.47 400.74 1792.34 401.51 1793.71 402.89 C 1795.08 404.26 1795.85 406.12 1795.85 408.07 L 1795.85 487.43 C 1795.85 491.48 1792.58 494.76 1788.53 494.76 L 1564.62 494.76 C 1560.58 494.76 1557.3 491.48 1557.3 487.43 L 1557.3 408.07 C 1557.3 404.02 1560.58 400.74 1564.62 400.74 Z" fill="#604ABD" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-34" data-name="TextBox 34">
+<rect x="1557.3" y="394.6" width="238.56" height="100.16" fill="none"/>
+<text x="1676.58" y="437.68" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">Thêm ý tưởng</tspan></text>
+<text x="1676.58" y="461.68" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">phụ hơn nữa</tspan></text>
+</g>
+</g>
+<g id="shape-35" data-name="AutoShape 35">
+<line x1="1480.17" y1="313.26" x2="1557.3" y2="365.84" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow7)" fill="none"/>
+</g>
+<g id="shape-36" data-name="AutoShape 36">
+<line x1="1480.17" y1="365.84" x2="1557.3" y2="447.75" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow8)" fill="none"/>
+</g>
+<g id="shape-37" data-name="Group 37">
+<g id="shape-38" data-name="Freeform 38">
+<path d="M 505.86 700.1 L 729.77 700.1 C 731.72 700.1 733.58 700.87 734.95 702.24 C 736.33 703.62 737.1 705.48 737.1 707.42 L 737.1 786.79 C 737.1 790.83 733.82 794.11 729.77 794.11 L 505.86 794.11 C 501.82 794.11 498.54 790.83 498.54 786.79 L 498.54 707.42 C 498.54 703.38 501.82 700.1 505.86 700.1 Z" fill="#A34ABD" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-39" data-name="TextBox 39">
+<rect x="498.54" y="693.96" width="238.56" height="100.16" fill="none"/>
+<text x="617.82" y="749.04" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">Thêm ý tưởng phụ</tspan></text>
+</g>
+</g>
+<g id="shape-40" data-name="AutoShape 40">
+<line x1="737.1" y1="746.11" x2="859.65" y2="747.11" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow9)" fill="none"/>
+</g>
+<g id="shape-41" data-name="Group 41">
+<g id="shape-42" data-name="Freeform 42">
+<path d="M 505.86 829.88 L 729.77 829.88 C 731.71 829.88 733.57 830.65 734.94 832.03 C 736.32 833.4 737.09 835.26 737.09 837.2 L 737.09 916.57 C 737.09 920.62 733.81 923.89 729.77 923.89 L 505.86 923.89 C 501.81 923.89 498.53 920.62 498.53 916.57 L 498.53 837.2 C 498.53 833.16 501.81 829.88 505.86 829.88 Z" fill="#A34ABD" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-43" data-name="TextBox 43">
+<rect x="498.53" y="823.74" width="238.56" height="100.16" fill="none"/>
+<text x="617.81" y="878.82" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">Thêm ý tưởng phụ</tspan></text>
+</g>
+</g>
+<g id="shape-44" data-name="AutoShape 44">
+<line x1="737.09" y1="746.11" x2="859.65" y2="876.89" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow10)" fill="none"/>
+</g>
+<g id="shape-45" data-name="Group 45">
+<g id="shape-46" data-name="Freeform 46">
+<path d="M 164.14 697.1 L 388.05 697.1 C 389.99 697.1 391.85 697.87 393.23 699.25 C 394.6 700.62 395.37 702.48 395.37 704.42 L 395.37 783.79 C 395.37 787.84 392.09 791.11 388.05 791.11 L 164.14 791.11 C 160.09 791.11 156.81 787.84 156.81 783.79 L 156.81 704.42 C 156.81 700.38 160.09 697.1 164.14 697.1 Z" fill="#604ABD"/>
+</g>
+<g id="shape-47" data-name="TextBox 47">
+<rect x="156.81" y="690.96" width="238.56" height="100.16" fill="none"/>
+<text x="276.09" y="734.04" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">Thêm ý tưởng</tspan></text>
+<text x="276.09" y="758.04" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">phụ hơn nữa</tspan></text>
+</g>
+</g>
+<g id="shape-48" data-name="Group 48">
+<g id="shape-49" data-name="Freeform 49">
+<path d="M 164.15 828.97 L 388.06 828.97 C 390 828.97 391.86 829.74 393.24 831.12 C 394.61 832.49 395.38 834.35 395.38 836.29 L 395.38 915.66 C 395.38 919.71 392.1 922.99 388.06 922.99 L 164.15 922.99 C 160.1 922.99 156.82 919.71 156.82 915.66 L 156.82 836.29 C 156.82 832.25 160.1 828.97 164.15 828.97 Z" fill="#604ABD" stroke-linecap="square" stroke="none" stroke-linejoin="miter"/>
+</g>
+<g id="shape-50" data-name="TextBox 50">
+<rect x="156.82" y="822.83" width="238.56" height="100.16" fill="none"/>
+<text x="276.1" y="865.91" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">Thêm ý tưởng</tspan></text>
+<text x="276.1" y="889.91" text-anchor="middle" xml:space="preserve" font-family="Muli, sans-serif" font-size="20" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="20">phụ hơn nữa</tspan></text>
+</g>
+</g>
+<g id="shape-51" data-name="AutoShape 51">
+<line x1="395.37" y1="744.11" x2="498.54" y2="747.11" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow11)" fill="none"/>
+</g>
+<g id="shape-52" data-name="AutoShape 52">
+<line x1="395.38" y1="875.98" x2="498.53" y2="876.89" stroke-width="2" stroke-linecap="round" stroke="#FFFFFF" marker-end="url(#marrow12)" fill="none"/>
+</g>
+<g id="shape-53" data-name="TextBox 53">
+<rect x="118.16" y="82.97" width="701.4" height="94.39" fill="none"/>
+<text x="118.16" y="110.17" text-anchor="start" xml:space="preserve" font-family="Muli, sans-serif" font-size="32" fill="#FFFFFF"><tspan fill="#FFFFFF" font-size="32">Cần đồng hồ bấm giờ? Tìm biểu tượng đồng hồ </tspan><tspan x="118.16" dy="38.4" fill="#FFFFFF" font-size="32">ở phía tay trái bên dưới và bắt đầu động não!</tspan></text>
+</g>
+<g id="shape-54" data-name="Group 54">
+<g id="shape-55" data-name="Freeform 55">
+<path d="M 1111.54 877.89 L 1850.29 877.89 C 1852.79 877.89 1854.83 879.92 1854.83 882.43 L 1854.83 1049.43 C 1854.83 1051.94 1852.79 1053.97 1850.29 1053.97 L 1111.54 1053.97 C 1109.04 1053.97 1107 1051.94 1107 1049.43 L 1107 882.43 C 1107 879.92 1109.04 877.89 1111.54 877.89 Z" fill="#FFFFFF" fill-opacity="0.698" stroke-linecap="round" stroke="none" stroke-dasharray="1 3" stroke-linejoin="round"/>
+</g>
+<g id="shape-56" data-name="TextBox 56">
+<rect x="1107" y="873.91" width="747.82" height="180.06" fill="none"/>
+<text x="1133.67" y="920.98" text-anchor="start" xml:space="preserve" font-family="&quot;Muli Semi-Bold&quot;, sans-serif" font-size="24" fill="#020327" fill-opacity="0.698"><tspan fill="#020327" font-size="24" fill-opacity="0.698">Mẹo:</tspan><tspan fill="#020327" font-size="24" fill-opacity="0.698"> Cộng tác khiến cho quá trình làm việc nhóm </tspan><tspan fill="#020327" font-size="24" fill-opacity="0.698">dễ dàng </tspan><tspan x="1133.67" dy="28.8" fill="#020327" font-size="24" fill-opacity="0.698">hơn! Nhấp &quot;Chia sẻ&quot; và mời các thành viên chung nhóm của </tspan><tspan x="1133.67" dy="28.8" fill="#020327" font-size="24" fill-opacity="0.698">bạn cùng điền vào đây. Sử dụng bảng trắng này để ghi lại </tspan><tspan x="1133.67" dy="28.8" fill="#020327" font-size="24" fill-opacity="0.698">các thông báo, ý tưởng, động não và các ý tưởng thú vị </tspan><tspan x="1133.67" dy="28.8" fill="#020327" font-size="24" fill-opacity="0.698">khác của nhóm.</tspan></text>
+</g>
+</g>
+<g id="shape-57" data-name="TextBox 57">
+<rect x="118.16" y="218.99" width="358.54" height="25.86" fill="none"/>
+<text x="297.43" y="237.12" text-anchor="middle" xml:space="preserve" font-family="&quot;Muli Semi-Bold&quot;, sans-serif" font-size="21.32" fill="#020327"><tspan fill="#020327" font-size="21.32">QUAY LẠI TRANG CHƯƠNG TRÌNH</tspan></text>
+</g></svg>
