@@ -154,10 +154,21 @@ namespace DoAnLtWeb.Controllers
             var user = await _userManager.FindByEmailAsync(email);
             if (user == null)
             {
+                string rawName = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email;
+                string cleanUsername = SanitizeUsername(rawName, email);
+
+                // Make sure username is unique
+                var baseUsername = cleanUsername;
+                int tempCounter = 1;
+                while (await _userManager.FindByNameAsync(cleanUsername) != null)
+                {
+                    cleanUsername = $"{baseUsername}{tempCounter++}";
+                }
+
                 user = new User
                 {
                     Email = email,
-                    Username = info.Principal.FindFirstValue(ClaimTypes.Name) ?? email
+                    Username = cleanUsername
                 };
 
                 var createResult = await _userManager.CreateAsync(user);
@@ -191,6 +202,47 @@ namespace DoAnLtWeb.Controllers
         {
             await _signInManager.SignOutAsync();
             return RedirectToAction("Login", "Account");
+        }
+
+        private string SanitizeUsername(string rawName, string email)
+        {
+            if (string.IsNullOrWhiteSpace(rawName)) rawName = email.Split('@')[0];
+            
+            // Replace common Vietnamese specific stroke characters
+            rawName = rawName.Replace("đ", "d").Replace("Đ", "D");
+
+            // Remove diacritics (accents)
+            var normalizedString = rawName.Normalize(System.Text.NormalizationForm.FormD);
+            var sb = new System.Text.StringBuilder();
+
+            foreach (var c in normalizedString)
+            {
+                var unicodeCategory = System.Globalization.CharUnicodeInfo.GetUnicodeCategory(c);
+                if (unicodeCategory != System.Globalization.UnicodeCategory.NonSpacingMark)
+                {
+                    sb.Append(c);
+                }
+            }
+
+            string clean = sb.ToString().Normalize(System.Text.NormalizationForm.FormC);
+
+            // Keep only allowed characters in default Identity validation:
+            // abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+
+            var allowedChars = "abcdefghijklmnopqrstuvwxyzABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789-._@+";
+            var result = new string(clean.Where(c => allowedChars.Contains(c)).ToArray());
+
+            if (string.IsNullOrWhiteSpace(result))
+            {
+                var prefix = email.Split('@')[0];
+                result = new string(prefix.Where(c => allowedChars.Contains(c)).ToArray());
+            }
+
+            if (string.IsNullOrWhiteSpace(result))
+            {
+                result = "user_" + Guid.NewGuid().ToString("N").Substring(0, 8);
+            }
+
+            return result;
         }
     }
 }
